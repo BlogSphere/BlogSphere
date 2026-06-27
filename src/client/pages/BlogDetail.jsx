@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X } from 'lucide-react';
+import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const parseInlineMarkdown = (text) => {
   if (!text) return '';
   // Clean up any leading list bullet/dash if it somehow slipped through
-  let cleanText = text.trim().replace(/^[\*\-\•]\s*/, '');
+  let cleanText = text.trim().replace(/^[*\-•]\s*/, '');
   
   // Parse markdown bold (**text**) into HTML/React bold elements
   const parts = cleanText.split('**');

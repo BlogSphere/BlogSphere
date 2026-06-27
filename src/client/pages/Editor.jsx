@@ -96,7 +96,7 @@ const parseHTMLToBlocks = (html) => {
 const parseInlineMarkdown = (text) => {
   if (!text) return '';
   // Clean up any leading list bullet/dash if it somehow slipped through
-  let cleanText = text.trim().replace(/^[\*\-\•]\s*/, '');
+  let cleanText = text.trim().replace(/^[*\-•]\s*/, '');
   
   // Parse markdown bold (**text**) into HTML/React bold elements
   const parts = cleanText.split('**');
