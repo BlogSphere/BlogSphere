@@ -1,9 +1,17 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface AuthState {
+  user: any;
+  token: string | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+}
 
 const token = localStorage.getItem('token') || null;
-const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
 
-const initialState = {
+const initialState: AuthState = {
   user,
   token,
   isAuthenticated: !!token,
@@ -19,7 +27,7 @@ const authSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    authSuccess: (state, action) => {
+    authSuccess: (state, action: PayloadAction<{ token: string; user: any }>) => {
       state.loading = false;
       state.isAuthenticated = true;
       state.token = action.payload.token;
@@ -28,11 +36,11 @@ const authSlice = createSlice({
       localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
-    authFailure: (state, action) => {
+    authFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
-    updateCurrentUser: (state, action) => {
+    updateCurrentUser: (state, action: PayloadAction<any>) => {
       state.user = action.payload;
       localStorage.setItem('user', JSON.stringify(action.payload));
     },
@@ -45,8 +53,7 @@ const authSlice = createSlice({
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     },
-    updateFollows: (state, action) => {
-      // action.payload: { following: [] } or similar
+    updateFollows: (state, action: PayloadAction<any[]>) => {
       if (state.user) {
         state.user.following = action.payload;
         localStorage.setItem('user', JSON.stringify(state.user));

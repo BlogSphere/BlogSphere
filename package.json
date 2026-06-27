@@ -2,20 +2,21 @@
   "name": "blog-sphere",
   "version": "1.0.0",
   "description": "Smart Community Blog Platform",
-  "main": "src/server/index.js",
+  "main": "src/server/index.ts",
   "type": "module",
   "scripts": {
-    "server": "nodemon src/server/index.js",
+    "server": "nodemon --exec tsx src/server/index.ts",
     "client": "vite",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "build": "vite build",
+    "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "node src/server/index.js"
+    "start": "tsx src/server/index.ts"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.5.0",
     "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
+    "bootstrap": "^5.3.3",
     "canvas-confetti": "^1.9.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -32,6 +33,11 @@
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.17.9",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
@@ -40,6 +46,8 @@
     "nodemon": "^3.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
     "vite": "^6.0.5"
   }
 }

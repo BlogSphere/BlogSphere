@@ -1,16 +1,16 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { authSuccess, logoutUser } from './redux/authSlice.js';
-import Navbar from './components/Navbar.jsx';
-import Home from './pages/Home.jsx';
-import Auth from './pages/Auth.jsx';
-import BlogDetail from './pages/BlogDetail.jsx';
-import Editor from './pages/Editor.jsx';
-import Dashboard from './pages/Dashboard.jsx';
-import Admin from './pages/Admin.jsx';
-import Profile from './pages/Profile.jsx';
-import api from './utils/api.js';
+import { authSuccess, logoutUser } from './redux/authSlice';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
+import Auth from './pages/Auth';
+import BlogDetail from './pages/BlogDetail';
+import Editor from './pages/Editor';
+import Dashboard from './pages/Dashboard';
+import Admin from './pages/Admin';
+import Profile from './pages/Profile';
+import api from './utils/api';
 
 export default function App() {
   const dispatch = useDispatch();
