@@ -31,4 +31,4 @@ jobs:
       run: npm run build
 
     - name: Backend Sanity Check
-      run: node --check src/server/index.js
+      run: npx tsx --check src/server/index.ts
