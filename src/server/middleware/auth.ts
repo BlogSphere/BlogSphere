@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import User from '../models/User';
 
-export const auth = async (req, res, next) => {
+export const auth = async (req: any, res: any, next: any) => {
   try {
     const authHeader = req.header('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -9,7 +9,7 @@ export const auth = async (req, res, next) => {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token_key_2026_987654321');
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token_key_2026_987654321');
     
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
@@ -23,8 +23,8 @@ export const auth = async (req, res, next) => {
   }
 };
 
-export const requireRole = (roles) => {
-  return (req, res, next) => {
+export const requireRole = (roles: string[]) => {
+  return (req: any, res: any, next: any) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required.' });
     }

@@ -11,8 +11,8 @@ import {
   translateBlog,
   getBlogVersions,
   restoreVersion
-} from '../controllers/blogController.js';
-import { auth } from '../middleware/auth.js';
+} from '../controllers/blogController';
+import { auth } from '../middleware/auth';
 
 const router = express.Router();
 
