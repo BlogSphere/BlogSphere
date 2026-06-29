@@ -54,6 +54,12 @@ const BlogSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  reactions: {
+    thumbsUp: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    heart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    clap: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    laugh: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  },
   views: {
     type: Number,
     default: 0

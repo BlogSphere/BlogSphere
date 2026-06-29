@@ -5,7 +5,7 @@ import {
   Save, Send, Eye, PenTool, Users, Plus, X, Search, 
   UserCheck, Edit3, Heading1, Heading2, List, Trash2, 
   Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft, 
-  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Sparkles
+  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Sparkles, Globe
 } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
@@ -215,6 +215,44 @@ export default function Editor() {
   const [aiTopic, setAiTopic] = useState('');
   const [generatingAI, setGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState('');
+
+  // AI Translation States
+  const [translatingAI, setTranslatingAI] = useState(false);
+
+  const handleAITranslate = async (lang) => {
+    if (!editId) return;
+    setTranslatingAI(true);
+    setError('');
+    try {
+      const res = await api.post(`/api/blogs/${editId}/ai-translate`, { lang });
+      setTitle(res.data.title);
+      setContent(res.data.content);
+      
+      const parsed = JSON.parse(res.data.content);
+      if (Array.isArray(parsed)) {
+        setBlocks(parsed);
+      }
+      
+      confetti({
+        particleCount: 80,
+        spread: 50,
+        origin: { y: 0.6 }
+      });
+
+      if (socket && editId) {
+        socket.emit('edit_content', {
+          blogId: editId,
+          content: res.data.content,
+          title: res.data.title
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err.response?.data?.error || 'Failed to auto-translate blog using Gemini.');
+    } finally {
+      setTranslatingAI(false);
+    }
+  };
 
   const handleGenerateAI = async () => {
     if (!aiTopic.trim()) return;
@@ -1122,6 +1160,48 @@ export default function Editor() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            {/* AI Auto-Translate Panel */}
+            <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
+              <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary-500" />
+                <span>AI Translate</span>
+              </h3>
+              {editId ? (
+                <>
+                  <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                    Translate this draft's title and blocks into Hindi or Gujarati using Gemini.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={translatingAI}
+                      onClick={() => handleAITranslate('hi')}
+                      className="flex-1 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-105 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-205 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      Hindi
+                    </button>
+                    <button
+                      type="button"
+                      disabled={translatingAI}
+                      onClick={() => handleAITranslate('gu')}
+                      className="flex-1 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-105 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-205 rounded-xl transition-all disabled:opacity-50"
+                    >
+                      Gujarati
+                    </button>
+                  </div>
+                  {translatingAI && (
+                    <p className="text-[10px] text-primary-500 animate-pulse mt-2 text-center font-semibold">
+                      Translating content blocks...
+                    </p>
+                  )}
+                </>
+              ) : (
+                <p className="text-xs text-slate-400 leading-relaxed italic">
+                  Please save this article draft first to enable Gemini AI translation.
+                </p>
+              )}
             </div>
 
             {/* Collaborators setup */}

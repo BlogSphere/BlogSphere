@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle } from 'lucide-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
+import { updateCurrentUser } from '../redux/authSlice.js';
 
 const parseInlineMarkdown = (text) => {
   if (!text) return '';
@@ -126,6 +127,7 @@ const renderBlogContent = (contentString) => {
 export default function BlogDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   const [blog, setBlog] = useState(null);
@@ -147,14 +149,19 @@ export default function BlogDetail() {
   const [versions, setVersions] = useState([]);
   const [selectedVersion, setSelectedVersion] = useState(null);
 
-  // Likes & Bookmark states
+  // Likes, Reactions & Bookmark states
   const [likesCount, setLikesCount] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [reactions, setReactions] = useState({ thumbsUp: [], heart: [], clap: [], laugh: [] });
 
   // Followers states
   const [followersCount, setFollowersCount] = useState(0);
   const [isFollowing, setIsFollowing] = useState(false);
+
+  // Newsletter states
+  const [isNewsletterSubscribed, setIsNewsletterSubscribed] = useState(false);
+  const [newsletterSubscribersCount, setNewsletterSubscribersCount] = useState(0);
 
   // Speech synthesis states
   const [speechState, setSpeechState] = useState('stopped'); // 'playing', 'paused', 'stopped'
@@ -179,12 +186,21 @@ export default function BlogDetail() {
         setRenderedContent(data.content);
         setLikesCount(data.likes?.length || 0);
         setIsLiked(isAuthenticated && data.likes?.includes(user?._id));
+        setReactions(data.reactions || { thumbsUp: [], heart: [], clap: [], laugh: [] });
+        
         setFollowersCount(data.author?.followers?.length || 0);
         setIsFollowing(isAuthenticated && data.author?.followers?.includes(user?._id));
+        
+        setIsNewsletterSubscribed(isAuthenticated && data.author?.newsletterSubscribers?.includes(user?._id));
+        setNewsletterSubscribersCount(data.author?.newsletterSubscribers?.length || 0);
 
-        // Check if bookmarked in localStorage
-        const bookmarks = JSON.parse(localStorage.getItem('offline_blogs') || '[]');
-        setIsBookmarked(bookmarks.some(b => b._id === data._id));
+        // Check if bookmarked
+        if (isAuthenticated && user?.savedBlogs) {
+          setIsBookmarked(user.savedBlogs.includes(data._id));
+        } else {
+          const bookmarks = JSON.parse(localStorage.getItem('offline_blogs') || '[]');
+          setIsBookmarked(bookmarks.some(b => b._id === data._id));
+        }
 
         // Load comments
         fetchComments(data._id);
@@ -199,6 +215,7 @@ export default function BlogDetail() {
           setRenderedTitle(matchingOffline.title);
           setRenderedContent(matchingOffline.content);
           setLikesCount(matchingOffline.likes?.length || 0);
+          setReactions(matchingOffline.reactions || { thumbsUp: [], heart: [], clap: [], laugh: [] });
           setIsBookmarked(true);
           setComments([]);
           setLoading(false);
@@ -252,22 +269,65 @@ export default function BlogDetail() {
     }
   };
 
-  // Bookmark / Offline reading save
-  const handleBookmark = () => {
-    const bookmarks = JSON.parse(localStorage.getItem('offline_blogs') || '[]');
-    if (isBookmarked) {
-      const updated = bookmarks.filter(b => b._id !== blog._id);
-      localStorage.setItem('offline_blogs', JSON.stringify(updated));
-      setIsBookmarked(false);
-    } else {
-      bookmarks.push({
-        ...blog,
-        title: renderedTitle,
-        content: renderedContent // save translated version if active
-      });
-      localStorage.setItem('offline_blogs', JSON.stringify(bookmarks));
-      setIsBookmarked(true);
-      confetti({ particleCount: 40, spread: 60 });
+  // Toggle Newsletter Subscription to author
+  const handleNewsletterToggle = async () => {
+    if (!isAuthenticated) return navigate('/login');
+    try {
+      const res = await api.post(`/api/users/newsletter/${blog.author._id}`);
+      setIsNewsletterSubscribed(res.data.isSubscribed);
+      setNewsletterSubscribersCount(res.data.subscribersCount);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Toggle reaction to blog post
+  const handleReact = async (reactionType) => {
+    if (!isAuthenticated) return navigate('/login');
+    try {
+      const res = await api.post(`/api/blogs/${blog._id}/react`, { reactionType });
+      setReactions(res.data.reactions);
+      if (res.data.isReacted) {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.85 }
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Bookmark / Database sync + Offline reading save
+  const handleBookmark = async () => {
+    if (!isAuthenticated) return navigate('/login');
+    try {
+      const res = await api.post(`/api/users/bookmarks/${blog._id}`);
+      const currentlyBookmarked = res.data.isBookmarked;
+      setIsBookmarked(currentlyBookmarked);
+
+      const bookmarksList = JSON.parse(localStorage.getItem('offline_blogs') || '[]');
+      if (currentlyBookmarked) {
+        if (!bookmarksList.some(b => b._id === blog._id)) {
+          bookmarksList.push({
+            ...blog,
+            title: renderedTitle,
+            content: renderedContent // save translated version if active
+          });
+        }
+        confetti({ particleCount: 40, spread: 60 });
+      } else {
+        const updated = bookmarksList.filter(b => b._id !== blog._id);
+        localStorage.setItem('offline_blogs', JSON.stringify(updated));
+      }
+      localStorage.setItem('offline_blogs', JSON.stringify(bookmarksList));
+
+      // Update Redux state
+      const updatedUser = { ...user, savedBlogs: res.data.savedBlogs };
+      dispatch(updateCurrentUser(updatedUser));
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -516,16 +576,29 @@ export default function BlogDetail() {
                 {blog.author?.name}
               </Link>
               {isAuthenticated && blog.author?._id !== user?._id && (
-                <button
-                  onClick={handleFollow}
-                  className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
-                    isFollowing
-                      ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                      : 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 hover:bg-primary-100'
-                  }`}
-                >
-                  {isFollowing ? 'Following' : 'Follow'}
-                </button>
+                <>
+                  <button
+                    onClick={handleFollow}
+                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
+                      isFollowing
+                        ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                        : 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 hover:bg-primary-100'
+                    }`}
+                  >
+                    {isFollowing ? 'Following' : 'Follow'}
+                  </button>
+                  <button
+                    onClick={handleNewsletterToggle}
+                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-all flex items-center gap-1 ${
+                      isNewsletterSubscribed
+                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-955/20 dark:text-rose-400'
+                        : 'bg-indigo-50 text-indigo-650 hover:bg-indigo-100 dark:bg-indigo-955/20 dark:text-indigo-400'
+                    }`}
+                  >
+                    <Mail className="w-3 h-3" />
+                    <span>{isNewsletterSubscribed ? 'Subscribed' : 'Newsletter'}</span>
+                  </button>
+                </>
               )}
             </div>
             <span className="text-xs text-slate-400">
@@ -679,34 +752,61 @@ export default function BlogDetail() {
         </div>
       )}
 
-      {/* Social Actions row (Like & Bookmark) */}
-      <div className="mt-8 flex justify-between items-center bg-slate-50 dark:bg-slate-900/30 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800">
-        <div className="flex gap-4">
+      {/* Social Actions row (Like, Reactions & Bookmark) */}
+      <div className="mt-8 flex flex-col md:flex-row justify-between gap-4 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-3xl border border-slate-200/50 dark:border-slate-800">
+        <div className="flex flex-wrap items-center gap-6">
+          {/* Classic Like */}
           <button
             onClick={handleLike}
-            className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
-              isLiked ? 'text-rose-500' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            className={`flex items-center gap-1.5 text-sm font-bold transition-all hover:scale-105 ${
+              isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500 dark:text-slate-500'
             }`}
           >
             <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
             <span>{likesCount} Likes</span>
           </button>
 
-          <div className="flex items-center gap-1 text-slate-400 text-sm">
-            <Eye className="w-5 h-5" />
-            <span>{blog.views} Reads</span>
+          {/* Emojis Reactions */}
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-150 dark:border-slate-800">
+            {[
+              { type: 'thumbsUp', label: '👍', name: 'Like' },
+              { type: 'heart', label: '❤️', name: 'Love' },
+              { type: 'clap', label: '👏', name: 'Clap' },
+              { type: 'laugh', label: '😂', name: 'Haha' }
+            ].map((emoji) => {
+              const list = reactions[emoji.type] || [];
+              const hasReacted = isAuthenticated && list.includes(user?._id);
+              return (
+                <button
+                  key={emoji.type}
+                  onClick={() => handleReact(emoji.type)}
+                  title={emoji.name}
+                  className={`flex items-center gap-1 text-sm transition-all hover:scale-125 px-1.5 py-0.5 rounded-md ${
+                    hasReacted ? 'bg-primary-50 dark:bg-primary-950/20' : ''
+                  }`}
+                >
+                  <span className="text-base">{emoji.label}</span>
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{list.length}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-1.5 text-slate-400 text-sm">
+            <Eye className="w-5 h-5 text-slate-550" />
+            <span className="font-semibold">{blog.views} Reads</span>
           </div>
         </div>
 
         <button
           onClick={handleBookmark}
-          className={`flex items-center gap-1.5 text-sm font-semibold transition-colors ${
-            isBookmarked ? 'text-primary-500' : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+          className={`flex items-center gap-1.5 text-sm font-bold transition-all hover:scale-105 ${
+            isBookmarked ? 'text-primary-500' : 'text-slate-400 hover:text-primary-500'
           }`}
-          title={isBookmarked ? 'Saved for offline reading' : 'Save offline'}
+          title={isBookmarked ? 'Saved to bookmarks' : 'Bookmark article'}
         >
           <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-          <span>{isBookmarked ? 'Saved' : 'Read Offline'}</span>
+          <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
         </button>
       </div>
 

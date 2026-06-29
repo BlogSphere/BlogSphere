@@ -11,7 +11,9 @@ import {
   translateBlog,
   getBlogVersions,
   restoreVersion,
-  generateAIBlogContent
+  generateAIBlogContent,
+  reactToBlog,
+  aiTranslateBlogBlocks
 } from '../controllers/blogController';
 import { auth } from '../middleware/auth';
 
@@ -25,8 +27,10 @@ router.post('/', auth, createBlog);
 router.put('/:id', auth, updateBlog);
 router.delete('/:id', auth, deleteBlog);
 router.post('/:id/like', auth, likeBlog);
+router.post('/:id/react', auth, reactToBlog);
 router.post('/:id/summary', generateSummary);
 router.post('/:id/translate', translateBlog);
+router.post('/:id/ai-translate', auth, aiTranslateBlogBlocks);
 router.get('/:id/versions', auth, getBlogVersions);
 router.post('/:id/versions/:versionId/restore', auth, restoreVersion);
 

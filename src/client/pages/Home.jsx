@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Sparkles, TrendingUp, Flame, AlertCircle } from 'lucide-react';
+import { Sparkles, TrendingUp, Flame, AlertCircle, Search, X } from 'lucide-react';
 import BlogCard from '../components/BlogCard.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import api from '../utils/api.js';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const category = searchParams.get('category');
   const tag = searchParams.get('tag');
   const search = searchParams.get('search');
@@ -17,6 +18,19 @@ export default function Home() {
   const [activeFeedTab, setActiveFeedTab] = useState('all'); // 'all' or 'recommended'
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Filter States
+  const [searchInput, setSearchInput] = useState(search || '');
+  const [selectedCategory, setSelectedCategory] = useState(category || '');
+  const [selectedTag, setSelectedTag] = useState(tag || '');
+  const [sortOption, setSortOption] = useState('newest'); // 'newest', 'views', 'likes'
+
+  // Sync state with URL changes
+  useEffect(() => {
+    setSelectedCategory(category || '');
+    setSelectedTag(tag || '');
+    setSearchInput(search || '');
+  }, [category, tag, search]);
 
   // Load feed tabs: default to recommended if logged in, unless category/tag filters exist
   useEffect(() => {
@@ -33,21 +47,30 @@ export default function Home() {
     const endpoint = activeFeedTab === 'recommended' ? '/api/blogs/recommendations' : '/api/blogs';
     const params = {};
     if (activeFeedTab === 'all') {
-      if (category) params.category = category;
-      if (tag) params.tag = tag;
-      if (search) params.search = search;
+      if (selectedCategory) params.category = selectedCategory;
+      if (selectedTag) params.tag = selectedTag;
+      if (searchInput) params.search = searchInput;
     }
 
     api.get(endpoint, { params })
       .then((res) => {
-        setBlogs(res.data.blogs || []);
+        let list = res.data.blogs || [];
+        // Apply sorting
+        if (sortOption === 'views') {
+          list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
+        } else if (sortOption === 'likes') {
+          list = [...list].sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+        } else {
+          list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+        setBlogs(list);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
-  }, [activeFeedTab, category, tag, search]);
+  }, [activeFeedTab, selectedCategory, selectedTag, searchInput, sortOption]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -88,12 +111,80 @@ export default function Home() {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Feed Column */}
           <main className="flex-1">
-            {/* Search/Category filter headings */}
-            {(category || tag || search) && (
+            {/* Robust Search & Filter Bar */}
+            {activeFeedTab === 'all' && (
+              <div className="mb-6 p-4 sm:p-5 rounded-3xl border border-slate-100 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                <div className="w-full md:flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Search titles, tags, categories..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    className="w-full py-2.5 pl-10 pr-4 text-sm transition-all border rounded-2xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-805 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white dark:focus:bg-slate-950"
+                  />
+                  <Search className="absolute w-4 h-4 text-slate-400 top-3.5 left-3.5" />
+                </div>
+                
+                <div className="flex flex-wrap w-full md:w-auto gap-3 items-center">
+                  {/* Category Select */}
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-3.5 py-2.5 text-xs font-semibold rounded-2xl border bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-650 dark:text-slate-300 focus:outline-none"
+                  >
+                    <option value="">All Categories</option>
+                    {['Technology', 'Travel', 'Food', 'Education', 'Sports'].map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+
+                  {/* Sort Option Select */}
+                  <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    className="px-3.5 py-2.5 text-xs font-semibold rounded-2xl border bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-650 dark:text-slate-300 focus:outline-none"
+                  >
+                    <option value="newest">Newest First</option>
+                    <option value="views">Most Views</option>
+                    <option value="likes">Most Likes</option>
+                  </select>
+
+                  {/* Reset Filters */}
+                  {(selectedCategory || selectedTag || searchInput || sortOption !== 'newest') && (
+                    <button
+                      onClick={() => {
+                        setSearchInput('');
+                        setSelectedCategory('');
+                        setSelectedTag('');
+                        setSortOption('newest');
+                        navigate('/');
+                      }}
+                      className="px-4 py-2.5 text-xs font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-2xl transition-all"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Active Tag indicator */}
+            {selectedTag && activeFeedTab === 'all' && (
+              <div className="mb-4 flex items-center gap-2">
+                <span className="text-xs text-slate-400 uppercase font-bold tracking-wider">Active Tag:</span>
+                <span className="text-xs font-bold bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 px-3 py-1 rounded-full flex items-center gap-1.5 border border-primary-100/30">
+                  #{selectedTag}
+                  <button onClick={() => setSelectedTag('')} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                </span>
+              </div>
+            )}
+
+            {/* Search/Category filter headings legacy notification */}
+            {(category || tag || search) && activeFeedTab === 'recommended' && (
               <div className="mb-6 p-4 rounded-2xl bg-white border border-slate-100 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
                 <div className="text-sm font-medium text-slate-500">
                   Showing results for:{' '}
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">
+                  <span className="font-semibold text-slate-850 dark:text-slate-100">
                     {category ? `Category: ${category}` : tag ? `#${tag}` : `Search query "${search}"`}
                   </span>
                 </div>

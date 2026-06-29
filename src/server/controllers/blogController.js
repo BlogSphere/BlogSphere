@@ -178,6 +178,10 @@ export const createBlog = async (req, res) => {
       }
     }
 
+    if (status === 'published') {
+      await notifySubscribers(blog, req.user);
+    }
+
     res.status(201).json({ message: 'Blog created successfully', blog });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -262,6 +266,8 @@ export const updateBlog = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
+    const wasPublished = blog.status === 'published';
+
     // Check permissions: author or collaborator
     const isAuthor = blog.author.toString() === req.user._id.toString();
     const isCollaborator = blog.collaborators.some(
@@ -297,6 +303,10 @@ export const updateBlog = async (req, res) => {
     blog.updatedAt = Date.now();
 
     await blog.save();
+
+    if (blog.status === 'published' && !wasPublished) {
+      await notifySubscribers(blog, req.user);
+    }
 
     res.status(200).json({ message: 'Blog updated successfully', blog });
   } catch (error) {
@@ -727,6 +737,175 @@ export const generateAIBlogContent = async (req, res) => {
       const fallbackData = generateMockBlog(topic);
       res.status(200).json({ title: fallbackData.title, blocks: fallbackData.blocks, fallback: true });
     }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Helper to notify subscribers of new articles
+const notifySubscribers = async (blog, authorUser) => {
+  try {
+    const author = await User.findById(authorUser._id).populate('newsletterSubscribers');
+    const subscribers = author?.newsletterSubscribers || [];
+    const categorySubscribers = await User.find({ subscribedCategories: blog.category });
+
+    const combinedIds = new Set();
+    subscribers.forEach(sub => combinedIds.add(sub._id.toString()));
+    categorySubscribers.forEach(sub => combinedIds.add(sub._id.toString()));
+    
+    combinedIds.delete(authorUser._id.toString());
+
+    for (const userId of combinedIds) {
+      const notif = new Notification({
+        userId,
+        message: `New article published by ${authorUser.name} under ${blog.category || 'general'}: "${blog.title}"`,
+        type: 'newsletter',
+        referenceId: blog._id
+      });
+      await notif.save();
+      if (global.io) {
+        global.io.to(`user_${userId}`).emit('notification_received', notif);
+      }
+    }
+  } catch (err) {
+    console.error('Error notifying subscribers:', err);
+  }
+};
+
+// React to blog post
+export const reactToBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reactionType } = req.body;
+    if (!['thumbsUp', 'heart', 'clap', 'laugh'].includes(reactionType)) {
+      return res.status(400).json({ error: 'Invalid reaction type.' });
+    }
+
+    const blog = await Blog.findById(id).populate('author');
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    if (!blog.reactions) {
+      blog.reactions = { thumbsUp: [], heart: [], clap: [], laugh: [] };
+    }
+
+    const reactionList = blog.reactions[reactionType];
+    const index = reactionList.indexOf(req.user._id);
+    let isReacted = false;
+
+    if (index === -1) {
+      reactionList.push(req.user._id);
+      isReacted = true;
+
+      // Notify author
+      if (blog.author._id.toString() !== req.user._id.toString()) {
+        const notif = new Notification({
+          userId: blog.author._id,
+          message: `${req.user.name} reacted with ${reactionType} on your blog "${blog.title}"`,
+          type: 'reaction',
+          referenceId: blog._id
+        });
+        await notif.save();
+        if (global.io) {
+          global.io.to(`user_${blog.author._id}`).emit('notification_received', notif);
+        }
+      }
+    } else {
+      reactionList.splice(index, 1);
+    }
+
+    await blog.save();
+    res.status(200).json({
+      message: isReacted ? 'Reaction added' : 'Reaction removed',
+      reactions: blog.reactions,
+      isReacted
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Helper for Gemini block-by-block translation
+const translateTextWithGemini = async (text, targetLang) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || !text) return text;
+  try {
+    const langName = targetLang === 'hi' ? 'Hindi' : targetLang === 'gu' ? 'Gujarati' : 'English';
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `You are an expert translator. Translate the following text into ${langName}. Preserve formatting and any markdown inline styles (like bold **text**). Do not output explanation or meta commentary, return only the translated text.\n\nText: ${text}`
+          }]
+        }]
+      })
+    });
+    if (!response.ok) return translateText(text, targetLang);
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    return rawText ? rawText.trim() : translateText(text, targetLang);
+  } catch (e) {
+    return translateText(text, targetLang);
+  }
+};
+
+// AI Translate blog blocks for the editor
+export const aiTranslateBlogBlocks = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { lang } = req.body;
+    
+    if (!['hi', 'gu'].includes(lang)) {
+      return res.status(400).json({ error: 'Invalid language. Only Hindi (hi) and Gujarati (gu) supported.' });
+    }
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    const translatedTitle = await translateTextWithGemini(blog.title, lang);
+    let translatedContent = '';
+    
+    try {
+      const blocks = JSON.parse(blog.content);
+      if (Array.isArray(blocks)) {
+        const translatedBlocks = [];
+        for (const block of blocks) {
+          const newBlock = { ...block };
+          if (block.content) {
+            newBlock.content = await translateTextWithGemini(block.content, lang);
+          }
+          if (block.caption) {
+            newBlock.caption = await translateTextWithGemini(block.caption, lang);
+          }
+          translatedBlocks.push(newBlock);
+        }
+        translatedContent = JSON.stringify(translatedBlocks);
+      } else {
+        translatedContent = await translateTextWithGemini(blog.content, lang);
+      }
+    } catch (e) {
+      translatedContent = await translateTextWithGemini(blog.content, lang);
+    }
+
+    // Update translations array in blog
+    blog.translations = blog.translations.filter(t => t.language !== lang);
+    blog.translations.push({
+      language: lang,
+      title: translatedTitle,
+      content: translatedContent
+    });
+    await blog.save();
+
+    res.status(200).json({
+      message: 'Blog successfully translated using Gemini AI',
+      title: translatedTitle,
+      content: translatedContent
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

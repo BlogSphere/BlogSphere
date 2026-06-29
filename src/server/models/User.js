@@ -38,6 +38,23 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
+  savedBlogs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Blog'
+  }],
+  newsletterSubscribers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  subscribedCategories: [{
+    type: String,
+    trim: true
+  }],
+  socialLinks: {
+    twitter: { type: String, default: '' },
+    github: { type: String, default: '' },
+    website: { type: String, default: '' }
+  },
   isVerified: {
     type: Boolean,
     default: false
