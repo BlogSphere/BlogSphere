@@ -539,7 +539,7 @@ export default function BlogDetail() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 relative">
+    <div className="max-w-[92%] xl:max-w-[1300px] mx-auto px-4 py-8 relative">
       {/* Back button */}
       <Link to="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 mb-6">
         <ArrowLeft className="w-4 h-4" />

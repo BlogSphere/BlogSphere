@@ -158,7 +158,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8 animate-fade-in">
+    <div className="max-w-[92%] xl:max-w-[1350px] mx-auto px-4 py-8 space-y-8 animate-fade-in">
       {/* Profile Header Card */}
       <div className="p-6 rounded-3xl border border-slate-100 dark:border-slate-850 bg-white dark:bg-slate-900/60 shadow-sm flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left backdrop-blur-md">
         {/* Avatar */}

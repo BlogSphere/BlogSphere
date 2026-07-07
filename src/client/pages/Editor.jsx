@@ -617,7 +617,7 @@ export default function Editor() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
+    <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 py-8">
       {/* Editor Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
@@ -802,7 +802,7 @@ export default function Editor() {
               <div className="flex flex-col md:flex-row gap-6 items-start mt-4">
                 {/* Block Palette Panel */}
                 {showLeftSidebar && (
-                  <div className="w-full md:w-56 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 p-4 rounded-3xl sticky top-24 space-y-4">
+                  <div className="w-full md:w-64 bg-slate-50 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/80 p-4 rounded-3xl sticky top-24 space-y-4">
                     <h4 className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Add Blocks</h4>
                     <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
                       {[
@@ -1177,7 +1177,7 @@ export default function Editor() {
 
         {/* Sidebar Configuration Parameters */}
         {showRightSidebar && (
-          <aside className="w-full lg:w-72 flex flex-col gap-6">
+          <aside className="w-full lg:w-80 flex flex-col gap-6">
             {/* Metadata configurations */}
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4">Post Settings</h3>

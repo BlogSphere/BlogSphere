@@ -6,10 +6,18 @@
 
 @layer base {
   body {
-    @apply font-sans bg-slate-50 text-slate-900 transition-colors duration-300;
+    background-color: #f8fafc;
+    background-image: radial-gradient(at 0% 0%, hsla(215, 28%, 95%, 1) 0px, transparent 50%), radial-gradient(at 50% 0%, hsla(250, 40%, 96%, 1) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(215, 28%, 95%, 1) 0px, transparent 50%);
+    background-attachment: fixed;
+    font-family: 'Inter', sans-serif;
+    color: #0f172a;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   .dark body {
-    @apply bg-slate-950 text-slate-100;
+    background-color: #020617;
+    background-image: radial-gradient(at 0% 0%, hsla(250, 45%, 10%, 0.5) 0px, transparent 50%), radial-gradient(at 50% 0%, hsla(215, 45%, 12%, 0.5) 0px, transparent 50%), radial-gradient(at 100% 0%, hsla(250, 45%, 10%, 0.5) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: #f8fafc;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-heading;

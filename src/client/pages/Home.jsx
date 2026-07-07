@@ -78,7 +78,7 @@ export default function Home() {
       {!category && !tag && !search && (
         <section className="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white border-b border-indigo-900/30">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-900/20 via-transparent to-transparent pointer-events-none" />
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 animate-fade-in">
+          <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 animate-fade-in">
             <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 uppercase tracking-wider">
               Smart Community Blog Sphere
             </span>
@@ -107,7 +107,7 @@ export default function Home() {
       )}
 
       {/* Main Feed Container */}
-      <div id="feed-start" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
+      <div id="feed-start" className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 mt-12">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Feed Column */}
           <main className="flex-1">
