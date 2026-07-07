@@ -1071,3 +1071,19 @@ export const suggestMetadata = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+export const triggerTrendingAutoPost = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Access denied. Admins only.' });
+    }
+    const { generateTrendingAutoPost } = await import('../services/trendingPoster.js');
+    const newBlog = await generateTrendingAutoPost();
+    res.status(201).json({
+      message: 'AI Trending Blog Auto-Posted successfully',
+      blog: newBlog
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

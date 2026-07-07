@@ -810,28 +810,6 @@ export default function BlogDetail() {
         </button>
       </div>
 
-      {/* Mock Sponsored Banner Ad */}
-      <div className="my-8 p-4 rounded-3xl border border-primary-500/10 bg-primary-500/5 dark:bg-primary-950/5 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden">
-        <span className="absolute top-2 right-2 bg-slate-950/70 text-white text-[8px] font-bold px-2 py-0.5 rounded uppercase tracking-wider">
-          Sponsored Ad
-        </span>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 flex-shrink-0">
-            <img src="https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&q=80&w=150" alt="Ad Icon" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Learn Artificial Intelligence Free</h4>
-            <p className="text-xs text-slate-450 mt-0.5">Master LLMs and neural architectures with leading DeepMind experts.</p>
-          </div>
-        </div>
-        <Link 
-          to="/adsense" 
-          className="px-5 py-2 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white font-bold rounded-full text-xs transition-all shadow-md shadow-primary-500/10 animate-pulse"
-        >
-          Check Course Details
-        </Link>
-      </div>
-
       {/* Version history Comparison panel */}
       <AnimatePresence>
         {showVersions && (

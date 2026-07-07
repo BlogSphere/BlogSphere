@@ -158,30 +158,6 @@ export default function Sidebar({ currentCategory, currentTag }) {
           </div>
         )}
       </div>
-
-      {/* Mock Sponsored Banner Ad */}
-      <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 dark:bg-amber-950/10 text-center relative overflow-hidden flex flex-col justify-between items-center gap-3">
-        <span className="absolute top-1.5 right-1.5 bg-slate-950/70 text-white text-[7px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-          Sponsored
-        </span>
-        <div className="w-full h-24 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800">
-          <img 
-            src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=400" 
-            alt="AdSense Sponsor" 
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div>
-          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Scale Docker Globally</h4>
-          <p className="text-[10px] text-slate-400 mt-0.5">Deploy edge web apps in seconds with Vercel Edge Server.</p>
-        </div>
-        <Link 
-          to="/adsense"
-          className="w-full py-1.5 text-center text-[10px] font-bold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-all shadow-sm"
-        >
-          Visit Sponsor Ad
-        </Link>
-      </div>
     </aside>
   );
 }

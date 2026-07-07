@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X } from 'lucide-react';
+import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, Sparkles } from 'lucide-react';
 import api from '../utils/api.js';
 
 export default function Admin() {
@@ -16,6 +16,22 @@ export default function Admin() {
   const [wordAdding, setWordAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [triggeringPost, setTriggeringPost] = useState(false);
+
+  const handleTriggerAutoPost = async () => {
+    setTriggeringPost(true);
+    try {
+      const res = await api.post('/api/blogs/trigger-trending-post');
+      alert(`Successfully published AI Trending Article: "${res.data.blog.title}"`);
+      // Reload blog list
+      const blogsRes = await api.get('/api/blogs?status=all');
+      setBlogsList(blogsRes.data.blogs || []);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to trigger automated trending post.');
+    } finally {
+      setTriggeringPost(false);
+    }
+  };
 
   // Redirect if not admin
   useEffect(() => {
@@ -118,12 +134,23 @@ export default function Admin() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Title */}
-      <div className="flex items-center gap-3">
-        <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin Control Panel</h1>
-          <p className="text-xs text-slate-400 mt-1">Manage user accounts, roles, spam moderation, and content auditing.</p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
+          <div>
+            <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin Control Panel</h1>
+            <p className="text-xs text-slate-400 mt-1">Manage user accounts, roles, spam moderation, and content auditing.</p>
+          </div>
         </div>
+        <button
+          type="button"
+          onClick={handleTriggerAutoPost}
+          disabled={triggeringPost}
+          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
+        >
+          <Sparkles className={`w-4 h-4 ${triggeringPost ? 'animate-spin' : ''}`} />
+          <span>{triggeringPost ? 'Generating AI Post...' : 'Trigger AI Auto-Post'}</span>
+        </button>
       </div>
 
       {error && (

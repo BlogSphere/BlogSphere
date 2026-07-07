@@ -145,6 +145,16 @@ io.on('connection', (socket: Socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
+  
+  // Start automated AI Trending poster scheduler interval (every 6 hours)
+  const SIX_HOURS = 6 * 60 * 60 * 1000;
+  setInterval(async () => {
+    try {
+      const { generateTrendingAutoPost } = await import('./services/trendingPoster.js');
+      await generateTrendingAutoPost();
+    } catch (err: any) {
+      console.error('Auto-post scheduler error:', err.message);
+    }
+  }, SIX_HOURS);
 });
-// Restart trigger
 
