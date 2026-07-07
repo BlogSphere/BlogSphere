@@ -177,7 +177,7 @@ export default function Profile() {
             </div>
             
             <div className="flex gap-2">
-              {isAuthenticated && currentUser?._id !== profileUser._id && (
+              {(!currentUser || currentUser?._id !== profileUser._id) && (
                 <>
                   <button
                     onClick={handleFollow}
@@ -193,7 +193,7 @@ export default function Profile() {
                     onClick={handleNewsletterToggle}
                     className={`px-5 py-2 text-xs font-bold rounded-full transition-all shadow-sm flex items-center gap-1.5 ${
                       isNewsletterSubscribed
-                        ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400'
+                        ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-955/20 dark:text-rose-400'
                         : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/10'
                     }`}
                   >

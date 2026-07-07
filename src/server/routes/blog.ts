@@ -13,7 +13,8 @@ import {
   restoreVersion,
   generateAIBlogContent,
   reactToBlog,
-  aiTranslateBlogBlocks
+  aiTranslateBlogBlocks,
+  suggestMetadata
 } from '../controllers/blogController';
 import { auth } from '../middleware/auth';
 
@@ -23,6 +24,7 @@ router.get('/', getBlogs);
 router.get('/recommendations', auth, getRecommendations);
 router.get('/:slug', getBlogBySlug);
 router.post('/generate-ai', auth, generateAIBlogContent);
+router.post('/suggest-metadata', auth, suggestMetadata);
 router.post('/', auth, createBlog);
 router.put('/:id', auth, updateBlog);
 router.delete('/:id', auth, deleteBlog);

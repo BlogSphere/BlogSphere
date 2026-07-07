@@ -10,6 +10,7 @@ import Editor from './pages/Editor';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import AdCenter from './pages/AdCenter';
 import api from './utils/api';
 
 export default function App() {
@@ -45,7 +46,8 @@ export default function App() {
             <Route path="/blog/:slug" element={<BlogDetail />} />
             <Route path="/editor" element={<Editor />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
+            <Route path="/system-admin-sphere" element={<Admin />} />
+            <Route path="/adsense" element={<AdCenter />} />
             <Route path="/profile/:id" element={<Profile />} />
           </Routes>
         </div>

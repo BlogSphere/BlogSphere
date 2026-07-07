@@ -13,6 +13,7 @@ import blogRoutes from './routes/blog';
 import commentRoutes from './routes/comment';
 import notificationRoutes from './routes/notification';
 import userRoutes from './routes/user';
+import restrictedWordsRoutes from './routes/restrictedWords';
 import Blog from './models/Blog';
 
 dotenv.config();
@@ -39,6 +40,7 @@ app.use('/api/blogs', blogRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/restricted-words', restrictedWordsRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

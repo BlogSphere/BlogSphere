@@ -1,11 +1,18 @@
 import Comment from '../models/Comment.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
+import { checkRestrictedContent } from './restrictedWordController.js';
 
 export const createComment = async (req, res) => {
   try {
     const { blogId, text, parentComment } = req.body;
     const userId = req.user._id;
+
+    // Check restricted content
+    const foundRestricted = await checkRestrictedContent(text);
+    if (foundRestricted) {
+      return res.status(400).json({ error: `Comment contains restricted words: ${foundRestricted.join(', ')}` });
+    }
 
     const blog = await Blog.findById(blogId).populate('author');
     if (!blog) {

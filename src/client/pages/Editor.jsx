@@ -215,6 +215,8 @@ export default function Editor() {
   const [aiTopic, setAiTopic] = useState('');
   const [generatingAI, setGeneratingAI] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [suggestedTitle, setSuggestedTitle] = useState('');
 
   // AI Translation States
   const [translatingAI, setTranslatingAI] = useState(false);
@@ -278,6 +280,46 @@ export default function Editor() {
       setAiError(err.response?.data?.error || 'Failed to generate AI blog.');
     } finally {
       setGeneratingAI(false);
+    }
+  };
+
+  const handleAISuggestMetadata = async () => {
+    // Extract block content text
+    const textToAnalyze = blocks.map(b => b.content || '').join(' ');
+    if (!textToAnalyze.trim()) {
+      alert('Please write some content first so the AI can analyze it.');
+      return;
+    }
+    
+    setAiLoading(true);
+    try {
+      const res = await api.post('/api/blogs/suggest-metadata', { 
+        title, 
+        content: JSON.stringify(blocks) 
+      });
+      
+      if (res.data.category) {
+        setCategory(res.data.category);
+      }
+      if (res.data.tags && res.data.tags.length > 0) {
+        // Merge without duplicates
+        const merged = [...new Set([...tags, ...res.data.tags])];
+        setTags(merged);
+      }
+      if (res.data.title) {
+        setSuggestedTitle(res.data.title);
+      }
+      
+      confetti({
+        particleCount: 50,
+        spread: 40,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || 'Failed to generate metadata suggestions.');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -1140,8 +1182,23 @@ export default function Editor() {
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4">Post Settings</h3>
               
+              {/* Category selector */}
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category</label>
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer font-semibold"
+                >
+                  <option value="">Select Category</option>
+                  {['Technology', 'Travel', 'Food', 'Education', 'Sports'].map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Tags configurators */}
-              <div>
+              <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Tags</label>
                 <input
                   type="text"
@@ -1159,6 +1216,36 @@ export default function Editor() {
                     </span>
                   ))}
                 </div>
+              </div>
+
+              {/* AI Metadata Suggestion */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/40">
+                <button
+                  type="button"
+                  onClick={handleAISuggestMetadata}
+                  disabled={aiLoading}
+                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{aiLoading ? 'AI Optimizing...' : 'AI Suggest Settings'}</span>
+                </button>
+
+                {suggestedTitle && (
+                  <div className="mt-3 p-2.5 rounded-xl bg-primary-50/50 dark:bg-primary-950/20 border border-primary-200/30 text-[10px] leading-relaxed">
+                    <span className="font-bold text-primary-600 dark:text-primary-400 block mb-1">Optimized Title Suggestion:</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleTitleChange(suggestedTitle);
+                        setSuggestedTitle('');
+                      }}
+                      className="text-left font-medium text-slate-700 dark:text-slate-305 hover:text-primary-600 dark:hover:text-primary-400 block transition-colors"
+                      title="Click to apply title"
+                    >
+                      {suggestedTitle} <span className="text-[8px] font-bold text-primary-500">(Click to apply)</span>
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

@@ -2,6 +2,7 @@ import Blog from '../models/Blog.js';
 import BlogVersion from '../models/BlogVersion.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import { checkRestrictedContent } from './restrictedWordController.js';
 
 // Free translation helper via google translate API
 const translateText = async (text, targetLang) => {
@@ -135,6 +136,26 @@ export const createBlog = async (req, res) => {
   try {
     const { title, content, coverImage, category, tags, status, collaborators } = req.body;
 
+    // Check restricted content
+    let textToValidate = `${title || ''} ${category || ''} ${tags ? tags.join(' ') : ''}`;
+    if (content) {
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          textToValidate += ' ' + parsed.map(b => `${b.content || ''} ${b.caption || ''}`).join(' ');
+        } else {
+          textToValidate += ' ' + content;
+        }
+      } catch (e) {
+        textToValidate += ' ' + content;
+      }
+    }
+
+    const foundRestricted = await checkRestrictedContent(textToValidate);
+    if (foundRestricted) {
+      return res.status(400).json({ error: `Content contains restricted words: ${foundRestricted.join(', ')}` });
+    }
+
     // Generate unique slug
     let baseSlug = title
       .toLowerCase()
@@ -264,6 +285,27 @@ export const updateBlog = async (req, res) => {
     const blog = await Blog.findById(id);
     if (!blog) {
       return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    // Check restricted content
+    let textToValidate = `${title !== undefined ? title : blog.title} ${category !== undefined ? category : blog.category} ${(tags !== undefined ? tags : blog.tags || []).join(' ')}`;
+    const finalContent = content !== undefined ? content : blog.content;
+    if (finalContent) {
+      try {
+        const parsed = JSON.parse(finalContent);
+        if (Array.isArray(parsed)) {
+          textToValidate += ' ' + parsed.map(b => `${b.content || ''} ${b.caption || ''}`).join(' ');
+        } else {
+          textToValidate += ' ' + finalContent;
+        }
+      } catch (e) {
+        textToValidate += ' ' + finalContent;
+      }
+    }
+
+    const foundRestricted = await checkRestrictedContent(textToValidate);
+    if (foundRestricted) {
+      return res.status(400).json({ error: `Content contains restricted words: ${foundRestricted.join(', ')}` });
     }
 
     const wasPublished = blog.status === 'published';
@@ -777,7 +819,9 @@ export const reactToBlog = async (req, res) => {
   try {
     const { id } = req.params;
     const { reactionType } = req.body;
-    if (!['thumbsUp', 'heart', 'clap', 'laugh'].includes(reactionType)) {
+    const reactionTypes = ['thumbsUp', 'heart', 'clap', 'laugh'];
+    
+    if (!reactionTypes.includes(reactionType)) {
       return res.status(400).json({ error: 'Invalid reaction type.' });
     }
 
@@ -790,12 +834,47 @@ export const reactToBlog = async (req, res) => {
       blog.reactions = { thumbsUp: [], heart: [], clap: [], laugh: [] };
     }
 
-    const reactionList = blog.reactions[reactionType];
-    const index = reactionList.indexOf(req.user._id);
+    // Find if the user already has a reaction of any type on this blog
+    let existingReactionType = null;
+    for (const type of reactionTypes) {
+      if (blog.reactions[type] && blog.reactions[type].some(uid => uid.toString() === req.user._id.toString())) {
+        existingReactionType = type;
+        break;
+      }
+    }
+
     let isReacted = false;
 
-    if (index === -1) {
-      reactionList.push(req.user._id);
+    if (existingReactionType) {
+      // Remove their user ID from the existing reaction array
+      const existingArray = blog.reactions[existingReactionType];
+      const index = existingArray.findIndex(uid => uid.toString() === req.user._id.toString());
+      if (index !== -1) {
+        existingArray.splice(index, 1);
+      }
+
+      // If the clicked reaction is DIFFERENT from their current one, add the new one
+      if (existingReactionType !== reactionType) {
+        blog.reactions[reactionType].push(req.user._id);
+        isReacted = true;
+
+        // Notify author
+        if (blog.author._id.toString() !== req.user._id.toString()) {
+          const notif = new Notification({
+            userId: blog.author._id,
+            message: `${req.user.name} reacted with ${reactionType} on your blog "${blog.title}"`,
+            type: 'reaction',
+            referenceId: blog._id
+          });
+          await notif.save();
+          if (global.io) {
+            global.io.to(`user_${blog.author._id}`).emit('notification_received', notif);
+          }
+        }
+      }
+    } else {
+      // User had no reaction, just add the new one
+      blog.reactions[reactionType].push(req.user._id);
       isReacted = true;
 
       // Notify author
@@ -811,11 +890,12 @@ export const reactToBlog = async (req, res) => {
           global.io.to(`user_${blog.author._id}`).emit('notification_received', notif);
         }
       }
-    } else {
-      reactionList.splice(index, 1);
     }
 
+    // Save and mark reactions as modified
+    blog.markModified('reactions');
     await blog.save();
+
     res.status(200).json({
       message: isReacted ? 'Reaction added' : 'Reaction removed',
       reactions: blog.reactions,
@@ -905,6 +985,87 @@ export const aiTranslateBlogBlocks = async (req, res) => {
       message: 'Blog successfully translated using Gemini AI',
       title: translatedTitle,
       content: translatedContent
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const suggestMetadata = async (req, res) => {
+  try {
+    const { title, content } = req.body;
+    if (!content) {
+      return res.status(400).json({ error: 'Content is required to analyze for suggestions.' });
+    }
+    
+    let cleanText = content;
+    try {
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) {
+        cleanText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {
+      cleanText = content.replace(/<[^>]*>/g, ' ');
+    }
+    cleanText = cleanText.substring(0, 5000); // limit payload size
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: `You are an AI blog assistant. Analyze the following blog draft details and suggest:
+                1. A catchy, SEO-friendly title optimized for engagement.
+                2. Exactly 3 to 5 relevant tags.
+                3. The single best category selection from this list: Technology, Travel, Food, Education, Sports.
+
+                Title Draft: ${title || ''}
+                Content Draft:
+                ${cleanText}
+
+                You MUST return a JSON object with this exact structure:
+                {
+                  "title": "Your suggested title here",
+                  "tags": ["tag1", "tag2", "tag3"],
+                  "category": "Technology"
+                }
+                Only return the raw JSON object, no markdown wrappers.`
+              }]
+            }],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            let cleanText = rawText.trim();
+            if (cleanText.startsWith('```')) {
+              cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+            }
+            const parsed = JSON.parse(cleanText);
+            return res.status(200).json(parsed);
+          }
+        }
+      } catch (apiError) {
+        console.error('Gemini metadata suggest failed, falling back:', apiError.message);
+      }
+    }
+
+    // Heuristic fallback if Gemini failed or is not available
+    const words = cleanText.toLowerCase().split(/\W+/).filter(w => w.length > 4);
+    const uniqueWords = [...new Set(words)];
+    const suggestedTags = uniqueWords.slice(0, 4).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+    
+    res.status(200).json({
+      title: title ? `Optimized: ${title}` : 'Exploring Modern Concepts',
+      tags: suggestedTags.length > 0 ? suggestedTags : ['BlogSphere', 'Creative'],
+      category: 'Technology'
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

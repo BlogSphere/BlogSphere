@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft } from 'lucide-react';
+import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X } from 'lucide-react';
 import api from '../utils/api.js';
 
 export default function Admin() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('users'); // 'users' or 'blogs'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'blogs', or 'restricted'
   const [usersList, setUsersList] = useState([]);
   const [blogsList, setBlogsList] = useState([]);
+  const [restrictedWords, setRestrictedWords] = useState([]);
+  const [newRestrictedWord, setNewRestrictedWord] = useState('');
+  const [wordAdding, setWordAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -26,28 +29,48 @@ export default function Admin() {
     setLoading(true);
     setError('');
 
-    if (activeTab === 'users') {
-      api.get('/api/users')
-        .then((res) => {
-          setUsersList(res.data.users || []);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.response?.data?.error || 'Failed to fetch users list.');
-          setLoading(false);
-        });
-    } else {
-      api.get('/api/blogs?status=all') // Admins can fetch all blogs
-        .then((res) => {
-          setBlogsList(res.data.blogs || []);
-          setLoading(false);
-        })
-        .catch((err) => {
-          setError(err.response?.data?.error || 'Failed to fetch blogs list.');
-          setLoading(false);
-        });
+    Promise.all([
+      api.get('/api/users'),
+      api.get('/api/blogs?status=all'),
+      api.get('/api/restricted-words')
+    ])
+      .then(([usersRes, blogsRes, wordsRes]) => {
+        setUsersList(usersRes.data.users || []);
+        setBlogsList(blogsRes.data.blogs || []);
+        setRestrictedWords(wordsRes.data.words || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.response?.data?.error || 'Failed to fetch administration data.');
+        setLoading(false);
+      });
+  }, []);
+
+  const handleAddWord = async (e) => {
+    e.preventDefault();
+    if (!newRestrictedWord.trim()) return;
+    setWordAdding(true);
+    try {
+      const res = await api.post('/api/restricted-words', { word: newRestrictedWord.trim() });
+      setRestrictedWords([...restrictedWords, res.data.word].sort((a, b) => a.word.localeCompare(b.word)));
+      setNewRestrictedWord('');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to add restricted word.');
+    } finally {
+      setWordAdding(false);
     }
-  }, [activeTab]);
+  };
+
+  const handleDeleteWord = async (wordId) => {
+    if (window.confirm('Are you sure you want to remove this word from restrictions?')) {
+      try {
+        await api.delete(`/api/restricted-words/${wordId}`);
+        setRestrictedWords(restrictedWords.filter(w => w._id !== wordId));
+      } catch (err) {
+        alert(err.response?.data?.error || 'Failed to delete restricted word.');
+      }
+    }
+  };
 
   // User Administration Updates
   const handleUpdateRole = async (targetId, newRole) => {
@@ -110,10 +133,10 @@ export default function Admin() {
       )}
 
       {/* Tabs */}
-      <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full w-fit mb-6">
+      <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full w-fit mb-6 overflow-x-auto max-w-full">
         <button
           onClick={() => setActiveTab('users')}
-          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 ${
+          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'users'
               ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -124,7 +147,7 @@ export default function Admin() {
         </button>
         <button
           onClick={() => setActiveTab('blogs')}
-          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 ${
+          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'blogs'
               ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
@@ -132,6 +155,17 @@ export default function Admin() {
         >
           <BookOpen className="w-4 h-4" />
           <span>Blogs Moderation ({blogsList.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('restricted')}
+          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
+            activeTab === 'restricted'
+              ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4 text-amber-505" />
+          <span>Restricted Words ({restrictedWords.length})</span>
         </button>
       </div>
 
@@ -164,7 +198,7 @@ export default function Admin() {
                     <td className="py-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
                         usr.role === 'admin'
-                          ? 'bg-indigo-50 text-indigo-650 dark:bg-indigo-950/20 dark:text-indigo-400'
+                          ? 'bg-indigo-50 text-indigo-655 dark:bg-indigo-950/20 dark:text-indigo-400'
                           : usr.role === 'author'
                           ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
                           : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
@@ -191,7 +225,7 @@ export default function Admin() {
                       {usr._id !== user._id && (
                         <button
                           onClick={() => handleDeleteUser(usr._id)}
-                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors"
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/20 rounded-lg transition-colors"
                           title="Purge User Account"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -203,7 +237,7 @@ export default function Admin() {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : activeTab === 'blogs' ? (
           /* Blogs Management Table */
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
@@ -233,7 +267,7 @@ export default function Admin() {
                     <td className="py-4 text-right pr-2">
                       <button
                         onClick={() => handleDeleteBlog(blog._id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-955/20 rounded-lg transition-colors"
                         title="Delete Post"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -243,6 +277,62 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+          </div>
+        ) : (
+          /* Restricted Words Tab */
+          <div className="space-y-6">
+            <div className="max-w-md">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Content Moderation & Filter</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Add words that you want to restrict on the platform. Users will be blocked from submitting posts or comments containing these keywords.
+              </p>
+              
+              <form onSubmit={handleAddWord} className="flex gap-2 mt-4">
+                <input
+                  type="text"
+                  value={newRestrictedWord}
+                  onChange={(e) => setNewRestrictedWord(e.target.value)}
+                  placeholder="e.g. spamword"
+                  disabled={wordAdding}
+                  className="flex-1 px-4 py-2.5 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white"
+                />
+                <button
+                  type="submit"
+                  disabled={wordAdding || !newRestrictedWord.trim()}
+                  className="px-5 py-2 text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 rounded-xl transition-all shadow-md shadow-primary-500/10"
+                >
+                  {wordAdding ? 'Adding...' : 'Restrict Word'}
+                </button>
+              </form>
+            </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Restricted Word List</h4>
+              {restrictedWords.length === 0 ? (
+                <div className="p-6 text-center border border-dashed rounded-2xl text-slate-400 dark:border-slate-800 italic text-sm">
+                  No restricted words configured yet. The platform is currently open!
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {restrictedWords.map((item) => (
+                    <span
+                      key={item._id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold border border-slate-200/50 dark:border-slate-800 transition-all"
+                    >
+                      <span>{item.word}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteWord(item._id)}
+                        className="text-slate-400 hover:text-rose-500 transition-colors"
+                        title="Remove word constraint"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
