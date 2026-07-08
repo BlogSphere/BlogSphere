@@ -145,7 +145,7 @@ export default function Sidebar({ currentCategory, currentTag }) {
               <Link
                 key={comm._id}
                 to={`/communities`}
-                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
               >
                 <div className="flex items-center gap-2.5">
                   <span className="flex items-center justify-center w-8 h-8 font-bold text-white rounded-lg bg-gradient-to-r from-primary-600 to-indigo-500 text-xs shadow-sm">
