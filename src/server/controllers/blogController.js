@@ -1214,13 +1214,18 @@ export const triggerTrendingAutoPost = async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Admins only.' });
     }
     const { generateTrendingAutoPost } = await import('../services/trendingPoster.js');
-    const newBlog = await generateTrendingAutoPost();
+    // force=true bypasses the 6-hour guard — admin manual triggers always post
+    const newBlog = await generateTrendingAutoPost(true);
+    if (!newBlog) {
+      return res.status(200).json({ message: 'No new post needed (guard active)', blog: null });
+    }
     res.status(201).json({
       message: 'AI Trending Blog Auto-Posted successfully',
       blog: newBlog
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('triggerTrendingAutoPost error:', error);
+    res.status(500).json({ error: error.message || 'Failed to trigger automated trending post.' });
   }
 };
 

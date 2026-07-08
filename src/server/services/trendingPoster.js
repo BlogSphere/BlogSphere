@@ -3,7 +3,7 @@ import User from '../models/User.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
 
-export const generateTrendingAutoPost = async () => {
+export const generateTrendingAutoPost = async (force = false) => {
   try {
     // 1. Ensure the system AI bot user exists
     let bot = await User.findOne({ email: 'trendbot@blogsphere.ai' });
@@ -21,15 +21,20 @@ export const generateTrendingAutoPost = async () => {
     }
 
     // 2. Time-guard: skip if TrendBot already posted in the last 6 hours
-    const SIX_HOURS_AGO = new Date(Date.now() - 6 * 60 * 60 * 1000);
-    const recentPost = await Blog.findOne({
-      author: bot._id,
-      createdAt: { $gte: SIX_HOURS_AGO }
-    }).sort({ createdAt: -1 });
+    //    (bypassed when force=true, e.g. manual admin trigger)
+    if (!force) {
+      const SIX_HOURS_AGO = new Date(Date.now() - 6 * 60 * 60 * 1000);
+      const recentPost = await Blog.findOne({
+        author: bot._id,
+        createdAt: { $gte: SIX_HOURS_AGO }
+      }).sort({ createdAt: -1 });
 
-    if (recentPost) {
-      console.log(`[AI TrendBot] ⏭️  Skipping — post already made within last 6 hours: "${recentPost.title}"`);
-      return null;
+      if (recentPost) {
+        console.log(`[AI TrendBot] ⏭️  Skipping — post already made within last 6 hours: "${recentPost.title}"`);
+        return null;
+      }
+    } else {
+      console.log('[AI TrendBot] 🔧 Force mode — bypassing 6-hour guard for manual admin trigger.');
     }
 
     let articleData = null;

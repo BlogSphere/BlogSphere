@@ -137,10 +137,10 @@ export default function Admin() {
   return (
     <div className="max-w-[95%] 2xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
-          <div>
+      <div className="flex flex-wrap justify-between items-start sm:items-center gap-4 w-full max-w-full">
+        <div className="flex items-center gap-3 min-w-0">
+          <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <div className="min-w-0">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin Control Panel</h1>
             <p className="text-xs text-slate-400 mt-1">Manage user accounts, roles, spam moderation, and content auditing.</p>
           </div>
@@ -149,7 +149,7 @@ export default function Admin() {
           type="button"
           onClick={handleTriggerAutoPost}
           disabled={triggeringPost}
-          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
+          className="flex shrink-0 items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
         >
           <Sparkles className={`w-4 h-4 ${triggeringPost ? 'animate-spin' : ''}`} />
           <span>{triggeringPost ? 'Generating AI Post...' : 'Trigger AI Auto-Post'}</span>
