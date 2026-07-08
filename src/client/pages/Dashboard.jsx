@@ -17,29 +17,29 @@ export default function Dashboard() {
     totalBlogs: 0,
     totalViews: 0,
     totalLikes: 0,
-    followersCount: 0
+    followersCount: 0,
+    reputationPoints: 0,
+    badge: 'Reader',
+    averageReadTimeMinutes: 0,
+    bounceRatePercent: 0,
+    completionRatePercent: 0,
+    topBlogTitle: 'No articles yet',
+    topBlogSlug: ''
   });
+  const [chartData, setChartData] = useState([]);
 
   useEffect(() => {
     if (user) {
       setLoading(true);
-      // Fetch user's blogs (both drafts and published)
-      api.get(`/api/blogs?author=${user._id}&status=all`)
-        .then((res) => {
-          const list = res.data.blogs || [];
-          setBlogs(list);
+      
+      const fetchBlogs = api.get(`/api/blogs?author=${user._id}&status=all`);
+      const fetchStats = api.get('/api/users/dashboard/stats');
 
-          // Calculate statistics
-          const totalBlogs = list.length;
-          const totalViews = list.reduce((sum, b) => sum + (b.views || 0), 0);
-          const totalLikes = list.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
-          
-          setStats({
-            totalBlogs,
-            totalViews,
-            totalLikes,
-            followersCount: user.followers?.length || 0
-          });
+      Promise.all([fetchBlogs, fetchStats])
+        .then(([blogsRes, statsRes]) => {
+          setBlogs(blogsRes.data.blogs || []);
+          setStats(statsRes.data.stats);
+          setChartData(statsRes.data.chartData || []);
           setLoading(false);
         })
         .catch((err) => {
@@ -54,7 +54,6 @@ export default function Dashboard() {
       try {
         await api.delete(`/api/blogs/${id}`);
         setBlogs(blogs.filter(b => b._id !== id));
-        // Update stats
         setStats(prev => ({
           ...prev,
           totalBlogs: prev.totalBlogs - 1
@@ -65,19 +64,7 @@ export default function Dashboard() {
     }
   };
 
-  // Mock data for views-per-day SVG Chart
-  // In a real application this is aggregated dynamically on the server
-  const chartData = [
-    { day: 'Mon', views: 120 },
-    { day: 'Tue', views: 340 },
-    { day: 'Wed', views: 210 },
-    { day: 'Thu', views: 480 },
-    { day: 'Fri', views: 390 },
-    { day: 'Sat', views: 610 },
-    { day: 'Sun', views: 540 }
-  ];
-
-  const maxViews = Math.max(...chartData.map(d => d.views));
+  const maxViews = chartData.length > 0 ? Math.max(...chartData.map(d => d.views)) : 100;
 
   if (loading) {
     return (
@@ -113,6 +100,24 @@ export default function Dashboard() {
             <div>
               <span className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">{item.title}</span>
               <span className="block text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">{item.value}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Smart Insights Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {[
+          { title: 'Reputation Level', value: `✨ ${stats.badge}`, sub: `${stats.reputationPoints} pts`, color: 'border-indigo-100 dark:border-indigo-950/40 bg-indigo-50/10' },
+          { title: 'Avg Read Time', value: `${stats.averageReadTimeMinutes} m`, sub: 'Estimated time spent', color: 'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50/10' },
+          { title: 'Completion Rate', value: `${stats.completionRatePercent}%`, sub: 'Scrolled to bottom', color: 'border-blue-100 dark:border-blue-950/40 bg-blue-50/10' },
+          { title: 'Bounce Rate', value: `${stats.bounceRatePercent}%`, sub: 'Read under 10s', color: 'border-rose-100 dark:border-rose-950/40 bg-rose-50/10' }
+        ].map((item, idx) => (
+          <div key={idx} className={`p-5 border rounded-2xl shadow-sm flex flex-col justify-between h-28 ${item.color}`}>
+            <span className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">{item.title}</span>
+            <div className="mt-2">
+              <span className="block text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{item.value}</span>
+              <span className="block text-[10px] text-slate-400 mt-1">{item.sub}</span>
             </div>
           </div>
         ))}

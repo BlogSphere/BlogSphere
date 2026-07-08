@@ -1,6 +1,30 @@
 import User from '../models/User.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
+import Comment from '../models/Comment.js';
+
+export const getPublicAuthors = async (req, res) => {
+  try {
+    const { search } = req.query;
+    const query = { role: { $in: ['author', 'admin'] } };
+    
+    // Hide private users from public search directory
+    query.isPrivate = { $ne: true };
+
+    if (search) {
+      query.name = { $regex: search, $options: 'i' };
+    }
+
+    const users = await User.find(query)
+      .select('name profileImage bio reputationPoints badge followers')
+      .sort({ reputationPoints: -1 })
+      .limit(20);
+
+    res.status(200).json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 export const getUserProfile = async (req, res) => {
   try {
@@ -130,7 +154,7 @@ export const deleteUser = async (req, res) => {
 // Update own user profile
 export const updateOwnProfile = async (req, res) => {
   try {
-    const { name, bio, profileImage, socialLinks } = req.body;
+    const { name, bio, profileImage, socialLinks, isPrivate } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
@@ -139,6 +163,7 @@ export const updateOwnProfile = async (req, res) => {
     if (name !== undefined) user.name = name;
     if (bio !== undefined) user.bio = bio;
     if (profileImage !== undefined) user.profileImage = profileImage;
+    if (isPrivate !== undefined) user.isPrivate = isPrivate;
     if (socialLinks !== undefined) {
       user.socialLinks = {
         twitter: socialLinks.twitter !== undefined ? socialLinks.twitter : user.socialLinks?.twitter || '',
@@ -280,6 +305,132 @@ export const toggleCategorySubscription = async (req, res) => {
       message: isSubscribed ? `Subscribed to category ${category}` : `Unsubscribed from category ${category}`,
       isSubscribed,
       subscribedCategories: user.subscribedCategories
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Dynamic User Reputation recalculator
+export const recalculateReputation = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) return;
+
+    // Fetch published blogs
+    const blogs = await Blog.find({ author: userId, status: 'published' });
+    const blogsCount = blogs.length;
+
+    // Likes count
+    const likesCount = blogs.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
+
+    // Reactions count
+    const reactionsCount = blogs.reduce((sum, b) => {
+      let rCount = 0;
+      if (b.reactions) {
+        rCount += (b.reactions.thumbsUp?.length || 0);
+        rCount += (b.reactions.heart?.length || 0);
+        rCount += (b.reactions.clap?.length || 0);
+        rCount += (b.reactions.laugh?.length || 0);
+      }
+      return sum + rCount;
+    }, 0);
+
+    // Comments count on user's blogs
+    const blogIds = blogs.map(b => b._id);
+    const commentsCount = await Comment.countDocuments({ blogId: { $in: blogIds } });
+
+    // Points scoring
+    const points = (blogsCount * 50) + (likesCount * 10) + (reactionsCount * 5) + (commentsCount * 5);
+
+    // Badges threshold
+    let newBadge = 'Reader';
+    if (points >= 500) {
+      newBadge = 'Moderator';
+    } else if (points >= 250) {
+      newBadge = 'Community Leader';
+    } else if (points >= 100) {
+      newBadge = 'Verified Author';
+    }
+
+    // Trigger milestone notification if upgraded
+    const oldBadge = user.badge || 'Reader';
+    const badgesOrder = ['Reader', 'Verified Author', 'Community Leader', 'Moderator'];
+    const oldIndex = badgesOrder.indexOf(oldBadge);
+    const newIndex = badgesOrder.indexOf(newBadge);
+
+    if (newIndex > oldIndex) {
+      const notif = new Notification({
+        userId: user._id,
+        message: `🎉 Congratulations! Your active participation has unlocked the "${newBadge}" badge!`,
+        type: 'reputation_milestone',
+        referenceId: user._id
+      });
+      await notif.save();
+      
+      if (global.io) {
+        global.io.to(`user_${user._id}`).emit('notification_received', notif);
+      }
+    }
+
+    user.reputationPoints = points;
+    user.badge = newBadge;
+    await user.save();
+  } catch (error) {
+    console.error('Reputation update error:', error.message);
+  }
+};
+
+// Aggregate stats for Author Analytics Dashboard
+export const getDashboardStats = async (req, res) => {
+  try {
+    const authorId = req.user._id;
+    const user = await User.findById(authorId);
+
+    // Fetch both published and draft blogs to calculate aggregate analytics
+    const blogs = await Blog.find({ author: authorId });
+    
+    const totalBlogs = blogs.length;
+    const totalViews = blogs.reduce((sum, b) => sum + (b.views || 0), 0);
+    const totalLikes = blogs.reduce((sum, b) => sum + (b.likes?.length || 0), 0);
+    const totalBounces = blogs.reduce((sum, b) => sum + (b.bounces || 0), 0);
+    const totalCompletions = blogs.reduce((sum, b) => sum + (b.completions || 0), 0);
+    const totalDuration = blogs.reduce((sum, b) => sum + (b.totalReadTime || 0), 0);
+
+    // Calculations
+    const averageReadTimeMinutes = totalViews > 0 ? parseFloat(((totalDuration / totalViews) / 60).toFixed(2)) : 0;
+    const bounceRatePercent = totalViews > 0 ? Math.round((totalBounces / totalViews) * 100) : 0;
+    const completionRatePercent = totalViews > 0 ? Math.round((totalCompletions / totalViews) * 100) : 0;
+
+    // Find top-performing blog by views
+    let topBlog = null;
+    if (blogs.length > 0) {
+      topBlog = [...blogs].sort((a, b) => (b.views || 0) - (a.views || 0))[0];
+    }
+
+    // Weekly stats simulation based on real views
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const chartData = weekdays.map((day, idx) => {
+      const factor = (idx + 1) / 28;
+      const simulatedViews = Math.round(totalViews * factor * (0.8 + Math.random() * 0.4));
+      return { day, views: simulatedViews || 0 };
+    });
+
+    res.status(200).json({
+      stats: {
+        totalBlogs,
+        totalViews,
+        totalLikes,
+        followersCount: user.followers?.length || 0,
+        reputationPoints: user.reputationPoints || 0,
+        badge: user.badge || 'Reader',
+        averageReadTimeMinutes,
+        bounceRatePercent,
+        completionRatePercent,
+        topBlogTitle: topBlog ? topBlog.title : 'No articles yet',
+        topBlogSlug: topBlog ? topBlog.slug : ''
+      },
+      chartData
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -2,6 +2,7 @@ import Comment from '../models/Comment.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
 import { checkRestrictedContent } from './restrictedWordController.js';
+import { recalculateReputation } from './userController.js';
 
 export const createComment = async (req, res) => {
   try {
@@ -61,6 +62,8 @@ export const createComment = async (req, res) => {
       }
     }
 
+    await recalculateReputation(blog.author._id);
+
     res.status(201).json({ message: 'Comment posted successfully', comment });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -102,6 +105,10 @@ export const deleteComment = async (req, res) => {
     // Delete comment and any replies
     await Comment.findByIdAndDelete(id);
     await Comment.deleteMany({ parentComment: id });
+
+    if (blog) {
+      await recalculateReputation(blog.author);
+    }
 
     res.status(200).json({ message: 'Comment and replies deleted successfully.' });
   } catch (error) {

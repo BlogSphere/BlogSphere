@@ -168,6 +168,15 @@ export default function BlogDetail() {
   const synthRef = useRef(window.speechSynthesis);
   const utteranceRef = useRef(null);
 
+  // Analytics tracking refs & states
+  const startTimeRef = useRef(Date.now());
+  const completedRef = useRef(false);
+
+  // Report states
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reporting, setReporting] = useState(false);
+
   // Comments states
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
@@ -232,6 +241,61 @@ export default function BlogDetail() {
       }
     };
   }, [slug, isAuthenticated, user]);
+
+  // Scroll tracking for completion rate analytics
+  useEffect(() => {
+    const handleScroll = () => {
+      if (completedRef.current) return;
+      const threshold = 150;
+      const totalHeight = document.documentElement.scrollHeight;
+      const currentScroll = window.innerHeight + window.scrollY;
+      if (totalHeight - currentScroll < threshold) {
+        completedRef.current = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // Time duration tracking for reading time and bounces analytics
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    completedRef.current = false;
+
+    return () => {
+      const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
+      if (durationSeconds > 0 && blog?._id) {
+        api.post(`/api/blogs/${blog._id}/analytics`, {
+          duration: durationSeconds,
+          completed: completedRef.current
+        }).catch(err => console.error('Failed logging reading analytics:', err));
+      }
+    };
+  }, [blog?._id]);
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      alert('Please log in to report articles.');
+      return;
+    }
+    if (!reportReason.trim()) return;
+
+    setReporting(true);
+    try {
+      await api.post(`/api/blogs/${blog._id}/report`, { reason: reportReason.trim() });
+      alert('Thank you! This article has been flagged and sent for moderation.');
+      setReportOpen(false);
+      setReportReason('');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to file report.');
+    } finally {
+      setReporting(false);
+    }
+  };
 
   const fetchComments = async (blogId) => {
     try {
@@ -575,6 +639,12 @@ export default function BlogDetail() {
               <Link to={`/profile/${blog.author?._id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">
                 {blog.author?.name}
               </Link>
+              {blog.author?.reputationPoints !== undefined && (
+                <span className="text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-400 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm" title="Reputation Level">
+                  <span>✨ {blog.author.badge || 'Reader'}</span>
+                  <span className="text-slate-400 font-medium">({blog.author.reputationPoints} pts)</span>
+                </span>
+              )}
               {(!user || blog.author?._id !== user?._id) && (
                 <>
                   <button
@@ -755,17 +825,6 @@ export default function BlogDetail() {
       {/* Social Actions row (Like, Reactions & Bookmark) */}
       <div className="mt-8 flex flex-col md:flex-row justify-between gap-4 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-3xl border border-slate-200/50 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-6">
-          {/* Classic Like */}
-          <button
-            onClick={handleLike}
-            className={`flex items-center gap-1.5 text-sm font-bold transition-all hover:scale-105 ${
-              isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500 dark:text-slate-500'
-            }`}
-          >
-            <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-            <span>{likesCount} Likes</span>
-          </button>
-
           {/* Emojis Reactions */}
           <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-150 dark:border-slate-800">
             {[
@@ -798,16 +857,29 @@ export default function BlogDetail() {
           </div>
         </div>
 
-        <button
-          onClick={handleBookmark}
-          className={`flex items-center gap-1.5 text-sm font-bold transition-all hover:scale-105 ${
-            isBookmarked ? 'text-primary-500' : 'text-slate-400 hover:text-primary-500'
-          }`}
-          title={isBookmarked ? 'Saved to bookmarks' : 'Bookmark article'}
-        >
-          <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
-          <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={handleBookmark}
+            className={`flex items-center gap-1.5 text-sm font-bold transition-all hover:scale-105 ${
+              isBookmarked ? 'text-primary-500' : 'text-slate-400 hover:text-primary-500'
+            }`}
+            title={isBookmarked ? 'Saved to bookmarks' : 'Bookmark article'}
+          >
+            <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+            <span>{isBookmarked ? 'Saved' : 'Bookmark'}</span>
+          </button>
+
+          {isAuthenticated && (
+            <button
+              onClick={() => setReportOpen(true)}
+              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-rose-500 transition-all hover:scale-105"
+              title="Report this article"
+            >
+              <AlertCircle className="w-5 h-5" />
+              <span>Report</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Version history Comparison panel */}
@@ -1049,6 +1121,60 @@ export default function BlogDetail() {
             ))}
         </div>
       </div>
+
+      {/* Report Post Modal */}
+      {reportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <form onSubmit={handleReportSubmit} className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
+              <h3 className="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-1.5">
+                <AlertCircle className="w-5 h-5 text-rose-500" />
+                <span>Flag Article</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              If this article violates guidelines, contains plagiarism, hate speech, spam, or abusive language, please notify our moderation team.
+            </p>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide">Reason / Details</label>
+              <textarea
+                placeholder="Explain why this article should be flagged..."
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+                className="w-full text-xs px-3.5 py-2.5 border rounded-2xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                rows={4}
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setReportOpen(false)}
+                className="px-4 py-2 border rounded-xl text-xs font-bold text-slate-400 hover:text-slate-650"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={reporting || !reportReason.trim()}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-rose-500/10 disabled:opacity-50 animate-pulse"
+              >
+                {reporting ? 'Filing Report...' : 'Submit Flag'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -15,9 +15,11 @@ export default function Home() {
 
   const { isAuthenticated } = useSelector((state) => state.auth);
 
-  const [activeFeedTab, setActiveFeedTab] = useState('all'); // 'all' or 'recommended'
+  const [activeFeedTab, setActiveFeedTab] = useState(isAuthenticated ? 'recommended' : 'trending');
   const [blogs, setBlogs] = useState([]);
+  const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchType, setSearchType] = useState('blogs'); // 'blogs', 'authors', 'topics'
 
   // Search & Filter States
   const [searchInput, setSearchInput] = useState(search || '');
@@ -32,19 +34,42 @@ export default function Home() {
     setSearchInput(search || '');
   }, [category, tag, search]);
 
-  // Load feed tabs: default to recommended if logged in, unless category/tag filters exist
+  // Load feed tabs: default to recommended if logged in, otherwise default to trending
   useEffect(() => {
-    if (isAuthenticated && !category && !tag && !search) {
+    if (category || tag || search) {
+      setActiveFeedTab('all');
+    } else if (isAuthenticated) {
       setActiveFeedTab('recommended');
     } else {
-      setActiveFeedTab('all');
+      setActiveFeedTab('trending');
     }
   }, [isAuthenticated, category, tag, search]);
 
   // Fetch blogs based on active feed tab and filters
   useEffect(() => {
     setLoading(true);
-    const endpoint = activeFeedTab === 'recommended' ? '/api/blogs/recommendations' : '/api/blogs';
+
+    if (activeFeedTab === 'all' && searchType === 'authors') {
+      api.get('/api/users/search/authors', { params: { search: searchInput } })
+        .then((res) => {
+          setUsersList(res.data.users || []);
+          setBlogs([]);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setLoading(false);
+        });
+      return;
+    }
+
+    let endpoint = '/api/blogs';
+    if (activeFeedTab === 'recommended') {
+      endpoint = '/api/blogs/recommendations';
+    } else if (activeFeedTab === 'trending') {
+      endpoint = '/api/blogs/trending';
+    }
+
     const params = {};
     if (activeFeedTab === 'all') {
       if (selectedCategory) params.category = selectedCategory;
@@ -55,22 +80,25 @@ export default function Home() {
     api.get(endpoint, { params })
       .then((res) => {
         let list = res.data.blogs || [];
-        // Apply sorting
-        if (sortOption === 'views') {
-          list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
-        } else if (sortOption === 'likes') {
-          list = [...list].sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
-        } else {
-          list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Apply sorting (only relevant for search/all list since recommended/trending are pre-sorted)
+        if (activeFeedTab === 'all') {
+          if (sortOption === 'views') {
+            list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
+          } else if (sortOption === 'likes') {
+            list = [...list].sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+          } else {
+            list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          }
         }
         setBlogs(list);
+        setUsersList([]);
         setLoading(false);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
-  }, [activeFeedTab, selectedCategory, selectedTag, searchInput, sortOption]);
+  }, [activeFeedTab, selectedCategory, selectedTag, searchInput, sortOption, searchType]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -157,6 +185,7 @@ export default function Home() {
                         setSelectedCategory('');
                         setSelectedTag('');
                         setSortOption('newest');
+                        setSearchType('blogs');
                         navigate('/');
                       }}
                       className="px-4 py-2.5 text-xs font-bold text-rose-500 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 rounded-2xl transition-all"
@@ -165,6 +194,32 @@ export default function Home() {
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {activeFeedTab === 'all' && (
+              <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+                {[
+                  { id: 'blogs', label: 'Articles' },
+                  { id: 'authors', label: 'Users & Authors' },
+                  { id: 'topics', label: 'Trending Topics' }
+                ].map((type) => (
+                  <button
+                    key={type.id}
+                    onClick={() => {
+                      setSearchType(type.id);
+                      setBlogs([]);
+                      setUsersList([]);
+                    }}
+                    className={`px-4 py-2 text-xs font-bold rounded-full transition-all border flex-shrink-0 ${
+                      searchType === type.id
+                        ? 'bg-primary-600 border-primary-600 text-white shadow-sm'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350'
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
               </div>
             )}
 
@@ -195,18 +250,31 @@ export default function Home() {
             )}
 
             {/* Feed Tabs Selector */}
-            {!category && !tag && !search && isAuthenticated && (
+            {!category && !tag && !search && (
               <div className="flex border-b border-slate-200 dark:border-slate-800 mb-6">
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setActiveFeedTab('recommended')}
+                    className={`py-3.5 px-5 text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
+                      activeFeedTab === 'recommended'
+                        ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
+                        : 'border-transparent text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>For You</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => setActiveFeedTab('recommended')}
+                  onClick={() => setActiveFeedTab('trending')}
                   className={`py-3.5 px-5 text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
-                    activeFeedTab === 'recommended'
+                    activeFeedTab === 'trending'
                       ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
                       : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4" />
-                  <span>For You</span>
+                  <Flame className="w-4 h-4" />
+                  <span>Trending</span>
                 </button>
                 <button
                   onClick={() => setActiveFeedTab('all')}
@@ -216,14 +284,106 @@ export default function Home() {
                       : 'border-transparent text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  <Flame className="w-4 h-4" />
-                  <span>Trending</span>
+                  <Search className="w-4 h-4" />
+                  <span>Explore & Search</span>
                 </button>
               </div>
             )}
 
-            {/* Loading Grid */}
-            {loading ? (
+            {/* Explore Target Renders */}
+            {activeFeedTab === 'all' && searchType === 'authors' ? (
+              loading ? (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="animate-pulse bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl h-44 p-6" />
+                  ))}
+                </div>
+              ) : usersList.length === 0 ? (
+                <div className="text-center py-16 p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80">
+                  <AlertCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">No Users Found</h3>
+                  <p className="text-slate-400 mt-1">We couldn't find any authors or users matching your search.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {usersList.map((usr) => (
+                    <div key={usr._id} className="p-6 border border-slate-100 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-slate-900/60 shadow-sm hover:shadow-md transition-all flex items-start gap-4">
+                      <img src={usr.profileImage || 'https://api.dicebear.com/7.x/adventurer/svg'} alt={usr.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10" />
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-slate-800 dark:text-slate-100">{usr.name}</h4>
+                          <span className="px-2 py-0.5 text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+                            {usr.badge || 'Writer'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2">{usr.bio || 'No bio description yet.'}</p>
+                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-505">
+                          <span>Reputation: <strong>{usr.reputationPoints || 0} pts</strong></span>
+                          <Link to={`/profile/${usr._id}`} className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">
+                            Profile →
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : activeFeedTab === 'all' && searchType === 'topics' ? (
+              loading ? (
+                <div className="animate-pulse space-y-6">
+                  <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded w-1/4" />
+                  <div className="h-24 bg-slate-200 dark:bg-slate-800 rounded-3xl" />
+                </div>
+              ) : (
+                <div className="space-y-8 p-6 border border-slate-100 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900/60">
+                  {/* Categories list */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Matching Categories</h3>
+                    {[...new Set(blogs.map(b => b.category).filter(Boolean))].length === 0 ? (
+                      <p className="text-xs text-slate-405">No categories found matching your query.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {[...new Set(blogs.map(b => b.category).filter(Boolean))].map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => {
+                              setSelectedCategory(cat);
+                              setSearchType('blogs');
+                            }}
+                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-slate-50 border border-slate-150 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
+                          >
+                            📁 {cat}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tags list */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Matching Tags & Hashtags</h3>
+                    {[...new Set(blogs.flatMap(b => b.tags || []))].length === 0 ? (
+                      <p className="text-xs text-slate-405">No tags found matching your query.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {[...new Set(blogs.flatMap(b => b.tags || []))].map(tg => (
+                          <button
+                            key={tg}
+                            onClick={() => {
+                              setSelectedTag(tg);
+                              setSearchType('blogs');
+                            }}
+                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-indigo-50/40 border border-indigo-100/50 dark:bg-indigo-950/10 dark:border-indigo-900/20 text-indigo-650 dark:text-indigo-400 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
+                          >
+                            # {tg}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            ) : loading ? (
               <div className="grid sm:grid-cols-2 gap-6">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="animate-pulse bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl h-80 flex flex-col justify-between p-5">

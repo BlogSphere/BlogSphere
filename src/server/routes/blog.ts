@@ -15,15 +15,28 @@ import {
   reactToBlog,
   aiTranslateBlogBlocks,
   suggestMetadata,
-  triggerTrendingAutoPost
+  triggerTrendingAutoPost,
+  getTrendingBlogs,
+  getFlaggedBlogs,
+  updateBlogAnalytics,
+  reportBlog,
+  checkSpam,
+  dismissReports
 } from '../controllers/blogController';
-import { auth } from '../middleware/auth';
+import { auth, optionalAuth } from '../middleware/auth';
+import { requireRole } from '../middleware/auth';
 
 const router = express.Router();
 
 router.get('/', getBlogs);
 router.get('/recommendations', auth, getRecommendations);
+router.get('/trending', optionalAuth, getTrendingBlogs);
+router.get('/flagged', auth, requireRole(['admin']), getFlaggedBlogs);
+router.post('/:id/dismiss-reports', auth, requireRole(['admin']), dismissReports);
+router.post('/check-spam', auth, checkSpam);
 router.get('/:slug', getBlogBySlug);
+router.post('/:id/analytics', optionalAuth, updateBlogAnalytics);
+router.post('/:id/report', auth, reportBlog);
 router.post('/generate-ai', auth, generateAIBlogContent);
 router.post('/suggest-metadata', auth, suggestMetadata);
 router.post('/trigger-trending-post', auth, triggerTrendingAutoPost);

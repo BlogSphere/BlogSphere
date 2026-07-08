@@ -2,7 +2,24 @@ import Blog from '../models/Blog.js';
 import BlogVersion from '../models/BlogVersion.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import Community from '../models/Community.js';
 import { checkRestrictedContent } from './restrictedWordController.js';
+import { recalculateReputation } from './userController.js';
+
+const sanitizeBlogObject = (blogDoc) => {
+  if (!blogDoc) return null;
+  const b = typeof blogDoc.toObject === 'function' ? blogDoc.toObject() : blogDoc;
+  if (b.isAnonymous) {
+    b.author = {
+      _id: 'anonymous',
+      name: 'Anonymous Writer',
+      profileImage: 'https://api.dicebear.com/7.x/identicon/svg?seed=anonymous',
+      bio: 'This author prefers to remain anonymous.',
+      badge: 'Reader'
+    };
+  }
+  return b;
+};
 
 // Free translation helper via google translate API
 const translateText = async (text, targetLang) => {
@@ -134,7 +151,7 @@ Only return the JSON object, do not include any markdown backticks or explanatio
 
 export const createBlog = async (req, res) => {
   try {
-    const { title, content, coverImage, category, tags, status, collaborators } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous } = req.body;
 
     // Check restricted content
     let textToValidate = `${title || ''} ${category || ''} ${tags ? tags.join(' ') : ''}`;
@@ -169,6 +186,12 @@ export const createBlog = async (req, res) => {
       slug = `${baseSlug}-${count}`;
     }
 
+    // Convert reader to author if they create/draft a post
+    if (req.user.role === 'reader') {
+      await User.findByIdAndUpdate(req.user._id, { role: 'author' });
+      req.user.role = 'author';
+    }
+
     const blog = new Blog({
       title,
       slug,
@@ -178,7 +201,9 @@ export const createBlog = async (req, res) => {
       category: category || '',
       tags: tags || [],
       status: status || 'draft',
-      collaborators: collaborators || []
+      collaborators: collaborators || [],
+      community: community || null,
+      isAnonymous: isAnonymous || false
     });
 
     await blog.save();
@@ -201,6 +226,28 @@ export const createBlog = async (req, res) => {
 
     if (status === 'published') {
       await notifySubscribers(blog, req.user);
+      await recalculateReputation(blog.author);
+
+      // Notify community members if published in a community
+      if (blog.community) {
+        const comm = await Community.findById(blog.community);
+        if (comm) {
+          for (const mId of comm.members) {
+            if (mId.toString() !== req.user._id.toString()) {
+              const notif = new Notification({
+                userId: mId,
+                message: `New post in "${comm.name}" by ${req.user.name}: "${blog.title}"`,
+                type: 'community_post',
+                referenceId: blog._id
+              });
+              await notif.save();
+              if (global.io) {
+                global.io.to(`user_${mId}`).emit('notification_received', notif);
+              }
+            }
+          }
+        }
+      }
     }
 
     res.status(201).json({ message: 'Blog created successfully', blog });
@@ -216,7 +263,14 @@ export const getBlogs = async (req, res) => {
 
     if (category) query.category = category;
     if (tag) query.tags = tag;
-    if (author) query.author = author;
+    
+    if (author) {
+      query.author = author;
+      // If someone else is querying this author's profile page, hide their anonymous posts!
+      if (!req.user || req.user._id.toString() !== author.toString()) {
+        query.isAnonymous = { $ne: true };
+      }
+    }
     
     // Filter by status if provided (and not 'all'). Default to 'published' if none provided
     if (status && status !== 'all') {
@@ -226,10 +280,15 @@ export const getBlogs = async (req, res) => {
     }
 
     if (search) {
+      const matchingAuthors = await User.find({ name: { $regex: search, $options: 'i' } }).select('_id');
+      const authorIds = matchingAuthors.map(u => u._id);
+
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { category: { $regex: search, $options: 'i' } },
-        { tags: { $regex: search, $options: 'i' } }
+        { tags: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
+        { author: { $in: authorIds } }
       ];
     }
 
@@ -238,7 +297,8 @@ export const getBlogs = async (req, res) => {
       .populate('collaborators', 'name profileImage')
       .sort({ createdAt: -1 });
 
-    res.status(200).json({ blogs });
+    const sanitizedBlogs = blogs.map(b => sanitizeBlogObject(b));
+    res.status(200).json({ blogs: sanitizedBlogs });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -271,7 +331,7 @@ export const getBlogBySlug = async (req, res) => {
     blog.views += 1;
     await blog.save();
 
-    res.status(200).json({ blog });
+    res.status(200).json({ blog: sanitizeBlogObject(blog) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -280,7 +340,7 @@ export const getBlogBySlug = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, coverImage, category, tags, status, collaborators } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous } = req.body;
 
     const blog = await Blog.findById(id);
     if (!blog) {
@@ -321,7 +381,6 @@ export const updateBlog = async (req, res) => {
     }
 
     // Version Control System
-    // Calculate new version number
     const versionCount = await BlogVersion.countDocuments({ blogId: blog._id });
     const version = new BlogVersion({
       blogId: blog._id,
@@ -339,6 +398,8 @@ export const updateBlog = async (req, res) => {
     blog.category = category !== undefined ? category : blog.category;
     blog.tags = tags !== undefined ? tags : blog.tags;
     blog.status = status !== undefined ? status : blog.status;
+    blog.community = community !== undefined ? community : blog.community;
+    blog.isAnonymous = isAnonymous !== undefined ? isAnonymous : blog.isAnonymous;
     if (isAuthor) {
       blog.collaborators = collaborators !== undefined ? collaborators : blog.collaborators;
     }
@@ -346,8 +407,51 @@ export const updateBlog = async (req, res) => {
 
     await blog.save();
 
+    // Calculate reputation if status changes or remains published
+    if (blog.status === 'published' || wasPublished) {
+      await recalculateReputation(blog.author);
+    }
+
+    // If transitioned to published, notify subscribers & community
     if (blog.status === 'published' && !wasPublished) {
       await notifySubscribers(blog, req.user);
+      
+      if (blog.community) {
+        const comm = await Community.findById(blog.community);
+        if (comm) {
+          for (const mId of comm.members) {
+            if (mId.toString() !== req.user._id.toString()) {
+              const notif = new Notification({
+                userId: mId,
+                message: `New post in "${comm.name}" by ${req.user.name}: "${blog.title}"`,
+                type: 'community_post',
+                referenceId: blog._id
+              });
+              await notif.save();
+              if (global.io) {
+                global.io.to(`user_${mId}`).emit('notification_received', notif);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // If content was modified and it is currently published, notify bookmarks
+    if (blog.status === 'published' && wasPublished && (content !== undefined || title !== undefined)) {
+      const bookmarkedUsers = await User.find({ savedBlogs: blog._id });
+      for (const u of bookmarkedUsers) {
+        const notif = new Notification({
+          userId: u._id,
+          message: `Bookmarked article "${blog.title}" has been updated`,
+          type: 'bookmark_update',
+          referenceId: blog._id
+        });
+        await notif.save();
+        if (global.io) {
+          global.io.to(`user_${u._id}`).emit('notification_received', notif);
+        }
+      }
     }
 
     res.status(200).json({ message: 'Blog updated successfully', blog });
@@ -370,9 +474,12 @@ export const deleteBlog = async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized to delete this blog.' });
     }
 
+    const authorId = blog.author;
     await Blog.findByIdAndDelete(id);
-    // Delete version history and comments
     await BlogVersion.deleteMany({ blogId: id });
+
+    // Recalculate author reputation since their article is deleted
+    await recalculateReputation(authorId);
 
     res.status(200).json({ message: 'Blog and its history deleted successfully.' });
   } catch (error) {
@@ -413,6 +520,7 @@ export const likeBlog = async (req, res) => {
     }
 
     await blog.save();
+    await recalculateReputation(blog.author._id);
     res.status(200).json({ message: isLiked ? 'Blog liked' : 'Blog unliked', likesCount: blog.likes.length, isLiked });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -426,33 +534,58 @@ export const getRecommendations = async (req, res) => {
     let preferredCategories = ['Technology', 'Education', 'Travel'];
     let preferredTags = [];
     let followedAuthors = [];
+    let communityIds = [];
 
     if (userId) {
       const user = await User.findById(userId);
-      followedAuthors = user.following || [];
+      if (user) {
+        followedAuthors = user.following || [];
+        
+        // Include subscribed categories
+        if (user.subscribedCategories && user.subscribedCategories.length > 0) {
+          preferredCategories = [...new Set([...preferredCategories, ...user.subscribedCategories])];
+        }
 
-      // Find blogs the user has liked
-      const likedBlogs = await Blog.find({ likes: userId });
-      if (likedBlogs.length > 0) {
-        preferredCategories = [...new Set(likedBlogs.map(b => b.category))];
-        preferredTags = [...new Set(likedBlogs.flatMap(b => b.tags))];
+        // Find blogs the user has liked
+        const likedBlogs = await Blog.find({ likes: userId });
+        if (likedBlogs.length > 0) {
+          preferredCategories = [...new Set([...preferredCategories, ...likedBlogs.map(b => b.category)])];
+          preferredTags = [...new Set([...preferredTags, ...likedBlogs.flatMap(b => b.tags)])];
+        }
+
+        // Include categories and tags from bookmarked blogs
+        if (user.savedBlogs && user.savedBlogs.length > 0) {
+          const savedBlogs = await Blog.find({ _id: { $in: user.savedBlogs } });
+          preferredCategories = [...new Set([...preferredCategories, ...savedBlogs.map(b => b.category)])];
+          preferredTags = [...new Set([...preferredTags, ...savedBlogs.flatMap(b => b.tags)])];
+        }
+
+        // Find communities the user is a member of
+        const userCommunities = await Community.find({ members: userId }).select('_id');
+        communityIds = userCommunities.map(c => c._id);
       }
     }
 
     // Query for recommendations
-    // 1. Prioritize followed authors and categories
-    // 2. Fallback to trending/popular if insufficient
-    let recommended = await Blog.find({
+    const query = {
       status: 'published',
-      $or: [
-        { author: { $in: followedAuthors } },
-        { category: { $in: preferredCategories } },
-        { tags: { $in: preferredTags } }
-      ],
       author: { $ne: userId } // Exclude own blogs
-    })
-    .populate('author', 'name profileImage')
-    .limit(10);
+    };
+
+    const conditions = [];
+    if (followedAuthors.length > 0) conditions.push({ author: { $in: followedAuthors } });
+    if (preferredCategories.length > 0) conditions.push({ category: { $in: preferredCategories } });
+    if (preferredTags.length > 0) conditions.push({ tags: { $in: preferredTags } });
+    if (communityIds.length > 0) conditions.push({ community: { $in: communityIds } });
+
+    if (conditions.length > 0) {
+      query.$or = conditions;
+    }
+
+    let recommended = await Blog.find(query)
+      .populate('author', 'name profileImage badge')
+      .populate('collaborators', 'name profileImage')
+      .limit(10);
 
     // If we have less than 5 recommendations, grab any popular published articles
     if (recommended.length < 5) {
@@ -465,14 +598,16 @@ export const getRecommendations = async (req, res) => {
         _id: { $notin: idsToExclude },
         author: { $ne: userId }
       })
-      .populate('author', 'name profileImage')
+      .populate('author', 'name profileImage badge')
+      .populate('collaborators', 'name profileImage')
       .sort({ views: -1, likes: -1 })
       .limit(remainingCount);
 
       recommended = recommended.concat(generalBlogs);
     }
 
-    res.status(200).json({ blogs: recommended });
+    const sanitizedRecommended = recommended.map(b => sanitizeBlogObject(b));
+    res.status(200).json({ blogs: sanitizedRecommended });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -895,6 +1030,7 @@ export const reactToBlog = async (req, res) => {
     // Save and mark reactions as modified
     blog.markModified('reactions');
     await blog.save();
+    await recalculateReputation(blog.author._id);
 
     res.status(200).json({
       message: isReacted ? 'Reaction added' : 'Reaction removed',
@@ -1082,6 +1218,261 @@ export const triggerTrendingAutoPost = async (req, res) => {
     res.status(201).json({
       message: 'AI Trending Blog Auto-Posted successfully',
       blog: newBlog
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Smart Trending Algorithm (Gravity Decay)
+export const getTrendingBlogs = async (req, res) => {
+  try {
+    const blogs = await Blog.find({ status: 'published' })
+      .populate('author', 'name profileImage badge')
+      .populate('collaborators', 'name profileImage');
+
+    const trendingList = [];
+
+    for (const blog of blogs) {
+      // Calculate comments count
+      const commentsCount = await Comment.countDocuments({ blogId: blog._id });
+      const likesCount = blog.likes?.length || 0;
+      const views = blog.views || 0;
+      
+      let reactionsCount = 0;
+      if (blog.reactions) {
+        reactionsCount += (blog.reactions.thumbsUp?.length || 0);
+        reactionsCount += (blog.reactions.heart?.length || 0);
+        reactionsCount += (blog.reactions.clap?.length || 0);
+        reactionsCount += (blog.reactions.laugh?.length || 0);
+      }
+
+      // Base engagement score
+      const baseScore = (likesCount * 10) + (commentsCount * 5) + (views * 1) + (reactionsCount * 5);
+
+      // Time decay gravity formula
+      const hoursSinceCreated = (Date.now() - new Date(blog.createdAt).getTime()) / (1000 * 60 * 60);
+      const trendingScore = baseScore / Math.pow(hoursSinceCreated + 2, 1.5);
+
+      trendingList.push({
+        blog,
+        trendingScore
+      });
+    }
+
+    // Sort by trending score descending
+    trendingList.sort((a, b) => b.trendingScore - a.trendingScore);
+
+    const sortedBlogs = trendingList.map(item => sanitizeBlogObject(item.blog));
+
+    res.status(200).json({ blogs: sortedBlogs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Get reported blogs for admin moderation
+export const getFlaggedBlogs = async (req, res) => {
+  try {
+    const blogs = await Blog.find({ 'reports.0': { $exists: true } })
+      .populate('author', 'name profileImage email')
+      .populate('reports.userId', 'name profileImage email')
+      .sort({ updatedAt: -1 });
+
+    res.status(200).json({ blogs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Track and update blog reading analytics (views, duration, bounces, completions)
+export const updateBlogAnalytics = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { duration, completed } = req.body;
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    if (duration !== undefined && typeof duration === 'number') {
+      blog.totalReadTime += duration;
+      if (duration < 10) {
+        blog.bounces += 1;
+      }
+    }
+
+    if (completed) {
+      blog.completions += 1;
+    }
+
+    await blog.save();
+    res.status(200).json({ message: 'Analytics recorded', blog });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Report / Flag blog post
+export const reportBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user._id;
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    // Check if user already reported it
+    const alreadyReported = blog.reports.some(r => r.userId.toString() === userId.toString());
+    if (alreadyReported) {
+      return res.status(400).json({ error: 'You have already reported this blog post.' });
+    }
+
+    blog.reports.push({
+      userId,
+      reason: reason || 'Inappropriate content or Spam',
+      createdAt: Date.now()
+    });
+
+    await blog.save();
+
+    // If excessive reports (>= 3), notify admin if socket server is active
+    if (blog.reports.length >= 3 && global.io) {
+      // Find admin users and push notification
+      const admins = await User.find({ role: 'admin' });
+      for (const admin of admins) {
+        const notif = new Notification({
+          userId: admin._id,
+          message: `⚠️ High alert: The post "${blog.title}" has been flagged by multiple readers!`,
+          type: 'moderation_alert',
+          referenceId: blog._id
+        });
+        await notif.save();
+        global.io.to(`user_${admin._id}`).emit('notification_received', notif);
+      }
+    }
+
+    res.status(200).json({ message: 'Post reported successfully. Our moderation team will review it.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Dismiss all report flags for a blog post
+export const dismissReports = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found' });
+    }
+
+    blog.reports = [];
+    await blog.save();
+
+    res.status(200).json({ message: 'All reports successfully cleared.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Smart Spam Detection checker
+export const checkSpam = async (req, res) => {
+  try {
+    const { title, content, tags } = req.body;
+    if (!content) {
+      return res.status(400).json({ error: 'Draft content is required to run spam scan.' });
+    }
+
+    let spamScore = 0;
+    const reasons = [];
+
+    // 1. Duplicate check (title similarity)
+    if (title && title.trim()) {
+      const duplicate = await Blog.findOne({
+        title: { $regex: `^${title.trim()}$`, $options: 'i' },
+        status: 'published'
+      });
+      if (duplicate) {
+        spamScore += 40;
+        reasons.push('Title is identical to an already published article.');
+      }
+    }
+
+    // Clean html block contents to plain text
+    let cleanText = content;
+    try {
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) {
+        cleanText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {
+      cleanText = content.replace(/<[^>]*>/g, ' ');
+    }
+    
+    const textLower = cleanText.toLowerCase();
+
+    // 2. Suspicious advertising/spam keywords check
+    const spamKeywords = [
+      'free-gift', 'lottery', 'viagra', 'casino', 'double-crypto', 'win-money', 
+      'giveaway', 'make-money-fast', 'investment-opportunity', 'guaranteed-return',
+      'work-from-home-scam', 'cheap-loans'
+    ];
+    
+    const foundKeywords = spamKeywords.filter(kw => textLower.includes(kw));
+    if (foundKeywords.length > 0) {
+      spamScore += Math.min(40, foundKeywords.length * 15);
+      reasons.push(`Contains spam/marketing trigger words: ${foundKeywords.join(', ')}.`);
+    }
+
+    // 3. Repeated Content check
+    const sentences = cleanText.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 15);
+    const sentenceCounts = {};
+    let duplicatesCount = 0;
+    sentences.forEach(s => {
+      sentenceCounts[s] = (sentenceCounts[s] || 0) + 1;
+      if (sentenceCounts[s] > 1) {
+        duplicatesCount++;
+      }
+    });
+
+    if (duplicatesCount >= 3) {
+      spamScore += 25;
+      reasons.push('Contains multiple repeated sentences/paragraphs (potential copy-paste spam).');
+    }
+
+    // 4. Keyword Stuffing check
+    const words = textLower.split(/\W+/).filter(w => w.length > 4);
+    const wordCounts = {};
+    let stuffingDetected = false;
+    words.forEach(w => {
+      wordCounts[w] = (wordCounts[w] || 0) + 1;
+    });
+
+    Object.keys(wordCounts).forEach(w => {
+      const density = wordCounts[w] / words.length;
+      // If a word of length > 4 is repeated 8+ times and takes up > 8% of the draft content
+      if (wordCounts[w] >= 8 && density > 0.08) {
+        stuffingDetected = true;
+      }
+    });
+
+    if (stuffingDetected) {
+      spamScore += 20;
+      reasons.push('Keyword stuffing detected (certain words appear too frequently).');
+    }
+
+    // Cap at 100
+    spamScore = Math.min(100, spamScore);
+
+    res.status(200).json({
+      spamScore,
+      isSpam: spamScore > 50,
+      reasons
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

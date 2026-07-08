@@ -182,6 +182,17 @@ export default function Editor() {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState('draft');
+  
+  const communityParam = searchParams.get('community') || '';
+  const [community, setCommunity] = useState(communityParam);
+  const [myCommunities, setMyCommunities] = useState([]);
+  const [isAnonymous, setIsAnonymous] = useState(false);
+
+  // Spam warning states
+  const [spamModalOpen, setSpamModalOpen] = useState(false);
+  const [spamScore, setSpamScore] = useState(0);
+  const [spamReasons, setSpamReasons] = useState([]);
+  const [bypassSpamCheck, setBypassSpamCheck] = useState(false);
 
   // Blocks builder state
   const [blocks, setBlocks] = useState([
@@ -344,6 +355,8 @@ export default function Editor() {
           setTags(blog.tags || []);
           setStatus(blog.status || 'draft');
           setCollaborators(blog.collaborators || []);
+          setCommunity(blog.community || '');
+          setIsAnonymous(blog.isAnonymous || false);
           
           // Parse content string into blocks
           const loadedBlocks = parseHTMLToBlocks(blog.content);
@@ -357,6 +370,17 @@ export default function Editor() {
         });
     }
   }, [editId]);
+
+  // Load communities list
+  useEffect(() => {
+    api.get('/api/communities')
+      .then((res) => {
+        setMyCommunities(res.data.communities || []);
+      })
+      .catch((err) => {
+        console.error('Failed to load communities:', err);
+      });
+  }, []);
 
   // Socket.io Real-time Collaboration Setup
   useEffect(() => {
@@ -572,6 +596,32 @@ export default function Editor() {
     if (!title.trim() || !content.trim()) {
       return setError('Title and Content cannot be empty.');
     }
+
+    // Intercept with spam check if publishing
+    if (publishStatus === 'published' && !bypassSpamCheck) {
+      setSaving(true);
+      setError('');
+      try {
+        const spamRes = await api.post('/api/blogs/check-spam', {
+          title: title.trim(),
+          content: JSON.stringify(blocks),
+          tags
+        });
+        
+        if (spamRes.data.isSpam) {
+          setSpamScore(spamRes.data.spamScore);
+          setSpamReasons(spamRes.data.reasons);
+          setSpamModalOpen(true);
+          setSaving(false);
+          return; // Stop and prompt user in warnings modal
+        }
+      } catch (err) {
+        console.error('Spam scan failed, skipping checks:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
+
     setSaving(true);
     setError('');
 
@@ -582,7 +632,9 @@ export default function Editor() {
       category,
       tags,
       status: publishStatus,
-      collaborators: collaborators.map(c => c._id)
+      collaborators: collaborators.map(c => c._id),
+      community: community || undefined,
+      isAnonymous
     };
 
     try {
@@ -1182,6 +1234,21 @@ export default function Editor() {
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4">Post Settings</h3>
               
+              {/* Community selector */}
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Community Channel</label>
+                <select
+                  value={community}
+                  onChange={(e) => setCommunity(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer font-semibold"
+                >
+                  <option value="">Personal Draft (None)</option>
+                  {myCommunities.map(c => (
+                    <option key={c._id} value={c._id}>{c.name} {c.isMember ? '(Joined)' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Category selector */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category</label>
@@ -1197,6 +1264,20 @@ export default function Editor() {
                 </select>
               </div>
 
+              {/* Anonymous setting */}
+              <div className="mb-4 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="isAnonymous"
+                  checked={isAnonymous}
+                  onChange={(e) => setIsAnonymous(e.target.checked)}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="isAnonymous" className="text-xs font-bold text-slate-400 uppercase cursor-pointer">
+                  Publish Anonymously
+                </label>
+              </div>
+
               {/* Tags configurators */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Tags</label>
@@ -1208,7 +1289,7 @@ export default function Editor() {
                   onKeyDown={handleAddTag}
                   className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none mb-3"
                 />
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 mb-2">
                   {tags.map((tag, idx) => (
                     <span key={idx} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full dark:bg-slate-800 dark:text-slate-400 flex items-center gap-1">
                       <span>#{tag}</span>
@@ -1216,6 +1297,36 @@ export default function Editor() {
                     </span>
                   ))}
                 </div>
+
+                {/* Dynamic Tag Suggestions */}
+                {(() => {
+                  const dictionary = ['React', 'Node.js', 'Express', 'MongoDB', 'Authentication', 'Security', 'JWT', 'Tailwind', 'CSS', 'JavaScript', 'TypeScript', 'Next.js', 'Vite', 'Docker', 'Git', 'Redux', 'API', 'REST', 'Web3', 'AI', 'Python', 'DevOps'];
+                  const textToScan = (title + ' ' + blocks.map(b => b.content || '').join(' ')).toLowerCase();
+                  const suggestions = dictionary.filter(tag => {
+                    if (tags.some(t => t.toLowerCase() === tag.toLowerCase())) return false;
+                    const regex = new RegExp(`\\b${tag.toLowerCase().replace('.', '\\.')}\\b`, 'i');
+                    return regex.test(textToScan);
+                  });
+
+                  if (suggestions.length === 0) return null;
+                  return (
+                    <div className="mt-3">
+                      <span className="block text-[10px] font-bold text-slate-405 dark:text-slate-500 uppercase mb-1">Suggested Tags:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {suggestions.slice(0, 5).map(tag => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => setTags([...tags, tag])}
+                            className="text-[10px] bg-indigo-50/50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/40 hover:dark:bg-indigo-950/40 transition-all font-semibold"
+                          >
+                            +{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* AI Metadata Suggestion */}
@@ -1415,6 +1526,74 @@ export default function Editor() {
                     <span>Generate Draft</span>
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Spam Warning Modal */}
+      {spamModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
+              <h3 className="text-base font-extrabold text-rose-600 dark:text-rose-450 flex items-center gap-1.5">
+                <span>⚠️ Spam Warning Alert</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSpamModalOpen(false)}
+                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
+              Our automated content filter analyzed your draft and detected potential concerns:
+            </p>
+
+            <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-150/20 rounded-2xl space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold text-rose-600 dark:text-rose-455">
+                <span>Spam Score:</span>
+                <span>{spamScore} / 100</span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-rose-500 h-1.5 rounded-full" style={{ width: `${spamScore}%` }} />
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+              <span className="text-[10px] font-bold text-slate-405 uppercase tracking-wide">Issues Detected</span>
+              {spamReasons.map((reason, idx) => (
+                <div key={idx} className="flex gap-2 text-xs text-slate-600 dark:text-slate-350 leading-relaxed bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/30">
+                  <span className="text-rose-500">•</span>
+                  <span>{reason}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSpamModalOpen(false)}
+                className="px-4.5 py-2 border rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+              >
+                Go Back & Edit
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setSpamModalOpen(false);
+                  setBypassSpamCheck(true);
+                  // We bypass in the next save call
+                  setTimeout(() => {
+                    handleSave('published');
+                  }, 100);
+                }}
+                className="px-4.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/10 transition-all"
+              >
+                Publish Anyway
               </button>
             </div>
           </div>

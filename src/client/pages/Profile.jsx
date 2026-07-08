@@ -38,6 +38,7 @@ export default function Profile() {
   const [editTwitter, setEditTwitter] = useState('');
   const [editGithub, setEditGithub] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
+  const [editIsPrivate, setEditIsPrivate] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -61,6 +62,7 @@ export default function Profile() {
         setEditTwitter(u.socialLinks?.twitter || '');
         setEditGithub(u.socialLinks?.github || '');
         setEditWebsite(u.socialLinks?.website || '');
+        setEditIsPrivate(u.isPrivate || false);
 
         setLoading(false);
       })
@@ -114,6 +116,7 @@ export default function Profile() {
         name: editName,
         bio: editBio,
         profileImage: editProfileImage,
+        isPrivate: editIsPrivate,
         socialLinks: {
           twitter: editTwitter,
           github: editGithub,
@@ -372,14 +375,28 @@ export default function Profile() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-450 uppercase mb-1">Avatar Image URL</label>
+                <label className="block text-xs font-bold text-slate-450 uppercase mb-1">Upload Avatar / Logo Image</label>
                 <input
-                  type="text"
-                  value={editProfileImage}
-                  onChange={(e) => setEditProfileImage(e.target.value)}
-                  placeholder="https://example.com/avatar.jpg"
-                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setEditProfileImage(reader.result);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border rounded-xl p-2 bg-slate-50 border-slate-200 dark:bg-slate-855 dark:border-slate-800"
                 />
+                {editProfileImage && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-[10px] text-slate-400">Preview:</span>
+                    <img src={editProfileImage} alt="Preview" className="w-8 h-8 rounded-full object-cover ring-2 ring-primary-500/10" />
+                  </div>
+                )}
               </div>
 
               <div>
@@ -391,6 +408,19 @@ export default function Profile() {
                   placeholder="Write a brief intro about yourself..."
                   className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 />
+              </div>
+
+              <div className="flex items-center gap-2 py-1">
+                <input
+                  type="checkbox"
+                  id="editIsPrivate"
+                  checked={editIsPrivate}
+                  onChange={(e) => setEditIsPrivate(e.target.checked)}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="editIsPrivate" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Keep Profile / Account Private
+                </label>
               </div>
 
               <div className="space-y-2">

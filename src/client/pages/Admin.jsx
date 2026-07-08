@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, Sparkles } from 'lucide-react';
 import api from '../utils/api.js';
@@ -8,10 +8,11 @@ export default function Admin() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('users'); // 'users', 'blogs', or 'restricted'
+  const [activeTab, setActiveTab] = useState('users'); // 'users', 'blogs', 'restricted', or 'flagged'
   const [usersList, setUsersList] = useState([]);
   const [blogsList, setBlogsList] = useState([]);
   const [restrictedWords, setRestrictedWords] = useState([]);
+  const [flaggedBlogs, setFlaggedBlogs] = useState([]);
   const [newRestrictedWord, setNewRestrictedWord] = useState('');
   const [wordAdding, setWordAdding] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -48,12 +49,14 @@ export default function Admin() {
     Promise.all([
       api.get('/api/users'),
       api.get('/api/blogs?status=all'),
-      api.get('/api/restricted-words')
+      api.get('/api/restricted-words'),
+      api.get('/api/blogs/flagged')
     ])
-      .then(([usersRes, blogsRes, wordsRes]) => {
+      .then(([usersRes, blogsRes, wordsRes, flaggedRes]) => {
         setUsersList(usersRes.data.users || []);
         setBlogsList(blogsRes.data.blogs || []);
         setRestrictedWords(wordsRes.data.words || []);
+        setFlaggedBlogs(flaggedRes.data.blogs || []);
         setLoading(false);
       })
       .catch((err) => {
@@ -191,8 +194,19 @@ export default function Admin() {
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >
-          <AlertTriangle className="w-4 h-4 text-amber-505" />
+          <Shield className="w-4 h-4" />
           <span>Restricted Words ({restrictedWords.length})</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('flagged')}
+          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
+            activeTab === 'flagged'
+              ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-455 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <AlertTriangle className="w-4 h-4 text-rose-500" />
+          <span>Flagged Posts ({flaggedBlogs.length})</span>
         </button>
       </div>
 
@@ -305,7 +319,7 @@ export default function Admin() {
               </tbody>
             </table>
           </div>
-        ) : (
+        ) : activeTab === 'restricted' ? (
           /* Restricted Words Tab */
           <div className="space-y-6">
             <div className="max-w-md">
@@ -360,6 +374,85 @@ export default function Admin() {
                 </div>
               )}
             </div>
+          </div>
+        ) : (
+          /* Flagged Posts Tab */
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="pb-3 pl-2">Flagged Article</th>
+                  <th className="pb-3">Author</th>
+                  <th className="pb-3 text-center">Flags</th>
+                  <th className="pb-3">Last Reported Concern</th>
+                  <th className="pb-3 text-right pr-2">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {flaggedBlogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-8 text-center text-slate-400 dark:text-slate-500 italic text-xs">
+                      No reported content! The community is safe and clean. ✨
+                    </td>
+                  </tr>
+                ) : (
+                  flaggedBlogs.map((blog) => (
+                    <tr key={blog._id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-colors">
+                      <td className="py-4 pl-2 font-semibold text-slate-800 dark:text-slate-100 max-w-xs truncate">
+                        <Link to={`/blog/${blog.slug}`} className="hover:underline">{blog.title}</Link>
+                        <span className="block text-[9px] text-slate-400 font-normal uppercase tracking-wider mt-0.5">
+                          {blog.category ? `${blog.category} • ` : ''}{blog.status}
+                        </span>
+                      </td>
+                      <td className="py-4 text-slate-650 dark:text-slate-400">
+                        {blog.author?.name || 'Anonymous'}
+                      </td>
+                      <td className="py-4 text-center font-bold text-rose-600 dark:text-rose-400">
+                        🚨 {blog.reports?.length || 0}
+                      </td>
+                      <td className="py-4 text-slate-550 dark:text-slate-400 text-xs italic max-w-xs truncate">
+                        {blog.reports?.[blog.reports.length - 1]?.reason || 'No details provided'}
+                      </td>
+                      <td className="py-4 text-right pr-2 space-x-2">
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('Dismiss all flag reports for this post?')) {
+                              try {
+                                await api.post(`/api/blogs/${blog._id}/dismiss-reports`);
+                                setFlaggedBlogs(flaggedBlogs.filter(b => b._id !== blog._id));
+                                alert('All report alerts dismissed successfully.');
+                              } catch (err) {
+                                alert(err.response?.data?.error || 'Failed to dismiss reports.');
+                              }
+                            }
+                          }}
+                          className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-lg transition-all inline-block animate-scale-in"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (window.confirm('Are you sure you want to delete this reported post? This action is permanent.')) {
+                              try {
+                                await api.delete(`/api/blogs/${blog._id}`);
+                                setFlaggedBlogs(flaggedBlogs.filter(b => b._id !== blog._id));
+                                setBlogsList(blogsList.filter(b => b._id !== blog._id));
+                                alert('Reported post deleted successfully.');
+                              } catch (err) {
+                                alert(err.response?.data?.error || 'Failed to delete post.');
+                              }
+                            }
+                          }}
+                          className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-955/20 rounded-lg transition-colors inline-block align-middle"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

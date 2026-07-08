@@ -24,7 +24,7 @@ export const register = async (req, res) => {
       password: hashedPassword,
       bio: bio || '',
       profileImage: profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
-      role: role || 'reader'
+      role: role || 'author'
     });
 
     await user.save();

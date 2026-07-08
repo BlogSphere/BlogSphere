@@ -14,6 +14,7 @@ import commentRoutes from './routes/comment';
 import notificationRoutes from './routes/notification';
 import userRoutes from './routes/user';
 import restrictedWordsRoutes from './routes/restrictedWords';
+import communityRoutes from './routes/community';
 import Blog from './models/Blog';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/comments', commentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/restricted-words', restrictedWordsRoutes);
+app.use('/api/communities', communityRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -146,6 +148,16 @@ const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
   
+  // Trigger AI Auto Poster immediately on startup
+  (async () => {
+    try {
+      const { generateTrendingAutoPost } = await import('./services/trendingPoster.js');
+      await generateTrendingAutoPost();
+    } catch (err: any) {
+      console.error('Initial startup auto-post error:', err.message);
+    }
+  })();
+
   // Start automated AI Trending poster scheduler interval (every 6 hours)
   const SIX_HOURS = 6 * 60 * 60 * 1000;
   setInterval(async () => {

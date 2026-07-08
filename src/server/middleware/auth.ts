@@ -34,3 +34,21 @@ export const requireRole = (roles: string[]) => {
     next();
   };
 };
+
+export const optionalAuth = async (req: any, res: any, next: any) => {
+  try {
+    const authHeader = req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '');
+      const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token_key_2026_987654321');
+      
+      const user = await User.findById(decoded.id).select('-password');
+      if (user) {
+        req.user = user;
+      }
+    }
+    next();
+  } catch (error) {
+    next();
+  }
+};

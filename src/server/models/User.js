@@ -30,6 +30,18 @@ const UserSchema = new mongoose.Schema({
     enum: ['reader', 'author', 'admin'],
     default: 'reader'
   },
+  isPrivate: {
+    type: Boolean,
+    default: false
+  },
+  reputationPoints: {
+    type: Number,
+    default: 0
+  },
+  badge: {
+    type: String,
+    default: 'Reader'
+  },
   followers: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

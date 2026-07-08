@@ -128,7 +128,7 @@ export default function Navbar() {
       <div className="px-4 mx-auto max-w-[95%] xl:max-w-[1550px] sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2">
               <span className="flex items-center justify-center w-10 h-10 font-bold text-white rounded-xl bg-gradient-to-r from-primary-600 to-indigo-600 shadow-md shadow-primary-500/20">
                 B
@@ -137,6 +137,15 @@ export default function Navbar() {
                 BlogSphere
               </span>
             </Link>
+
+            <div className="hidden md:flex items-center gap-4 text-xs font-bold uppercase tracking-wider pl-4 border-l border-slate-200 dark:border-slate-800">
+              <Link to="/" className={`transition-colors ${location.pathname === '/' ? 'text-primary-600 dark:text-primary-450' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
+                Home
+              </Link>
+              <Link to="/communities" className={`transition-colors ${location.pathname === '/communities' ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
+                Communities
+              </Link>
+            </div>
           </div>
 
           {/* Search bar */}
@@ -310,6 +319,20 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 md:hidden px-4 pt-2 pb-4 space-y-2">
+          <Link
+            to="/"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-350 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
+          >
+            Home
+          </Link>
+          <Link
+            to="/communities"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-355 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
+          >
+            Communities
+          </Link>
           <form onSubmit={handleSearch} className="relative py-2">
             <input
               type="text"

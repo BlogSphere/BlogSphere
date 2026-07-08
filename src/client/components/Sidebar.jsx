@@ -10,6 +10,7 @@ export default function Sidebar({ currentCategory, currentTag }) {
   const navigate = useNavigate();
   const [offlineArticles, setOfflineArticles] = useState([]);
   const [recommendedAuthors, setRecommendedAuthors] = useState([]);
+  const [communities, setCommunities] = useState([]);
 
   useEffect(() => {
     // Load offline stored blogs
@@ -33,6 +34,13 @@ export default function Sidebar({ currentCategory, currentTag }) {
           if (authors.length >= 3) break;
         }
         setRecommendedAuthors(authors);
+      })
+      .catch(console.error);
+
+    // Load communities list
+    api.get('/api/communities')
+      .then((res) => {
+        setCommunities(res.data.communities || []);
       })
       .catch(console.error);
   }, []);
@@ -119,6 +127,36 @@ export default function Sidebar({ currentCategory, currentTag }) {
                     {author.bio || 'Wandering explorer and wordsmith'}
                   </p>
                 </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Communities Directory Panel */}
+      {communities.length > 0 && (
+        <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
+          <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
+            <Compass className="w-4 h-4 text-primary-500" />
+            <span>Popular Communities</span>
+          </h3>
+          <div className="flex flex-col gap-3">
+            {communities.slice(0, 4).map((comm) => (
+              <Link
+                key={comm._id}
+                to={`/communities`}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850/50 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="flex items-center justify-center w-8 h-8 font-bold text-white rounded-lg bg-gradient-to-r from-primary-600 to-indigo-500 text-xs shadow-sm">
+                    {comm.name[0]}
+                  </span>
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800 dark:text-slate-100">{comm.name}</span>
+                    <span className="block text-[10px] text-slate-400 mt-0.5">{comm.membersCount || 0} members</span>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-primary-600 dark:text-primary-400">View</span>
               </Link>
             ))}
           </div>

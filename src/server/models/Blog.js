@@ -64,6 +64,32 @@ const BlogSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  bounces: {
+    type: Number,
+    default: 0
+  },
+  completions: {
+    type: Number,
+    default: 0
+  },
+  totalReadTime: {
+    type: Number,
+    default: 0
+  },
+  reports: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    reason: { type: String, default: '' },
+    createdAt: { type: Date, default: Date.now }
+  }],
+  community: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Community',
+    default: null
+  },
+  isAnonymous: {
+    type: Boolean,
+    default: false
+  },
   status: {
     type: String,
     enum: ['draft', 'published'],

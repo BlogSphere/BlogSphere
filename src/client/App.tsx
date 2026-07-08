@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { authSuccess, logoutUser } from './redux/authSlice';
 import Navbar from './components/Navbar';
@@ -10,6 +10,8 @@ import Editor from './pages/Editor';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import Communities from './pages/Communities';
+import AdCenter from './pages/AdCenter';
 import api from './utils/api';
 
 export default function App() {
@@ -43,10 +45,16 @@ export default function App() {
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
             <Route path="/blog/:slug" element={<BlogDetail />} />
+            <Route path="/blog" element={<Navigate to="/" replace />} />
             <Route path="/editor" element={<Editor />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/system-admin-sphere" element={<Admin />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/adcenter" element={<AdCenter />} />
+            <Route path="/adsense" element={<AdCenter />} />
             <Route path="/profile/:id" element={<Profile />} />
+            <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/communities" element={<Communities />} />
           </Routes>
         </div>
 
