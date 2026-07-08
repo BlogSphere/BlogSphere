@@ -145,6 +145,20 @@ io.on('connection', (socket: Socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
+
+// Graceful port-conflict handler — prevents unhandled crash on EADDRINUSE
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n[BlogSphere] ❌ Port ${PORT} is already in use.`);
+    console.error(`[BlogSphere] 💡 Run this in your terminal to free it:\n`);
+    console.error(`   netstat -ano | findstr :${PORT}   → get PID`);
+    console.error(`   taskkill /PID <PID> /F\n`);
+    process.exit(1);
+  } else {
+    throw err;
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
   
