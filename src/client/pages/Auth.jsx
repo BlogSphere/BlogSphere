@@ -14,15 +14,18 @@ export default function Auth() {
 
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     bio: '',
-    role: 'reader'
+    role: 'reader',
+    isPrivate: false
   });
   const [showPassword, setShowPassword] = useState(false);
   const [localError, setLocalError] = useState('');
   const [errors, setErrors] = useState({
     name: '',
+    username: '',
     email: '',
     password: ''
   });
@@ -56,6 +59,11 @@ export default function Auth() {
 
     if (activeTab === 'register' && !formData.name.trim()) {
       tempErrors.name = 'Full name is required.';
+      isValid = false;
+    }
+
+    if (activeTab === 'register' && formData.username.trim() && !/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      tempErrors.username = 'Username can only contain letters, numbers, and underscores.';
       isValid = false;
     }
 
@@ -201,6 +209,26 @@ export default function Auth() {
                 )}
               </div>
 
+              {/* Username (Optional) */}
+              <div className="relative">
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  placeholder="Username (e.g. patel_deep)"
+                  className={`w-full py-2.5 pl-10 pr-4 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-100 ${
+                    errors.username ? 'is-invalid border-rose-500' : ''
+                  }`}
+                />
+                <User className="absolute w-4 h-4 text-slate-400 top-3.5 left-3.5" />
+                {errors.username && (
+                  <div className="invalid-feedback text-start text-[11px] text-rose-500 mt-1 block">
+                    {errors.username}
+                  </div>
+                )}
+              </div>
+
               {/* Bio (Optional) */}
               <div className="relative">
                 <input
@@ -212,6 +240,49 @@ export default function Auth() {
                   className="w-full py-2.5 pl-10 pr-4 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-100"
                 />
                 <BookOpen className="absolute w-4 h-4 text-slate-400 top-3.5 left-3.5" />
+              </div>
+
+              {/* Account Type Selection */}
+              <div className="space-y-1 text-start">
+                <label className="text-xs font-bold text-slate-400 uppercase">Account Type</label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: 'reader' })}
+                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
+                      formData.role === 'reader'
+                        ? 'bg-primary-50 dark:bg-primary-950/20 border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    📖 Reader
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, role: 'author' })}
+                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
+                      formData.role === 'author'
+                        ? 'bg-primary-50 dark:bg-primary-950/20 border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    ✍️ Writer
+                  </button>
+                </div>
+              </div>
+
+              {/* Profile Privacy Choice */}
+              <div className="flex items-center gap-2 py-1 text-start">
+                <input
+                  type="checkbox"
+                  id="isPrivate"
+                  checked={formData.isPrivate}
+                  onChange={(e) => setFormData({ ...formData, isPrivate: e.target.checked })}
+                  className="rounded border-slate-350 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                />
+                <label htmlFor="isPrivate" className="text-xs font-semibold text-slate-700 dark:text-slate-350 cursor-pointer">
+                  Keep Profile / Account Private
+                </label>
               </div>
             </>
           )}

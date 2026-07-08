@@ -187,6 +187,7 @@ export default function Editor() {
   const [community, setCommunity] = useState(communityParam);
   const [myCommunities, setMyCommunities] = useState([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [enhancingBlockIndex, setEnhancingBlockIndex] = useState(null);
 
   // Spam warning states
   const [spamModalOpen, setSpamModalOpen] = useState(false);
@@ -518,6 +519,27 @@ export default function Editor() {
     const updated = [...blocks];
     updated.splice(index + 1, 0, duplicated);
     handleBlocksChange(updated);
+  };
+
+  const handleAIImproveBlock = async (index) => {
+    const block = blocks[index];
+    if (!block.content || !block.content.trim()) return;
+
+    setEnhancingBlockIndex(index);
+    try {
+      const res = await api.post('/api/blogs/ai-enhance-block', {
+        content: block.content,
+        type: block.type
+      });
+      if (res.data.enhancedText) {
+        updateBlockContent(index, res.data.enhancedText);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('AI Block Enhancement failed. Please try again.');
+    } finally {
+      setEnhancingBlockIndex(null);
+    }
   };
 
   const moveBlock = (index, direction) => {
@@ -1195,6 +1217,17 @@ export default function Editor() {
                               <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1 align-middle self-center"></div>
                             </>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleAIImproveBlock(index)}
+                            disabled={enhancingBlockIndex !== null}
+                            className={`p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-indigo-500 rounded-lg text-slate-400 hover:text-indigo-650 transition-colors ${
+                              enhancingBlockIndex === index ? 'animate-spin' : ''
+                            }`}
+                            title="AI Assistant: Polish & Enhance Text"
+                          >
+                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => duplicateBlock(index)}

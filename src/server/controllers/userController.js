@@ -154,10 +154,21 @@ export const deleteUser = async (req, res) => {
 // Update own user profile
 export const updateOwnProfile = async (req, res) => {
   try {
-    const { name, bio, profileImage, socialLinks, isPrivate } = req.body;
+    const { name, bio, profileImage, socialLinks, isPrivate, username } = req.body;
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (username !== undefined && username !== user.username) {
+      const cleanUsername = username.toLowerCase().trim();
+      if (cleanUsername) {
+        const existingUsername = await User.findOne({ username: cleanUsername });
+        if (existingUsername) {
+          return res.status(400).json({ error: 'This username is already taken.' });
+        }
+        user.username = cleanUsername;
+      }
     }
 
     if (name !== undefined) user.name = name;

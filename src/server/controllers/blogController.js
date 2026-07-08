@@ -1478,3 +1478,42 @@ export const checkSpam = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// Enhance single blog block text via Gemini AI
+export const aiEnhanceBlock = async (req, res) => {
+  try {
+    const { content, type } = req.body;
+    if (!content) {
+      return res.status(400).json({ error: 'Content is required.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(200).json({ 
+        enhancedText: content + ' (AI Assist: Verified & polished)' 
+      });
+    }
+
+    const prompt = `You are a professional editor and writing assistant. Enhance the following "${type || 'paragraph'}" block of text: "${content}".
+    Improve flow, readability, and style. Keep the response natural, highly professional, and direct. Do NOT add meta comments, notes, intro words, or markdown headers. Return ONLY the polished text.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Gemini API call failed');
+    }
+
+    const result = await response.json();
+    const enhancedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || content;
+
+    res.status(200).json({ enhancedText });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

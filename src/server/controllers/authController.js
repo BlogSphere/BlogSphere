@@ -6,12 +6,21 @@ const JWT_SECRET = process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, bio, profileImage, role } = req.body;
+    const { name, email, password, bio, profileImage, role, isPrivate, username } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'A user with this email already exists.' });
+    }
+
+    const finalUsername = username 
+      ? username.toLowerCase().trim() 
+      : name.toLowerCase().replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 1000);
+
+    let uniqueUsername = finalUsername;
+    while (await User.findOne({ username: uniqueUsername })) {
+      uniqueUsername = `${finalUsername}${Math.floor(Math.random() * 100)}`;
     }
 
     // Hash password
@@ -20,11 +29,13 @@ export const register = async (req, res) => {
     // Create user
     const user = new User({
       name,
+      username: uniqueUsername,
       email,
       password: hashedPassword,
       bio: bio || '',
       profileImage: profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
-      role: role || 'author'
+      role: role || 'author',
+      isPrivate: isPrivate || false
     });
 
     await user.save();

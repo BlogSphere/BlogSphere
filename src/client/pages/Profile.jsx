@@ -39,6 +39,7 @@ export default function Profile() {
   const [editGithub, setEditGithub] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
   const [editIsPrivate, setEditIsPrivate] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -63,6 +64,7 @@ export default function Profile() {
         setEditGithub(u.socialLinks?.github || '');
         setEditWebsite(u.socialLinks?.website || '');
         setEditIsPrivate(u.isPrivate || false);
+        setEditUsername(u.username || '');
 
         setLoading(false);
       })
@@ -117,6 +119,7 @@ export default function Profile() {
         bio: editBio,
         profileImage: editProfileImage,
         isPrivate: editIsPrivate,
+        username: editUsername,
         socialLinks: {
           twitter: editTwitter,
           github: editGithub,
@@ -209,7 +212,7 @@ export default function Profile() {
               {isAuthenticated && currentUser?._id === profileUser._id && (
                 <button
                   onClick={() => setIsEditModalOpen(true)}
-                  className="px-5 py-2 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-305 transition-colors flex items-center gap-1.5"
+                  className="px-5 py-2 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white shadow-sm transition-all flex items-center gap-1.5"
                 >
                   <Settings2 className="w-3.5 h-3.5" />
                   <span>Edit Profile</span>
@@ -350,8 +353,8 @@ export default function Profile() {
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4 my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit Profile Details</h3>
               <button 
@@ -370,6 +373,17 @@ export default function Profile() {
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-455 uppercase mb-1">Username</label>
+                <input
+                  type="text"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  placeholder="username (e.g. patel_deep)"
                   className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
