@@ -247,7 +247,7 @@ export default function Admin() {
       )}
 
       {/* Tabs */}
-      <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full w-fit mb-6 overflow-x-auto max-w-full">
+      <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full mb-6 overflow-x-auto w-full md:w-fit max-w-full">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
