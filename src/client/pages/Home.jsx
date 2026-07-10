@@ -116,13 +116,19 @@ export default function Home() {
             <p className="mt-4 max-w-xl mx-auto text-lg text-slate-400 font-medium">
               Discover stories, collaborate on code reviews, translate articles instantly, and participate in peer editing.
             </p>
-            <div className="mt-10 flex justify-center gap-4">
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
               <a
                 href="#feed-start"
                 className="px-6 py-3 rounded-full text-sm font-semibold bg-primary-600 hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20"
               >
                 Start Reading
               </a>
+              <Link
+                to="/galaxy"
+                className="px-6 py-3 rounded-full text-sm font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 transition-all border border-indigo-500/30 flex items-center gap-1.5 shadow-lg shadow-indigo-500/20 text-white"
+              >
+                Explore Galaxy 🌌
+              </Link>
               <Link
                 to="/editor"
                 className="px-6 py-3 rounded-full text-sm font-semibold bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-700"
@@ -287,6 +293,12 @@ export default function Home() {
                   <Search className="w-4 h-4" />
                   <span>Explore & Search</span>
                 </button>
+                <Link
+                  to="/galaxy"
+                  className="py-3.5 px-5 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 flex items-center gap-2 transition-all"
+                >
+                  <span>Galaxy View 🌌</span>
+                </Link>
               </div>
             )}
 

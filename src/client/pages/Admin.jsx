@@ -22,6 +22,47 @@ export default function Admin() {
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // Daily AI Brief states
+  const [dailyReport, setDailyReport] = useState([]);
+  const [dailyReportLoading, setDailyReportLoading] = useState(false);
+  const [generatingBriefDate, setGeneratingBriefDate] = useState('');
+
+  const fetchDailyReport = async () => {
+    setDailyReportLoading(true);
+    try {
+      const res = await api.get('/api/blogs/admin/daily-analytics');
+      setDailyReport(res.data.report || []);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to fetch daily analytics report.');
+    } finally {
+      setDailyReportLoading(false);
+    }
+  };
+
+  const handleGenerateDailyBrief = async (date) => {
+    setGeneratingBriefDate(date);
+    try {
+      const res = await api.post('/api/blogs/admin/daily-brief/generate', { date });
+      alert(`AI summary for ${date} generated successfully!`);
+      // Update local report with generated brief
+      setDailyReport(prev => prev.map(item => {
+        if (item.date === date) {
+          return {
+            ...item,
+            hasBrief: true,
+            summary: res.data.brief.summary,
+            keyThemes: res.data.brief.keyThemes
+          };
+        }
+        return item;
+      }));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to generate AI summary brief.');
+    } finally {
+      setGeneratingBriefDate('');
+    }
+  };
+
   const handleTriggerAutoPost = async () => {
     setTriggeringPost(true);
     try {
@@ -261,6 +302,17 @@ export default function Admin() {
         >
           <DollarSign className="w-4 h-4 text-emerald-500" />
           <span>Earnings Report</span>
+        </button>
+        <button
+          onClick={() => { setActiveTab('dailyBrief'); fetchDailyReport(); }}
+          className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
+            activeTab === 'dailyBrief'
+              ? 'bg-white dark:bg-slate-800 text-indigo-650 dark:text-indigo-400 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-indigo-500" />
+          <span>Daily AI Brief</span>
         </button>
       </div>
 
@@ -640,6 +692,109 @@ export default function Admin() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Daily AI Brief Tab ── */}
+        {activeTab === 'dailyBrief' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-500" />
+                Community Daily AI Summaries
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">View daily publishing analytics and generate Gemini AI executive briefs summarizing community output.</p>
+            </div>
+
+            {dailyReportLoading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-650 rounded-full animate-spin" />
+                <p className="text-sm text-slate-400 font-medium">Aggregating daily publishing telemetry...</p>
+              </div>
+            ) : dailyReport.length === 0 ? (
+              <div className="text-center py-16 text-slate-405">
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20 text-indigo-550" />
+                <p className="font-semibold">No published blogs found on the platform yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {dailyReport.map((day) => (
+                  <div key={day.date} className="p-5 border rounded-2xl bg-slate-50 border-slate-150 dark:bg-slate-800/40 dark:border-slate-800 space-y-4">
+                    {/* Header Row */}
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <span className="text-sm font-extrabold text-slate-800 dark:text-white">{new Date(day.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        <span className="ml-3 px-2.5 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-655 dark:bg-indigo-955/20 dark:text-indigo-400 rounded-full border border-indigo-100/30">
+                          {day.blogsCount} {day.blogsCount === 1 ? 'article' : 'articles'} published
+                        </span>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleGenerateDailyBrief(day.date)}
+                        disabled={generatingBriefDate === day.date}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-gradient-to-r from-primary-600 to-indigo-605 hover:from-primary-700 hover:to-indigo-705 text-white rounded-xl transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
+                      >
+                        <Sparkles className={`w-3.5 h-3.5 ${generatingBriefDate === day.date ? 'animate-spin' : ''}`} />
+                        <span>{generatingBriefDate === day.date ? 'Generating AI Brief...' : day.hasBrief ? 'Regenerate Daily AI Brief' : 'Generate Daily AI Brief'}</span>
+                      </button>
+                    </div>
+
+                    {/* Brief Summary Content if exists */}
+                    {day.hasBrief ? (
+                      <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 space-y-4">
+                        <div className="space-y-1.5">
+                          <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">AI Executive Briefing</h4>
+                          <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap">{day.summary}</p>
+                        </div>
+                        {day.keyThemes && day.keyThemes.length > 0 && (
+                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                            <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Key Themes & Highlights</h4>
+                            <ul className="grid sm:grid-cols-2 gap-2">
+                              {day.keyThemes.map((theme, idx) => (
+                                <li key={idx} className="text-xs text-slate-650 dark:text-slate-400 flex gap-2 items-start bg-slate-50 dark:bg-slate-955/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-900">
+                                  <span className="text-indigo-500 font-extrabold text-sm leading-3">•</span>
+                                  <span>{theme}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-850 text-center text-xs text-slate-400 font-medium">
+                        No AI Briefing generated for this day yet. Click "Generate Daily AI Brief" to create one.
+                      </div>
+                    )}
+
+                    {/* List of articles published on that day */}
+                    <div className="space-y-2">
+                      <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Articles Feed</h4>
+                      <div className="flex flex-col gap-2">
+                        {day.blogs.map((b, bIdx) => (
+                          <div key={bIdx} className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-850 hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate">{b.title}</span>
+                              <span className="text-[9px] text-slate-400 mt-0.5 inline-block bg-slate-50 dark:bg-slate-800 px-2 py-0.5 rounded font-semibold uppercase tracking-wider">
+                                {b.category || 'General'}
+                              </span>
+                            </div>
+                            {b.tags && b.tags.length > 0 && (
+                              <div className="hidden sm:flex gap-1">
+                                {b.tags.slice(0, 2).map((tg, tIdx) => (
+                                  <span key={tIdx} className="text-[9px] font-semibold text-purple-650 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400 px-2 py-0.5 rounded-full border border-purple-100/30">
+                                    #{tg}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

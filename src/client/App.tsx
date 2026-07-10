@@ -10,6 +10,7 @@ import Editor from './pages/Editor';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
+import Galaxy from './pages/Galaxy';
 import Communities from './pages/Communities';
 import AdCenter from './pages/AdCenter';
 import api from './utils/api';
@@ -42,6 +43,7 @@ export default function App() {
         <div className="flex-1 w-full">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/galaxy" element={<Galaxy />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/register" element={<Auth />} />
             <Route path="/blog/:slug" element={<BlogDetail />} />

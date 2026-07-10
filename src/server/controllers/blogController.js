@@ -1,6 +1,7 @@
 import Blog from '../models/Blog.js';
 import BlogVersion from '../models/BlogVersion.js';
 import User from '../models/User.js';
+import DailyBrief from '../models/DailyBrief.js';
 import Notification from '../models/Notification.js';
 import Community from '../models/Community.js';
 import { checkRestrictedContent } from './restrictedWordController.js';
@@ -1566,6 +1567,184 @@ export const aiTutorReview = async (req, res) => {
     const review = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Review complete. Content looks ready to publish!';
 
     res.status(200).json({ review });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// GET Daily Analytics grouped by date
+export const getDailyAnalytics = async (req, res) => {
+  try {
+    const blogs = await Blog.find({ status: 'published' }).select('title category tags createdAt');
+    const groups = {};
+
+    blogs.forEach(blog => {
+      const dateStr = new Date(blog.createdAt).toISOString().slice(0, 10);
+      if (!groups[dateStr]) {
+        groups[dateStr] = {
+          date: dateStr,
+          blogsCount: 0,
+          blogs: []
+        };
+      }
+      groups[dateStr].blogsCount += 1;
+      groups[dateStr].blogs.push({
+        title: blog.title,
+        category: blog.category || 'General',
+        tags: blog.tags || []
+      });
+    });
+
+    const dates = Object.keys(groups);
+    const briefs = await DailyBrief.find({ date: { $in: dates } });
+    const briefsMap = {};
+    briefs.forEach(b => {
+      briefsMap[b.date] = b;
+    });
+
+    const report = dates.map(date => {
+      const group = groups[date];
+      const brief = briefsMap[date];
+      return {
+        date: date,
+        blogsCount: group.blogsCount,
+        blogs: group.blogs,
+        hasBrief: !!brief,
+        summary: brief ? brief.summary : '',
+        keyThemes: brief ? brief.keyThemes : []
+      };
+    }).sort((a, b) => b.date.localeCompare(a.date));
+
+    res.status(200).json({ report });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// POST Generate AI daily summary brief
+export const generateDailyBrief = async (req, res) => {
+  try {
+    const { date } = req.body;
+    if (!date) {
+      return res.status(400).json({ error: 'Date (YYYY-MM-DD) is required.' });
+    }
+
+    const start = new Date(`${date}T00:00:00.000Z`);
+    const end = new Date(`${date}T23:59:59.999Z`);
+
+    const blogs = await Blog.find({
+      status: 'published',
+      createdAt: { $gte: start, $lte: end }
+    }).select('title category content tags');
+
+    if (blogs.length === 0) {
+      return res.status(400).json({ error: 'No published blogs found on this date to summarize.' });
+    }
+
+    const blogDescriptions = blogs.map((b, i) => {
+      let text = '';
+      try {
+        const parsed = JSON.parse(b.content);
+        if (Array.isArray(parsed)) {
+          text = parsed.map(block => block.content || '').join(' ').substring(0, 300);
+        } else {
+          text = b.content.replace(/<[^>]*>/g, ' ').substring(0, 300);
+        }
+      } catch (e) {
+        text = b.content.replace(/<[^>]*>/g, ' ').substring(0, 300);
+      }
+      return `Blog #${i+1}:\nTitle: ${b.title}\nCategory: ${b.category || 'General'}\nTags: ${(b.tags || []).join(', ')}\nPreview: ${text}`;
+    }).join('\n\n');
+
+    const prompt = `You are a community director analyzing the blog posts published on our platform today (${date}). Provide a cohesive, daily summary briefing detailing what themes, topics, and discussions occupied our community today based on the posts listed below.
+
+Posts published today:
+${blogDescriptions}
+
+You MUST return a JSON object with this exact structure:
+{
+  "summary": "Provide a cohesive executive summary paragraph (around 3-4 sentences) analyzing the collective community output today.",
+  "keyThemes": [
+    "Theme 1 (e.g. Technology Trends - a short description explaining what was discussed)",
+    "Theme 2 (e.g. Health & Wellness - ...)",
+    "Theme 3 (e.g. Travel logs - ...)",
+    "Theme 4 (e.g. ...)",
+    "Theme 5 (e.g. ...)"
+  ]
+}
+
+Only return the JSON object, do not include any markdown backticks or explanation text.`;
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      const mockSummary = `Today's blogs highlighted key insights in community writing. Contributors shared articles exploring various themes including ${blogs.map(b => b.category).filter(Boolean).slice(0, 3).join(', ') || 'personal logs'}.`;
+      const mockThemes = [
+        'Community collaboration and writing logs',
+        'Creative blogging setups',
+        'Daily summaries and updates',
+        'Interactive visual feedback',
+        'Content management systems'
+      ];
+      
+      let brief = await DailyBrief.findOne({ date });
+      if (!brief) {
+        brief = new DailyBrief({
+          date,
+          blogsCount: blogs.length,
+          summary: mockSummary,
+          keyThemes: mockThemes
+        });
+      } else {
+        brief.blogsCount = blogs.length;
+        brief.summary = mockSummary;
+        brief.keyThemes = mockThemes;
+      }
+      await brief.save();
+      return res.status(200).json({ brief });
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Gemini API call failed');
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) throw new Error('Invalid response structure from Gemini API');
+
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+    }
+
+    const parsed = JSON.parse(cleanText);
+    const summary = parsed.summary || 'Summary generated.';
+    const keyThemes = parsed.keyThemes || [];
+
+    let brief = await DailyBrief.findOne({ date });
+    if (!brief) {
+      brief = new DailyBrief({
+        date,
+        blogsCount: blogs.length,
+        summary,
+        keyThemes
+      });
+    } else {
+      brief.blogsCount = blogs.length;
+      brief.summary = summary;
+      brief.keyThemes = keyThemes;
+    }
+
+    await brief.save();
+    res.status(200).json({ brief });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

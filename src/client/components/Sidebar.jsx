@@ -47,6 +47,24 @@ export default function Sidebar({ currentCategory, currentTag }) {
 
   return (
     <aside className="w-full lg:w-80 flex flex-col gap-6">
+      {/* Galaxy Exploration Banner */}
+      <div className="p-5 rounded-3xl border border-indigo-500/30 dark:border-indigo-500/20 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white relative overflow-hidden shadow-lg shadow-indigo-500/10">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,_var(--tw-gradient-stops))] from-violet-500/20 via-transparent to-transparent pointer-events-none" />
+        <h3 className="text-xs font-extrabold tracking-wider text-indigo-300 uppercase mb-2 flex items-center gap-1.5">
+          <span className="inline-block animate-pulse">🌌</span>
+          <span>Stellar Exploration</span>
+        </h3>
+        <p className="text-xs text-slate-400 leading-relaxed mb-4 font-medium">
+          Discover authors, articles, and topics connected as stars in a 3D/2D Knowledge Galaxy.
+        </p>
+        <Link
+          to="/galaxy"
+          className="w-full py-2.5 rounded-2xl text-center text-xs font-extrabold bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-650 hover:to-violet-650 transition-all text-white block shadow-md shadow-indigo-500/20"
+        >
+          Explore Galaxy View
+        </Link>
+      </div>
+
       {/* Categories Panel */}
       <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
         <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">

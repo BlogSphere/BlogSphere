@@ -23,7 +23,9 @@ import {
   checkSpam,
   dismissReports,
   aiEnhanceBlock,
-  aiTutorReview
+  aiTutorReview,
+  getDailyAnalytics,
+  generateDailyBrief
 } from '../controllers/blogController';
 import { auth, optionalAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/auth';
@@ -31,6 +33,8 @@ import { requireRole } from '../middleware/auth';
 const router = express.Router();
 
 router.get('/', getBlogs);
+router.get('/admin/daily-analytics', auth, requireRole(['admin']), getDailyAnalytics);
+router.post('/admin/daily-brief/generate', auth, requireRole(['admin']), generateDailyBrief);
 router.get('/recommendations', auth, getRecommendations);
 router.get('/trending', optionalAuth, getTrendingBlogs);
 router.get('/flagged', auth, requireRole(['admin']), getFlaggedBlogs);

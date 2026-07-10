@@ -145,6 +145,9 @@ export default function Navbar() {
               <Link to="/communities" className={`transition-colors ${location.pathname === '/communities' ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
                 Communities
               </Link>
+              <Link to="/galaxy" className={`transition-colors ${location.pathname === '/galaxy' ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
+                Galaxy View 🌌
+              </Link>
             </div>
           </div>
 
@@ -332,6 +335,13 @@ export default function Navbar() {
             className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-355 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
           >
             Communities
+          </Link>
+          <Link
+            to="/galaxy"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-355 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
+          >
+            Galaxy View 🌌
           </Link>
           <form onSubmit={handleSearch} className="relative py-2">
             <input
