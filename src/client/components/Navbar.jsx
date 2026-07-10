@@ -124,7 +124,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 transition-all border-b glass-card overflow-hidden w-full max-w-[100vw]">
+    <nav className="sticky top-0 z-50 transition-all border-b glass-card w-full max-w-[100vw]">
       <div className="px-4 mx-auto max-w-[95%] xl:max-w-[1550px] sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
