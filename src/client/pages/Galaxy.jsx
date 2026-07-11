@@ -5,7 +5,7 @@ import {
   HelpCircle, RefreshCw, ZoomIn, ZoomOut, Search, Info 
 } from 'lucide-react';
 import api from '../utils/api.js';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 
 // Category color mappings
 const CATEGORY_COLORS = {
@@ -708,13 +708,13 @@ export default function Galaxy() {
       {/* Help Tutorial Modal */}
       <AnimatePresence>
         {showTutorial && (
-          <motion.div 
+          <m.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="absolute inset-0 bg-slate-900/60 dark:bg-slate-955/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
           >
-            <motion.div 
+            <m.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
@@ -760,8 +760,8 @@ export default function Galaxy() {
               >
                 Launch Exploration
               </button>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         )}
       </AnimatePresence>
 
@@ -822,7 +822,7 @@ export default function Galaxy() {
       {/* Glassmorphic Side Drawer for selected nodes */}
       <AnimatePresence>
         {selectedBlog && (
-          <motion.div
+          <m.div
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
@@ -905,8 +905,8 @@ export default function Galaxy() {
                 <div className="space-y-2">
                   <h4 className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-455 tracking-wider">Tags</h4>
                   <div className="flex flex-wrap gap-1.5">
-                    {selectedBlog.tags.map((tg, idx) => (
-                      <span key={idx} className="text-[10px] font-bold bg-slate-100 dark:bg-white/5 text-purple-650 dark:text-purple-355 border border-slate-200 dark:border-white/5 px-2.5 py-1 rounded-full">
+                    {selectedBlog.tags.map((tg) => (
+                      <span key={tg} className="text-[10px] font-bold bg-slate-100 dark:bg-white/5 text-purple-650 dark:text-purple-355 border border-slate-200 dark:border-white/5 px-2.5 py-1 rounded-full">
                         #{tg}
                       </span>
                     ))}
@@ -943,8 +943,8 @@ export default function Galaxy() {
                       <div className="pt-2.5 border-t border-slate-200 dark:border-white/5 space-y-1.5">
                         <span className="text-[9px] uppercase font-bold text-slate-500 dark:text-slate-455 block tracking-wider">Key Takeaways</span>
                         <ul className="space-y-1">
-                          {keyPoints.map((pt, idx) => (
-                            <li key={idx} className="flex gap-2 items-start text-slate-600 dark:text-slate-350">
+                          {keyPoints.map((pt) => (
+                            <li key={pt} className="flex gap-2 items-start text-slate-600 dark:text-slate-355">
                               <span className="text-indigo-500 dark:text-indigo-400 text-base leading-3 font-extrabold">•</span>
                               <span>{pt}</span>
                             </li>
@@ -970,7 +970,7 @@ export default function Galaxy() {
                 Read Full Article
               </Link>
             </div>
-          </motion.div>
+          </m.div>
         )}
       </AnimatePresence>
 

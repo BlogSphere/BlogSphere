@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Heart, Clock, User } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 
 // Clean text helper that handles both HTML and JSON block array structure
 const getCleanText = (content) => {
@@ -49,7 +49,7 @@ export default function BlogCard({ blog }) {
   const imageUrl = sanitizeImageUrl(blog.coverImage) || FALLBACK_IMAGE;
 
   return (
-    <motion.article
+    <m.article
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
@@ -77,8 +77,8 @@ export default function BlogCard({ blog }) {
           {/* Tags */}
           {blog.tags && blog.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2.5">
-              {blog.tags.slice(0, 3).map((tag, idx) => (
-                <span key={idx} className="text-[10px] text-slate-400 font-semibold uppercase">
+              {blog.tags.slice(0, 3).map((tag) => (
+                <span key={tag} className="text-[10px] text-slate-400 font-semibold uppercase">
                   #{tag}
                 </span>
               ))}
@@ -141,6 +141,6 @@ export default function BlogCard({ blog }) {
           </div>
         </div>
       </div>
-    </motion.article>
+    </m.article>
   );
 }

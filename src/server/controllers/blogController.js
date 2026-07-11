@@ -152,7 +152,7 @@ Only return the JSON object, do not include any markdown backticks or explanatio
 
 export const createBlog = async (req, res) => {
   try {
-    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime } = req.body;
 
     // Check restricted content
     let textToValidate = `${title || ''} ${category || ''} ${tags ? tags.join(' ') : ''}`;
@@ -172,6 +172,25 @@ export const createBlog = async (req, res) => {
     const foundRestricted = await checkRestrictedContent(textToValidate);
     if (foundRestricted) {
       return res.status(400).json({ error: `Content contains restricted words: ${foundRestricted.join(', ')}` });
+    }
+
+    // Validate scheduled publish time
+    let finalScheduledPublishTime = null;
+    if (status === 'scheduled') {
+      if (!scheduledPublishTime) {
+        return res.status(400).json({ error: 'Scheduled publish time is required when status is scheduled.' });
+      }
+      const schedTime = new Date(scheduledPublishTime);
+      const now = new Date();
+      const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      if (schedTime <= now) {
+        return res.status(400).json({ error: 'Scheduled publish time must be in the future.' });
+      }
+      if (schedTime > oneWeekFromNow) {
+        return res.status(400).json({ error: 'Scheduled publish time must be within 1 week from now.' });
+      }
+      finalScheduledPublishTime = schedTime;
     }
 
     // Generate unique slug
@@ -204,7 +223,8 @@ export const createBlog = async (req, res) => {
       status: status || 'draft',
       collaborators: collaborators || [],
       community: community || null,
-      isAnonymous: isAnonymous || false
+      isAnonymous: isAnonymous || false,
+      scheduledPublishTime: finalScheduledPublishTime
     });
 
     await blog.save();
@@ -341,7 +361,7 @@ export const getBlogBySlug = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime } = req.body;
 
     const blog = await Blog.findById(id);
     if (!blog) {
@@ -367,6 +387,29 @@ export const updateBlog = async (req, res) => {
     const foundRestricted = await checkRestrictedContent(textToValidate);
     if (foundRestricted) {
       return res.status(400).json({ error: `Content contains restricted words: ${foundRestricted.join(', ')}` });
+    }
+
+    // Validate scheduled publish time
+    let finalScheduledPublishTime = blog.scheduledPublishTime;
+    const finalStatus = status !== undefined ? status : blog.status;
+    if (finalStatus === 'scheduled') {
+      const timeToValidate = scheduledPublishTime !== undefined ? scheduledPublishTime : blog.scheduledPublishTime;
+      if (!timeToValidate) {
+        return res.status(400).json({ error: 'Scheduled publish time is required when status is scheduled.' });
+      }
+      const schedTime = new Date(timeToValidate);
+      const now = new Date();
+      const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+      if (schedTime <= now) {
+        return res.status(400).json({ error: 'Scheduled publish time must be in the future.' });
+      }
+      if (schedTime > oneWeekFromNow) {
+        return res.status(400).json({ error: 'Scheduled publish time must be within 1 week from now.' });
+      }
+      finalScheduledPublishTime = schedTime;
+    } else if (finalStatus === 'published' || finalStatus === 'draft') {
+      finalScheduledPublishTime = null;
     }
 
     const wasPublished = blog.status === 'published';
@@ -399,6 +442,7 @@ export const updateBlog = async (req, res) => {
     blog.category = category !== undefined ? category : blog.category;
     blog.tags = tags !== undefined ? tags : blog.tags;
     blog.status = status !== undefined ? status : blog.status;
+    blog.scheduledPublishTime = finalScheduledPublishTime;
     blog.community = community !== undefined ? community : blog.community;
     blog.isAnonymous = isAnonymous !== undefined ? isAnonymous : blog.isAnonymous;
     if (isAuthor) {
@@ -1700,5 +1744,61 @@ Rewritten text:`;
     res.status(200).json({ rewrittenContent: rewrittenText });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+export const checkAndPublishScheduledBlogs = async () => {
+  try {
+    const now = new Date();
+    // Find blogs with status 'scheduled' and scheduledPublishTime <= now
+    const scheduledBlogs = await Blog.find({
+      status: 'scheduled',
+      scheduledPublishTime: { $lte: now }
+    });
+
+    if (scheduledBlogs.length === 0) return;
+
+    console.log(`[Scheduler] Found ${scheduledBlogs.length} scheduled blogs to publish.`);
+
+    for (const blog of scheduledBlogs) {
+      blog.status = 'published';
+      blog.createdAt = now; // Update published time to now
+      blog.updatedAt = now;
+      await blog.save();
+
+      // Recalculate author reputation
+      await recalculateReputation(blog.author);
+
+      // Notify subscribers and community
+      const authorUser = await User.findById(blog.author);
+      if (authorUser) {
+        await notifySubscribers(blog, authorUser);
+
+        // Notify community members if published in a community
+        if (blog.community) {
+          const comm = await Community.findById(blog.community);
+          if (comm) {
+            for (const mId of comm.members) {
+              if (mId.toString() !== authorUser._id.toString()) {
+                const notif = new Notification({
+                  userId: mId,
+                  message: `New post in "${comm.name}" by ${authorUser.name}: "${blog.title}"`,
+                  type: 'community_post',
+                  referenceId: blog._id
+                });
+                await notif.save();
+                if (global.io) {
+                  global.io.to(`user_${mId}`).emit('notification_received', notif);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      console.log(`[Scheduler] Blog "${blog.title}" has been successfully published.`);
+    }
+  } catch (error) {
+    console.error('[Scheduler] Error checking and publishing scheduled blogs:', error.message);
   }
 };

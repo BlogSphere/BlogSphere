@@ -92,8 +92,8 @@ export default function Dashboard() {
           { title: 'Article Views', value: stats.totalViews, icon: Eye, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
           { title: 'Total Likes', value: stats.totalLikes, icon: Heart, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
           { title: 'Followers', value: stats.followersCount, icon: Users, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' }
-        ].map((item, idx) => (
-          <div key={idx} className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm flex items-center gap-4">
+        ].map((item) => (
+          <div key={item.title} className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm flex items-center gap-4">
             <div className={`p-3.5 rounded-xl ${item.color}`}>
               <item.icon className="w-6 h-6" />
             </div>
@@ -112,8 +112,8 @@ export default function Dashboard() {
           { title: 'Avg Read Time', value: `${stats.averageReadTimeMinutes} m`, sub: 'Estimated time spent', color: 'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50/10' },
           { title: 'Completion Rate', value: `${stats.completionRatePercent}%`, sub: 'Scrolled to bottom', color: 'border-blue-100 dark:border-blue-950/40 bg-blue-50/10' },
           { title: 'Bounce Rate', value: `${stats.bounceRatePercent}%`, sub: 'Read under 10s', color: 'border-rose-100 dark:border-rose-950/40 bg-rose-50/10' }
-        ].map((item, idx) => (
-          <div key={idx} className={`p-5 border rounded-2xl shadow-sm flex flex-col justify-between h-28 ${item.color}`}>
+        ].map((item) => (
+          <div key={item.title} className={`p-5 border rounded-2xl shadow-sm flex flex-col justify-between h-28 ${item.color}`}>
             <span className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">{item.title}</span>
             <div className="mt-2">
               <span className="block text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{item.value}</span>
@@ -137,10 +137,10 @@ export default function Dashboard() {
 
           {/* SVG Bar Chart */}
           <div className="relative w-full h-56 flex items-end justify-between px-2 pt-6">
-            {chartData.map((data, idx) => {
+            {chartData.map((data) => {
               const barHeight = `${(data.views / maxViews) * 80}%`;
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center group relative">
+                <div key={data.day} className="flex-1 flex flex-col items-center group relative">
                   {/* Tooltip */}
                   <span className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold">
                     {data.views} views
@@ -220,6 +220,7 @@ export default function Dashboard() {
                 >
                   <option value="all">All Statuses</option>
                   <option value="published">Published</option>
+                  <option value="scheduled">Scheduled</option>
                   <option value="draft">Drafts</option>
                 </select>
               </div>
@@ -255,6 +256,8 @@ export default function Dashboard() {
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
                               blog.status === 'published'
                                 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                : blog.status === 'scheduled'
+                                ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
                                 : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                             }`}>
                               {blog.status}

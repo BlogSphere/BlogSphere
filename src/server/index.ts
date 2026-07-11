@@ -207,5 +207,16 @@ server.listen(PORT, () => {
       console.error('Auto-post scheduler error:', err.message);
     }
   }, SIX_HOURS);
+
+  // Start automated scheduled blog publisher (every 30 seconds)
+  const THIRTY_SECONDS = 30 * 1000;
+  setInterval(async () => {
+    try {
+      const { checkAndPublishScheduledBlogs } = await import('./controllers/blogController.js');
+      await checkAndPublishScheduledBlogs();
+    } catch (err: any) {
+      console.error('Scheduled blog publisher error:', err.message);
+    }
+  }, THIRTY_SECONDS);
 });
 

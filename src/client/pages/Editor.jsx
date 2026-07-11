@@ -6,7 +6,7 @@ import {
   UserCheck, Edit3, Heading1, Heading2, List, Trash2,
   Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft,
   Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Globe, CheckCircle2, AlertCircle,
-  Sparkles
+  Sparkles, Clock
 } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
@@ -101,9 +101,9 @@ const parseInlineMarkdown = (text) => {
 
   // Parse markdown bold (**text**) into HTML/React bold elements
   const parts = cleanText.split('**');
-  return parts.map((part, index) => {
-    if (index % 2 === 1) {
-      return <strong key={index} className="font-bold">{part}</strong>;
+  return parts.map((part, pId) => {
+    if (pId % 2 === 1) {
+      return <strong key={part + '-' + pId} className="font-bold">{part}</strong>;
     }
     return part;
   });
@@ -152,8 +152,8 @@ const renderBlogPreview = (contentString) => {
               case 'list':
                 return (
                   <ul key={block.id} className="list-disc pl-6 space-y-1.5 my-4">
-                    {block.content.split('\n').filter(Boolean).map((item, idx) => (
-                      <li key={idx} className={`text-slate-700 dark:text-slate-300 text-base leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}>{parseInlineMarkdown(item)}</li>
+                    {block.content.split('\n').filter(Boolean).map((item) => (
+                      <li key={item} className={`text-slate-700 dark:text-slate-300 text-base leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}>{parseInlineMarkdown(item)}</li>
                     ))}
                   </ul>
                 );
@@ -188,6 +188,8 @@ export default function Editor() {
   const [community, setCommunity] = useState(communityParam);
   const [myCommunities, setMyCommunities] = useState([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isScheduled, setIsScheduled] = useState(false);
+  const [scheduledTime, setScheduledTime] = useState('');
   const [docTutorFeedback, setDocTutorFeedback] = useState('');
   const [docTutorLoading, setDocTutorLoading] = useState(false);
 
@@ -449,6 +451,15 @@ export default function Editor() {
           setCollaborators(blog.collaborators || []);
           setCommunity(blog.community || '');
           setIsAnonymous(blog.isAnonymous || false);
+          if (blog.status === 'scheduled') {
+            setIsScheduled(true);
+            if (blog.scheduledPublishTime) {
+              const dt = new Date(blog.scheduledPublishTime);
+              const offset = dt.getTimezoneOffset();
+              const localDt = new Date(dt.getTime() - offset * 60 * 1000);
+              setScheduledTime(localDt.toISOString().slice(0, 16));
+            }
+          }
 
           // Parse content string into blocks
           const loadedBlocks = parseHTMLToBlocks(blog.content);
@@ -781,7 +792,8 @@ export default function Editor() {
       status: publishStatus,
       collaborators: collaborators.map(c => c._id),
       community: community || undefined,
-      isAnonymous
+      isAnonymous,
+      scheduledPublishTime: isScheduled && scheduledTime ? new Date(scheduledTime).toISOString() : null
     };
 
     try {
@@ -837,9 +849,9 @@ export default function Editor() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <div className="flex -space-x-1.5 overflow-hidden">
-              {activeCollaborators.map((c, i) => (
+              {activeCollaborators.map((c) => (
                 <span
-                  key={i}
+                  key={c.userId}
                   title={`${c.userName} is editing`}
                   className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-indigo-500 text-white font-bold text-[9px] flex items-center justify-center"
                 >
@@ -871,12 +883,12 @@ export default function Editor() {
           </button>
 
           <button
-            onClick={() => handleSave('published')}
+            onClick={() => handleSave(isScheduled ? 'scheduled' : 'published')}
             disabled={saving}
             className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold rounded-full text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-500/10"
           >
-            <Send className="w-4 h-4" />
-            <span>Publish Article</span>
+            {isScheduled ? <Clock className="w-4 h-4" /> : <Send className="w-4 h-4" />}
+            <span>{isScheduled ? 'Schedule Article' : 'Publish Article'}</span>
           </button>
         </div>
       </div>
@@ -1431,6 +1443,52 @@ export default function Editor() {
                 </label>
               </div>
 
+              {/* Schedule Publish */}
+              <div className="mb-4 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="isScheduled"
+                    checked={isScheduled}
+                    onChange={(e) => {
+                      setIsScheduled(e.target.checked);
+                      if (e.target.checked) {
+                        const tomorrow = new Date();
+                        tomorrow.setHours(tomorrow.getHours() + 24);
+                        const offset = tomorrow.getTimezoneOffset();
+                        const localTomorrow = new Date(tomorrow.getTime() - offset * 60 * 1000);
+                        setScheduledTime(localTomorrow.toISOString().slice(0, 16));
+                      } else {
+                        setScheduledTime('');
+                      }
+                    }}
+                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                  />
+                  <label htmlFor="isScheduled" className="text-xs font-bold text-slate-400 uppercase cursor-pointer select-none">
+                    Schedule Publish
+                  </label>
+                </div>
+                
+                {isScheduled && (
+                  <div className="space-y-2 mt-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                      Publish Time (within 7 days)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={scheduledTime}
+                      min={new Date().toISOString().slice(0, 16)}
+                      max={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border rounded-xl bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none"
+                    />
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">
+                      Your post will be published automatically at the chosen time.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               {/* Tags configurators */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Tags</label>
@@ -1443,10 +1501,10 @@ export default function Editor() {
                   className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none mb-3"
                 />
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                  {tags.map((tag, idx) => (
-                    <span key={idx} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full dark:bg-slate-800 dark:text-slate-400 flex items-center gap-1">
+                  {tags.map((tag) => (
+                    <span key={tag} className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full dark:bg-slate-800 dark:text-slate-400 flex items-center gap-1">
                       <span>#{tag}</span>
-                      <button type="button" onClick={() => handleRemoveTag(idx)} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                      <button type="button" onClick={() => handleRemoveTag(tags.indexOf(tag))} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
                     </span>
                   ))}
                 </div>
@@ -1609,8 +1667,8 @@ export default function Editor() {
                   <div className="space-y-1.5">
                     <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Recommendations</span>
                     <div className="space-y-1.5">
-                      {getSuggestions().map((sug, idx) => (
-                        <div key={idx} className="flex gap-2 text-[11px] text-slate-600 dark:text-slate-400 leading-snug bg-slate-50 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
+                      {getSuggestions().map((sug) => (
+                        <div key={sug} className="flex gap-2 text-[11px] text-slate-600 dark:text-slate-400 leading-snug bg-slate-50 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
                           <span className="text-indigo-400 font-bold mt-0.5">→</span>
                           <span>{sug}</span>
                         </div>
@@ -1733,8 +1791,8 @@ export default function Editor() {
 
             <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Issues Detected</span>
-              {spamReasons.map((reason, idx) => (
-                <div key={idx} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/30">
+              {spamReasons.map((reason) => (
+                <div key={reason} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-955 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/30">
                   <span className="text-rose-500">•</span>
                   <span>{reason}</span>
                 </div>
@@ -1792,9 +1850,9 @@ export default function Editor() {
 
             {grammarErrors.length > 0 && (
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {grammarErrors.map((error, idx) => (
-                  <div key={idx} className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/20 rounded-2xl space-y-2">
-                    <div className="flex gap-2 text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                {grammarErrors.map((error) => (
+                  <div key={error.type + '-' + error.original + '-' + error.context} className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/20 rounded-2xl space-y-2">
+                    <div className="flex gap-2 text-xs text-slate-600 dark:text-slate-355 leading-relaxed">
                       <span className="text-emerald-500 font-bold">•</span>
                       <span className="font-semibold text-emerald-700 dark:text-emerald-300">{error.type}: </span>
                       <span>"{error.original}"</span>
@@ -1816,8 +1874,8 @@ export default function Editor() {
             {grammarSuggestions.length > 0 && (
               <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/20 rounded-2xl space-y-2">
                 <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">AI Suggestions</h4>
-                {grammarSuggestions.map((sug, idx) => (
-                  <div key={idx} className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                {grammarSuggestions.map((sug) => (
+                  <div key={sug} className="text-xs text-slate-600 dark:text-slate-355 leading-relaxed">
                     <span className="text-indigo-500 font-bold">→ </span>
                     <span>{sug}</span>
                   </div>

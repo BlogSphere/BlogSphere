@@ -752,8 +752,8 @@ export default function Admin() {
                           <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
                             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Key Themes & Highlights</h4>
                             <ul className="grid sm:grid-cols-2 gap-2">
-                              {day.keyThemes.map((theme, idx) => (
-                                <li key={idx} className="text-xs text-slate-650 dark:text-slate-400 flex gap-2 items-start bg-slate-50 dark:bg-slate-955/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-900">
+                              {day.keyThemes.map((theme) => (
+                                <li key={theme} className="text-xs text-slate-650 dark:text-slate-400 flex gap-2 items-start bg-slate-50 dark:bg-slate-955/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-900">
                                   <span className="text-indigo-500 font-extrabold text-sm leading-3">•</span>
                                   <span>{theme}</span>
                                 </li>

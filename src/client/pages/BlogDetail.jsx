@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { updateCurrentUser } from '../redux/authSlice.js';
 
 const parseInlineMarkdown = (text) => {
@@ -14,9 +14,9 @@ const parseInlineMarkdown = (text) => {
   
   // Parse markdown bold (**text**) into HTML/React bold elements
   const parts = cleanText.split('**');
-  return parts.map((part, index) => {
-    if (index % 2 === 1) {
-      return <strong key={index} className="font-bold">{part}</strong>;
+  return parts.map((part, pId) => {
+    if (pId % 2 === 1) {
+      return <strong key={part + '-' + pId} className="font-bold">{part}</strong>;
     }
     return part;
   });
@@ -98,8 +98,8 @@ const renderBlogContent = (contentString) => {
               case 'list':
                 return (
                   <ul key={block.id} className="list-disc pl-6 space-y-1.5 my-4">
-                    {block.content.split('\n').filter(Boolean).map((item, idx) => (
-                      <li key={idx} className={`text-slate-700 dark:text-slate-300 text-base leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}>
+                    {block.content.split('\n').filter(Boolean).map((item) => (
+                      <li key={item} className={`text-slate-700 dark:text-slate-300 text-base leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}>
                         {parseInlineMarkdown(item)}
                       </li>
                     ))}
@@ -779,7 +779,7 @@ export default function BlogDetail() {
 
       {/* AI Summary Highlight Card */}
       {showSummary && (blog.summary || blog.keyPoints?.length > 0) && (
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 p-6 rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/40 dark:bg-amber-950/5"
@@ -795,8 +795,8 @@ export default function BlogDetail() {
             <div className="mt-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">5 Key Takeaways</h4>
               <ul className="space-y-1.5">
-                {blog.keyPoints.map((point, idx) => (
-                  <li key={idx} className="text-xs text-slate-600 dark:text-slate-400 flex gap-2 items-start">
+                {blog.keyPoints.map((point) => (
+                  <li key={point} className="text-xs text-slate-600 dark:text-slate-400 flex gap-2 items-start">
                     <span className="text-amber-500 font-bold">•</span>
                     <span>{point}</span>
                   </li>
@@ -804,7 +804,7 @@ export default function BlogDetail() {
               </ul>
             </div>
           )}
-        </motion.div>
+        </m.div>
       )}
 
       {/* Blog Content */}
@@ -819,8 +819,8 @@ export default function BlogDetail() {
       {/* Tags row */}
       {blog.tags && blog.tags.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-          {blog.tags.map((t, i) => (
-            <span key={i} className="text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-full text-slate-600 dark:text-slate-400">
+          {blog.tags.map((t) => (
+            <span key={t} className="text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-900 rounded-full text-slate-600 dark:text-slate-400">
               #{t}
             </span>
           ))}
@@ -891,7 +891,7 @@ export default function BlogDetail() {
       <AnimatePresence>
         {showVersions && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-            <motion.div
+            <m.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -981,7 +981,7 @@ export default function BlogDetail() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </m.div>
           </div>
         )}
       </AnimatePresence>
