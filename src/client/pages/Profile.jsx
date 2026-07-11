@@ -294,7 +294,7 @@ export default function Profile() {
             className={`py-3 px-5 text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
               activeTab === 'authored'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-                : 'border-transparent text-slate-400 hover:text-slate-650'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -305,7 +305,7 @@ export default function Profile() {
             className={`py-3 px-5 text-sm font-semibold border-b-2 flex items-center gap-2 transition-all ${
               activeTab === 'bookmarks'
                 ? 'border-primary-600 text-primary-600 dark:text-primary-400 dark:border-primary-400'
-                : 'border-transparent text-slate-400 hover:text-slate-650'
+                : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
             <Bookmark className="w-4 h-4" />
@@ -367,29 +367,29 @@ export default function Profile() {
 
             <form onSubmit={handleProfileUpdate} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-450 uppercase mb-1">Full Name</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Full Name</label>
                 <input
                   type="text"
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-455 uppercase mb-1">Username</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Username</label>
                 <input
                   type="text"
                   value={editUsername}
                   onChange={(e) => setEditUsername(e.target.value)}
                   placeholder="username (e.g. patel_deep)"
-                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-700 dark:text-slate-350 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-450 uppercase mb-1">Upload Avatar / Logo Image</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Upload Avatar / Logo Image</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -403,7 +403,7 @@ export default function Profile() {
                       reader.readAsDataURL(file);
                     }
                   }}
-                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border rounded-xl p-2 bg-slate-50 border-slate-200 dark:bg-slate-855 dark:border-slate-800"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-primary-50 file:text-primary-600 hover:file:bg-primary-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer border rounded-xl p-2 bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800"
                 />
                 {editProfileImage && (
                   <div className="mt-2 flex items-center gap-2">
@@ -414,13 +414,13 @@ export default function Profile() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-450 uppercase mb-1">Bio Description</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Bio Description</label>
                 <textarea
                   rows={3}
                   value={editBio}
                   onChange={(e) => setEditBio(e.target.value)}
                   placeholder="Write a brief intro about yourself..."
-                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
                 />
               </div>
 
@@ -438,35 +438,35 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-450 uppercase">Social Links</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase">Social Links</label>
                 <div className="relative">
-                  <span className="absolute top-2.5 left-3 text-slate-450"><Twitter className="w-4 h-4" /></span>
+                  <span className="absolute top-2.5 left-3 text-slate-400"><Twitter className="w-4 h-4" /></span>
                   <input
                     type="text"
                     value={editTwitter}
                     onChange={(e) => setEditTwitter(e.target.value)}
                     placeholder="Twitter Handle or URL"
-                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div className="relative">
-                  <span className="absolute top-2.5 left-3 text-slate-450"><Github className="w-4 h-4" /></span>
+                  <span className="absolute top-2.5 left-3 text-slate-400"><Github className="w-4 h-4" /></span>
                   <input
                     type="text"
                     value={editGithub}
                     onChange={(e) => setEditGithub(e.target.value)}
                     placeholder="Github Username or URL"
-                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
                 <div className="relative">
-                  <span className="absolute top-2.5 left-3 text-slate-455"><Globe className="w-4 h-4" /></span>
+                  <span className="absolute top-2.5 left-3 text-slate-400"><Globe className="w-4 h-4" /></span>
                   <input
                     type="text"
                     value={editWebsite}
                     onChange={(e) => setEditWebsite(e.target.value)}
                     placeholder="Personal Website URL"
-                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-750 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full pl-9 pr-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   />
                 </div>
               </div>

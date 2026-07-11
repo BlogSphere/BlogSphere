@@ -285,7 +285,7 @@ export default function Admin() {
           onClick={() => { setActiveTab('flagged'); }}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'flagged'
-              ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-455 shadow-sm'
+              ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
               : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
           }`}
         >
@@ -710,12 +710,12 @@ export default function Admin() {
 
             {dailyReportLoading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-650 rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
                 <p className="text-sm text-slate-400 font-medium">Aggregating daily publishing telemetry...</p>
               </div>
             ) : dailyReport.length === 0 ? (
-              <div className="text-center py-16 text-slate-405">
-                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20 text-indigo-550" />
+              <div className="text-center py-16 text-slate-400">
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20 text-indigo-500" />
                 <p className="font-semibold">No published blogs found on the platform yet.</p>
               </div>
             ) : (

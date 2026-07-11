@@ -11,7 +11,6 @@ import {
   translateBlog,
   getBlogVersions,
   restoreVersion,
-  generateAIBlogContent,
   reactToBlog,
   aiTranslateBlogBlocks,
   suggestMetadata,
@@ -22,10 +21,11 @@ import {
   reportBlog,
   checkSpam,
   dismissReports,
-  aiEnhanceBlock,
   aiTutorReview,
   getDailyAnalytics,
-  generateDailyBrief
+  generateDailyBrief,
+  grammarCheck,
+  aiRewrite
 } from '../controllers/blogController';
 import { auth, optionalAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/auth';
@@ -40,12 +40,12 @@ router.get('/trending', optionalAuth, getTrendingBlogs);
 router.get('/flagged', auth, requireRole(['admin']), getFlaggedBlogs);
 router.post('/:id/dismiss-reports', auth, requireRole(['admin']), dismissReports);
 router.post('/check-spam', auth, checkSpam);
-router.post('/ai-enhance-block', auth, aiEnhanceBlock);
 router.post('/ai-tutor-review', auth, aiTutorReview);
+router.post('/grammar-check', auth, grammarCheck);
+router.post('/ai-rewrite', auth, aiRewrite);
 router.get('/:slug', getBlogBySlug);
 router.post('/:id/analytics', optionalAuth, updateBlogAnalytics);
 router.post('/:id/report', auth, reportBlog);
-router.post('/generate-ai', auth, generateAIBlogContent);
 router.post('/suggest-metadata', auth, suggestMetadata);
 router.post('/trigger-trending-post', auth, triggerTrendingAutoPost);
 router.post('/', auth, createBlog);

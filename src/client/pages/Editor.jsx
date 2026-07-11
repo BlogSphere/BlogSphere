@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { 
-  Save, Send, Eye, PenTool, Users, Plus, X, Search, 
-  UserCheck, Edit3, Heading1, Heading2, List, Trash2, 
-  Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft, 
-  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Sparkles, Globe
+import {
+  Save, Send, Eye, PenTool, Users, Plus, X, Search,
+  UserCheck, Edit3, Heading1, Heading2, List, Trash2,
+  Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft,
+  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Globe, CheckCircle2, AlertCircle,
+  Sparkles
 } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
@@ -37,13 +38,13 @@ const createBlockInstance = (type) => {
 
 const parseHTMLToBlocks = (html) => {
   if (!html) return [createBlockInstance('p')];
-  
+
   try {
     const parsed = JSON.parse(html);
     if (Array.isArray(parsed) && parsed.length > 0) {
       return parsed;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -97,7 +98,7 @@ const parseInlineMarkdown = (text) => {
   if (!text) return '';
   // Clean up any leading list bullet/dash if it somehow slipped through
   let cleanText = text.trim().replace(/^[*\-•]\s*/, '');
-  
+
   // Parse markdown bold (**text**) into HTML/React bold elements
   const parts = cleanText.split('**');
   return parts.map((part, index) => {
@@ -163,7 +164,7 @@ const renderBlogPreview = (contentString) => {
         </div>
       );
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return <div dangerouslySetInnerHTML={{ __html: contentString || '<p className="text-slate-400 italic">No content written yet.</p>' }} />;
 };
@@ -182,12 +183,11 @@ export default function Editor() {
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const [status, setStatus] = useState('draft');
-  
+
   const communityParam = searchParams.get('community') || '';
   const [community, setCommunity] = useState(communityParam);
   const [myCommunities, setMyCommunities] = useState([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [enhancingBlockIndex, setEnhancingBlockIndex] = useState(null);
   const [docTutorFeedback, setDocTutorFeedback] = useState('');
   const [docTutorLoading, setDocTutorLoading] = useState(false);
 
@@ -224,16 +224,34 @@ export default function Editor() {
   const [editorZoom, setEditorZoom] = useState(100);
   const [activeBlockIndex, setActiveBlockIndex] = useState(null);
 
-  // AI Write states
-  const [aiModalOpen, setAiModalOpen] = useState(false);
-  const [aiTopic, setAiTopic] = useState('');
-  const [generatingAI, setGeneratingAI] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
-  const [suggestedTitle, setSuggestedTitle] = useState('');
+  // Grammar/Spell check states
+  const [grammarCheckLoading, setGrammarCheckLoading] = useState(false);
+  const [grammarErrors, setGrammarErrors] = useState([]);
+  const [grammarModalOpen, setGrammarModalOpen] = useState(false);
+  const [grammarSuggestions, setGrammarSuggestions] = useState([]);
 
   // AI Translation States
   const [translatingAI, setTranslatingAI] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [suggestedTitle, setSuggestedTitle] = useState('');
+  const [rewriteModalOpen, setRewriteModalOpen] = useState(false);
+  const [rewriteInstruction, setRewriteInstruction] = useState('');
+
+  // Toast notifications state
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'info') => {
+    setToast({ message, type });
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => {
+        setToast(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const handleAITranslate = async (lang) => {
     if (!editId) return;
@@ -243,12 +261,12 @@ export default function Editor() {
       const res = await api.post(`/api/blogs/${editId}/ai-translate`, { lang });
       setTitle(res.data.title);
       setContent(res.data.content);
-      
+
       const parsed = JSON.parse(res.data.content);
       if (Array.isArray(parsed)) {
         setBlocks(parsed);
       }
-      
+
       confetti({
         particleCount: 80,
         spread: 50,
@@ -270,48 +288,21 @@ export default function Editor() {
     }
   };
 
-  const handleGenerateAI = async () => {
-    if (!aiTopic.trim()) return;
-    setGeneratingAI(true);
-    setAiError('');
-    try {
-      const res = await api.post('/api/blogs/generate-ai', { topic: aiTopic });
-      setTitle(res.data.title);
-      setBlocks(res.data.blocks);
-      setAiModalOpen(false);
-      setAiTopic('');
-      // Trigger a socket sync if in multi-author session
-      if (socket && blogId) {
-        socket.emit('edit_blog', { blogId, title: res.data.title, content: JSON.stringify(res.data.blocks) });
-      }
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch (err) {
-      console.error(err);
-      setAiError(err.response?.data?.error || 'Failed to generate AI blog.');
-    } finally {
-      setGeneratingAI(false);
-    }
-  };
-
   const handleAISuggestMetadata = async () => {
     // Extract block content text
     const textToAnalyze = blocks.map(b => b.content || '').join(' ');
     if (!textToAnalyze.trim()) {
-      alert('Please write some content first so the AI can analyze it.');
+      showToast('Please write some content first so the AI can analyze it.', 'error');
       return;
     }
-    
+
     setAiLoading(true);
     try {
-      const res = await api.post('/api/blogs/suggest-metadata', { 
-        title, 
-        content: JSON.stringify(blocks) 
+      const res = await api.post('/api/blogs/suggest-metadata', {
+        title,
+        content: JSON.stringify(blocks)
       });
-      
+
       if (res.data.category) {
         setCategory(res.data.category);
       }
@@ -323,7 +314,7 @@ export default function Editor() {
       if (res.data.title) {
         setSuggestedTitle(res.data.title);
       }
-      
+
       confetti({
         particleCount: 50,
         spread: 40,
@@ -331,9 +322,107 @@ export default function Editor() {
       });
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || 'Failed to generate metadata suggestions.');
+      showToast(err.response?.data?.error || 'Failed to generate metadata suggestions.', 'error');
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  // Grammar/Spell Check - sends user text to AI for corrections only (no new words)
+  const handleGrammarCheck = async () => {
+    // Extract all text content from blocks
+    const textToCheck = blocks.map(b => b.content || '').join(' ');
+    if (!textToCheck.trim()) {
+      showToast('Please write some content first to check for grammar/spelling errors.', 'error');
+      return;
+    }
+
+    setGrammarCheckLoading(true);
+    setGrammarErrors([]);
+    setGrammarSuggestions([]);
+    try {
+      const res = await api.post('/api/blogs/grammar-check', {
+        content: textToCheck
+      });
+
+      if (res.data.errors && res.data.errors.length > 0) {
+        setGrammarErrors(res.data.errors);
+        setGrammarSuggestions(res.data.suggestions || []);
+        setGrammarModalOpen(true);
+      } else {
+        showToast('No grammar or spelling errors found! Your writing looks great.', 'success');
+      }
+
+      confetti({
+        particleCount: 50,
+        spread: 40,
+        origin: { y: 0.6 }
+      });
+    } catch (err) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Failed to check grammar.', 'error');
+    } finally {
+      setGrammarCheckLoading(false);
+    }
+  };
+
+  // AI Rewrite Assistant - user explains what they want, AI rewrites in proper English using only their words
+  const handleAIRewrite = () => {
+    const textToRewrite = blocks.map(b => b.content || '').join(' ');
+    if (!textToRewrite.trim()) {
+      showToast('Please write some content first for the AI to help rewrite.', 'error');
+      return;
+    }
+    setRewriteInstruction('');
+    setRewriteModalOpen(true);
+  };
+
+  const submitAIRewrite = async () => {
+    if (!rewriteInstruction.trim()) return;
+    const textToRewrite = blocks.map(b => b.content || '').join(' ');
+    
+    setRewriteModalOpen(false);
+    setGrammarCheckLoading(true);
+    try {
+      const res = await api.post('/api/blogs/ai-rewrite', { 
+        content: textToRewrite,
+        instruction: rewriteInstruction.trim()
+      });
+      
+      if (res.data.rewrittenContent) {
+        // Apply the rewritten content to blocks proportionally
+        // For simplicity, replace the first paragraph block or create new content
+        const newBlocks = blocks.map((block, index) => {
+          if (index === 0 && block.type === 'p') {
+            return { ...block, content: res.data.rewrittenContent };
+          }
+          return block;
+        });
+        
+        // If no paragraph block, add the rewritten content as a new paragraph
+        if (!newBlocks.some(b => b.type === 'p')) {
+          newBlocks.unshift({ 
+            id: Date.now().toString(), 
+            type: 'p', 
+            content: res.data.rewrittenContent 
+          });
+        }
+        
+        handleBlocksChange(newBlocks);
+        
+        confetti({
+          particleCount: 80,
+          spread: 50,
+          origin: { y: 0.6 }
+        });
+        
+        showToast('Content rewritten in proper English!', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Failed to rewrite content.', 'error');
+    } finally {
+      setGrammarCheckLoading(false);
     }
   };
 
@@ -360,7 +449,7 @@ export default function Editor() {
           setCollaborators(blog.collaborators || []);
           setCommunity(blog.community || '');
           setIsAnonymous(blog.isAnonymous || false);
-          
+
           // Parse content string into blocks
           const loadedBlocks = parseHTMLToBlocks(blog.content);
           setBlocks(loadedBlocks);
@@ -523,27 +612,6 @@ export default function Editor() {
     handleBlocksChange(updated);
   };
 
-  const handleAIImproveBlock = async (index) => {
-    const block = blocks[index];
-    if (!block.content || !block.content.trim()) return;
-
-    setEnhancingBlockIndex(index);
-    try {
-      const res = await api.post('/api/blogs/ai-enhance-block', {
-        content: block.content,
-        type: block.type
-      });
-      if (res.data.enhancedText) {
-        updateBlockContent(index, res.data.enhancedText);
-      }
-    } catch (e) {
-      console.error(e);
-      alert('AI Block Enhancement failed. Please try again.');
-    } finally {
-      setEnhancingBlockIndex(null);
-    }
-  };
-
   const calculateDraftScore = () => {
     let score = 0;
     if (title && title.trim()) {
@@ -597,7 +665,7 @@ export default function Editor() {
       }
     } catch (e) {
       console.error(e);
-      alert('DocTutor review session failed. Please retry.');
+      showToast('DocTutor review session failed. Please retry.', 'error');
     } finally {
       setDocTutorLoading(false);
     }
@@ -642,11 +710,7 @@ export default function Editor() {
     setSearchUserQuery(val);
     if (val.trim().length > 1) {
       try {
-        const res = await api.get(`/api/users?search=${val}`); // Admin get users or profile search helper. Let's make sure it handles gracefully.
-        // Wait, standard users cannot hit GET /api/users if requireRole(['admin']) is present.
-        // Let's check how we can fetch users: let's fetch matching profiles. To make it open for authors, let's write a simple user search in users endpoints or handle gracefully!
-        // In server/routes/user.js we defined GET / only for admin. We can fall back to searching users list or let them type emails. Typing emails is incredibly robust and requires no admin privilege security violations!
-        // Let's implement User search by emailing user search criteria or fall back gracefully! Let's mock search or fetch profiles
+        const res = await api.get(`/api/users?search=${val}`);
         const mockUsers = [
           { _id: '64f7b4c6e9118e001c38fa11', name: 'Alice Smith', email: 'alice@example.com' },
           { _id: '64f7b4c6e9118e001c38fa22', name: 'Bob Carter', email: 'bob@example.com' },
@@ -690,7 +754,7 @@ export default function Editor() {
           content: JSON.stringify(blocks),
           tags
         });
-        
+
         if (spamRes.data.isSpam) {
           setSpamScore(spamRes.data.spamScore);
           setSpamReasons(spamRes.data.reasons);
@@ -728,7 +792,7 @@ export default function Editor() {
       }
 
       setSaving(false);
-      
+
       confetti({
         particleCount: 150,
         spread: 80,
@@ -796,7 +860,7 @@ export default function Editor() {
             {editorMode === 'edit' ? <Eye className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
             <span>{editorMode === 'edit' ? 'Preview' : 'Editor'}</span>
           </button>
-          
+
           <button
             onClick={() => handleSave('draft')}
             disabled={saving}
@@ -834,11 +898,10 @@ export default function Editor() {
                   <button
                     type="button"
                     onClick={() => setShowLeftSidebar(!showLeftSidebar)}
-                    className={`p-2 rounded-xl border transition-all ${
-                      showLeftSidebar 
-                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold' 
+                    className={`p-2 rounded-xl border transition-all ${showLeftSidebar
+                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
                         : 'bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 text-slate-500'
-                    }`}
+                      }`}
                     title={showLeftSidebar ? "Hide Block Palette" : "Show Block Palette"}
                   >
                     <LayoutGrid className="w-4 h-4" />
@@ -847,11 +910,10 @@ export default function Editor() {
                   <button
                     type="button"
                     onClick={() => setShowRightSidebar(!showRightSidebar)}
-                    className={`p-2 rounded-xl border transition-all ${
-                      showRightSidebar 
-                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold' 
+                    className={`p-2 rounded-xl border transition-all ${showRightSidebar
+                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
                         : 'bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 text-slate-500'
-                    }`}
+                      }`}
                     title={showRightSidebar ? "Hide Settings Sidebar" : "Show Settings Sidebar"}
                   >
                     <Settings2 className="w-4 h-4" />
@@ -864,12 +926,24 @@ export default function Editor() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setAiModalOpen(true)}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-primary-200 bg-primary-50/50 hover:bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold text-xs transition-colors shadow-sm"
-                    title="Write complete article using Gemini AI"
+                    onClick={handleGrammarCheck}
+                    disabled={grammarCheckLoading}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-900/30 dark:text-emerald-400 font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
+                    title="Check grammar & spelling errors"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-primary-500 animate-pulse" />
-                    <span>Write with AI</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Grammar Check</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAIRewrite}
+                    disabled={grammarCheckLoading}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-indigo-400 font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
+                    title="Explain what you want to write - AI corrects errors and rewrites in proper English without adding external info"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>AI Rewrite</span>
                   </button>
                 </div>
 
@@ -1008,7 +1082,7 @@ export default function Editor() {
                           <div className="cursor-grab active:cursor-grabbing hover:text-slate-500">
                             <GripVertical className="w-4 h-4" />
                           </div>
-                          
+
                           <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-0.5 mt-2 transition-opacity duration-200">
                             <button
                               type="button"
@@ -1171,7 +1245,7 @@ export default function Editor() {
                                 placeholder="Paste Image URL link..."
                                 className="w-full text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-primary-500"
                               />
-                              
+
                               {block.url ? (
                                 <div className="rounded-xl overflow-hidden shadow-sm max-w-xs border dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
                                   <img
@@ -1230,9 +1304,8 @@ export default function Editor() {
                         </div>
 
                         {/* Block Action Buttons on Hover/Focus */}
-                        <div className={`flex items-start gap-1 transition-opacity duration-200 select-none flex-shrink-0 ${
-                          activeBlockIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                        }`}>
+                        <div className={`flex items-start gap-1 transition-opacity duration-200 select-none flex-shrink-0 ${activeBlockIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                          }`}>
                           {/* Formatting Controls for Text Blocks */}
                           {['h1', 'h2', 'p', 'quote', 'list', 'callout'].includes(block.type) && (
                             <>
@@ -1242,11 +1315,10 @@ export default function Editor() {
                                   const isBold = block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type);
                                   updateBlockProperty(index, 'bold', !isBold);
                                 }}
-                                className={`p-1.5 rounded-lg border transition-colors ${
-                                  (block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type))
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold' 
+                                className={`p-1.5 rounded-lg border transition-colors ${(block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type))
+                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
                                     : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                }`}
+                                  }`}
                                 title="Toggle Bold"
                               >
                                 <span className="font-bold text-xs">B</span>
@@ -1254,11 +1326,10 @@ export default function Editor() {
                               <button
                                 type="button"
                                 onClick={() => updateBlockProperty(index, 'italic', !block.italic)}
-                                className={`p-1.5 rounded-lg border transition-colors ${
-                                  block.italic 
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold' 
+                                className={`p-1.5 rounded-lg border transition-colors ${block.italic
+                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
                                     : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                }`}
+                                  }`}
                                 title="Toggle Italic"
                               >
                                 <span className="italic text-xs font-serif font-bold">I</span>
@@ -1266,11 +1337,10 @@ export default function Editor() {
                               <button
                                 type="button"
                                 onClick={() => updateBlockProperty(index, 'underline', !block.underline)}
-                                className={`p-1.5 rounded-lg border transition-colors ${
-                                  block.underline 
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold' 
+                                className={`p-1.5 rounded-lg border transition-colors ${block.underline
+                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
                                     : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                }`}
+                                  }`}
                                 title="Toggle Underline"
                               >
                                 <span className="underline text-xs font-bold">U</span>
@@ -1278,17 +1348,6 @@ export default function Editor() {
                               <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1 align-middle self-center"></div>
                             </>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => handleAIImproveBlock(index)}
-                            disabled={enhancingBlockIndex !== null}
-                            className={`p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-indigo-500 rounded-lg text-slate-400 hover:text-indigo-650 transition-colors ${
-                              enhancingBlockIndex === index ? 'animate-spin' : ''
-                            }`}
-                            title="AI Assistant: Polish & Enhance Text"
-                          >
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                          </button>
                           <button
                             type="button"
                             onClick={() => duplicateBlock(index)}
@@ -1327,7 +1386,7 @@ export default function Editor() {
             {/* Metadata configurations */}
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4">Post Settings</h3>
-              
+
               {/* Community selector */}
               <div className="mb-4">
                 <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Community Channel</label>
@@ -1405,7 +1464,7 @@ export default function Editor() {
                   if (suggestions.length === 0) return null;
                   return (
                     <div className="mt-3">
-                      <span className="block text-[10px] font-bold text-slate-405 dark:text-slate-500 uppercase mb-1">Suggested Tags:</span>
+                      <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase mb-1">Suggested Tags:</span>
                       <div className="flex flex-wrap gap-1.5">
                         {suggestions.slice(0, 5).map(tag => (
                           <button
@@ -1429,7 +1488,7 @@ export default function Editor() {
                   type="button"
                   onClick={handleAISuggestMetadata}
                   disabled={aiLoading}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{aiLoading ? 'AI Optimizing...' : 'AI Suggest Settings'}</span>
@@ -1444,7 +1503,7 @@ export default function Editor() {
                         handleTitleChange(suggestedTitle);
                         setSuggestedTitle('');
                       }}
-                      className="text-left font-medium text-slate-700 dark:text-slate-305 hover:text-primary-600 dark:hover:text-primary-400 block transition-colors"
+                      className="text-left font-medium text-slate-700 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 block transition-colors"
                       title="Click to apply title"
                     >
                       {suggestedTitle} <span className="text-[8px] font-bold text-primary-500">(Click to apply)</span>
@@ -1483,7 +1542,7 @@ export default function Editor() {
                         onClick={() => handleAITranslate('gu')}
                         className="py-2.5 text-xs font-bold bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/20 dark:hover:bg-teal-950/40 text-teal-700 dark:text-teal-400 rounded-xl transition-all disabled:opacity-50 border border-teal-100 dark:border-teal-900/30"
                       >
-                        🏛️ Gujarati
+                        🇮🇳 Gujarati
                       </button>
                     </div>
                     {translatingAI && (
@@ -1527,22 +1586,19 @@ export default function Editor() {
                         style={{ transition: 'stroke-dashoffset 0.5s ease' }}
                       />
                     </svg>
-                    <span className={`absolute inset-0 flex items-center justify-center text-xs font-extrabold ${
-                      calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
-                    }`}>{calculateDraftScore()}</span>
+                    <span className={`absolute inset-0 flex items-center justify-center text-xs font-extrabold ${calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
+                      }`}>{calculateDraftScore()}</span>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Draft Score</p>
-                    <p className={`text-sm font-extrabold ${
-                      calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
-                    }`}>
+                    <p className={`text-sm font-extrabold ${calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
+                      }`}>
                       {calculateDraftScore() >= 80 ? '🏆 Excellent!' : calculateDraftScore() >= 50 ? '⚡ Getting there' : '📝 Needs work'}
                     </p>
                     <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-1.5">
                       <div
-                        className={`h-1.5 rounded-full transition-all duration-500 ${
-                          calculateDraftScore() >= 80 ? 'bg-emerald-500' : calculateDraftScore() >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                        }`}
+                        className={`h-1.5 rounded-full transition-all duration-500 ${calculateDraftScore() >= 80 ? 'bg-emerald-500' : calculateDraftScore() >= 50 ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}
                         style={{ width: `${calculateDraftScore()}%` }}
                       />
                     </div>
@@ -1644,79 +1700,12 @@ export default function Editor() {
         )}
       </div>
 
-      {/* AI Writer Modal */}
-      {aiModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary-500 animate-pulse" />
-                <span>Write Article with AI</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAiModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <p className="text-xs text-slate-400">
-              Provide a topic or a brief prompt, and our Gemini AI Assistant will outline and write a structured, publish-ready article containing headings, code snippets, lists, and quotes.
-            </p>
-            {aiError && (
-              <div className="p-3 text-xs bg-rose-50 border border-rose-100 text-rose-600 rounded-xl dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400">
-                {aiError}
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase">Topic / Description</label>
-              <textarea
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="e.g., A comprehensive guide to React Hooks and clean code state management..."
-                rows={3}
-                className="w-full px-3 py-2 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-            </div>
-            <div className="flex justify-end gap-3.5 pt-2">
-              <button
-                type="button"
-                onClick={() => setAiModalOpen(false)}
-                disabled={generatingAI}
-                className="px-4 py-2 border rounded-xl text-xs font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleGenerateAI}
-                disabled={generatingAI || !aiTopic.trim()}
-                className="flex items-center gap-1.5 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-primary-500/10 disabled:opacity-50"
-              >
-                {generatingAI ? (
-                  <>
-                    <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>AI Writing...</span>
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Generate Draft</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Spam Warning Modal */}
       {spamModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
-              <h3 className="text-base font-extrabold text-rose-600 dark:text-rose-450 flex items-center gap-1.5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
                 <span>⚠️ Spam Warning Alert</span>
               </h3>
               <button
@@ -1727,13 +1716,13 @@ export default function Editor() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <p className="text-xs text-slate-550 dark:text-slate-400 leading-relaxed">
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
               Our automated content filter analyzed your draft and detected potential concerns:
             </p>
 
-            <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-150/20 rounded-2xl space-y-2">
-              <div className="flex justify-between items-center text-xs font-bold text-rose-600 dark:text-rose-455">
+            <div className="p-4 bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200/20 rounded-2xl space-y-2">
+              <div className="flex justify-between items-center text-xs font-bold text-rose-600 dark:text-rose-400">
                 <span>Spam Score:</span>
                 <span>{spamScore} / 100</span>
               </div>
@@ -1743,9 +1732,9 @@ export default function Editor() {
             </div>
 
             <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-              <span className="text-[10px] font-bold text-slate-405 uppercase tracking-wide">Issues Detected</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Issues Detected</span>
               {spamReasons.map((reason, idx) => (
-                <div key={idx} className="flex gap-2 text-xs text-slate-600 dark:text-slate-350 leading-relaxed bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/30">
+                <div key={idx} className="flex gap-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-950 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800/30">
                   <span className="text-rose-500">•</span>
                   <span>{reason}</span>
                 </div>
@@ -1756,7 +1745,7 @@ export default function Editor() {
               <button
                 type="button"
                 onClick={() => setSpamModalOpen(false)}
-                className="px-4.5 py-2 border rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+                className="px-5 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
               >
                 Go Back & Edit
               </button>
@@ -1770,12 +1759,151 @@ export default function Editor() {
                     handleSave('published');
                   }, 100);
                 }}
-                className="px-4.5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/10 transition-all"
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-500/10 transition-all"
               >
                 Publish Anyway
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Grammar/Spell Check Modal */}
+      {grammarModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-2xl p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                <CheckCircle2 className="w-5 h-5" />
+                <span>Grammar & Spelling Check</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setGrammarModalOpen(false)}
+                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Found {grammarErrors.length} potential issue(s) in your writing:
+            </p>
+
+            {grammarErrors.length > 0 && (
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                {grammarErrors.map((error, idx) => (
+                  <div key={idx} className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/20 rounded-2xl space-y-2">
+                    <div className="flex gap-2 text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                      <span className="text-emerald-500 font-bold">•</span>
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-300">{error.type}: </span>
+                      <span>"{error.original}"</span>
+                      {error.suggestion && (
+                        <span className="text-slate-500 dark:text-slate-400">→ Suggested: </span>
+                      )}
+                      {error.suggestion && (
+                        <span className="font-medium text-emerald-600 dark:text-emerald-400">"{error.suggestion}"</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                      Context: ...{error.context}...
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {grammarSuggestions.length > 0 && (
+              <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/20 rounded-2xl space-y-2">
+                <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">AI Suggestions</h4>
+                {grammarSuggestions.map((sug, idx) => (
+                  <div key={idx} className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                    <span className="text-indigo-500 font-bold">→ </span>
+                    <span>{sug}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setGrammarModalOpen(false)}
+                className="px-5 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Rewrite Custom Modal */}
+      {rewriteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
+                <Sparkles className="w-5 h-5 text-indigo-500" />
+                <span>AI Rewrite Assistant</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRewriteModalOpen(false)}
+                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Explain what you want to express in your post. The AI will correct spelling/syntax errors and rewrite it in proper English without adding any external information or new concepts.
+            </p>
+
+            <div className="space-y-2">
+              <textarea
+                value={rewriteInstruction}
+                onChange={(e) => setRewriteInstruction(e.target.value)}
+                placeholder="e.g., I want to say that Bun runtime is extremely fast compared to Node.js."
+                className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-sans"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setRewriteModalOpen(false)}
+                className="px-5 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitAIRewrite}
+                disabled={!rewriteInstruction.trim()}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 transition-all disabled:opacity-50"
+              >
+                Rewrite Text
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/50 dark:border-slate-800 rounded-2xl shadow-xl animate-fade-in">
+          {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+          {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-500" />}
+          {toast.type === 'info' && <Sparkles className="w-4 h-4 text-indigo-500" />}
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{toast.message}</span>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-850 rounded-lg text-slate-400 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

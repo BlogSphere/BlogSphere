@@ -782,144 +782,6 @@ export const restoreVersion = async (req, res) => {
   }
 };
 
-// Real AI full blog generation helper via Gemini API
-const generateGeminiBlog = async (topic) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not defined in environment variables.');
-  }
-
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: `You are an expert article writer. Write a comprehensive, high-quality, and engaging blog post about the topic: "${topic}".
-              
-              You MUST return a JSON object with this exact structure:
-              {
-                "title": "A catchy, SEO-friendly title of the blog post",
-                "blocks": [
-                  { "id": "h1-block-1", "type": "h1", "content": "Introduction to the topic" },
-                  { "id": "p-block-2", "type": "p", "content": "Write an engaging paragraph block here." },
-                  { "id": "h2-block-3", "type": "h2", "content": "Subheading of section 1" },
-                  { "id": "p-block-4", "type": "p", "content": "Write a detailed paragraph explaining details of section 1." },
-                  { "id": "quote-block-5", "type": "quote", "content": "An inspiring quote or callout related to the topic." },
-                  { "id": "list-block-6", "type": "list", "content": "Key point 1\\nKey point 2\\nKey point 3" },
-                  { "id": "p-block-7", "type": "p", "content": "A strong conclusion paragraph." }
-                ]
-              }
-
-              Write at least 6 blocks. Ensure they are structured logically. Do not include any markdown formatting wrappers or backticks, return ONLY the raw JSON object.`
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
-    })
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-  }
-
-  const result = await response.json();
-  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) {
-    throw new Error('Invalid response structure from Gemini API');
-  }
-
-  let cleanText = rawText.trim();
-  if (cleanText.startsWith('```')) {
-    cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
-  }
-  const parsed = JSON.parse(cleanText);
-  if (parsed && parsed.blocks && Array.isArray(parsed.blocks)) {
-    parsed.blocks = parsed.blocks.map(block => {
-      if (block.type === 'list' && typeof block.content === 'string') {
-        block.content = block.content
-          .split('\n')
-          .map(line => line.trim().replace(/^[\*\-\•]\s*/, ''))
-          .join('\n');
-      }
-      return block;
-    });
-  }
-  return parsed;
-};
-
-// Fallback Mock Blog Generator when Gemini API is rate-limited or offline
-const generateMockBlog = (topic) => {
-  const cleanTopic = topic.trim();
-  const title = `Exploring ${cleanTopic}: A Comprehensive Guide`;
-  const blocks = [
-    {
-      id: `h1-mock-${Date.now()}-1`,
-      type: 'h1',
-      content: `Introduction to ${cleanTopic}`
-    },
-    {
-      id: `p-mock-${Date.now()}-2`,
-      type: 'p',
-      content: `This article provides an in-depth overview of ${cleanTopic}. Understanding this subject is crucial for developers and enthusiasts alike, as it represents a core pillar of modern digital solutions. As technology evolves, staying informed on topics like ${cleanTopic} helps professionals maintain a competitive edge and build more robust architectures.`
-    },
-    {
-      id: `h2-mock-${Date.now()}-3`,
-      type: 'h2',
-      content: `Key Concepts and Principles of ${cleanTopic}`
-    },
-    {
-      id: `p-mock-${Date.now()}-4`,
-      type: 'p',
-      content: `When delving into ${cleanTopic}, there are several fundamental principles to consider. First, it requires a solid understanding of how different components interface with each other. Second, performance and scalability must be factored in early in the design cycle. Adhering to these standards ensures clean, maintainable systems.`
-    },
-    {
-      id: `quote-mock-${Date.now()}-5`,
-      type: 'quote',
-      content: `"${cleanTopic} is not just a technology or methodology—it's a mindset that shapes how we solve complex problems in modern development."`
-    },
-    {
-      id: `list-mock-${Date.now()}-6`,
-      type: 'list',
-      content: `Core benefit 1: Rapid integration and adaptability\nCore benefit 2: High efficiency and minimized developer overhead\nCore benefit 3: Scalability ready for production deployments`
-    },
-    {
-      id: `p-mock-${Date.now()}-7`,
-      type: 'p',
-      content: `In conclusion, ${cleanTopic} plays an essential role in today's software landscape. By leveraging these concepts, teams can build fast, secure, and highly reliable applications. As you continue exploring this topic, focus on practical implementations and iterative improvements.`
-    }
-  ];
-  return { title, blocks };
-};
-
-export const generateAIBlogContent = async (req, res) => {
-  try {
-    const { topic } = req.body;
-    if (!topic || topic.trim().length === 0) {
-      return res.status(400).json({ error: 'Topic is required to generate content.' });
-    }
-
-    try {
-      const generated = await generateGeminiBlog(topic);
-      res.status(200).json({ title: generated.title, blocks: generated.blocks });
-    } catch (apiError) {
-      console.warn(`[WARN] Gemini API failed (${apiError.message}). Falling back to mock generator.`);
-      const fallbackData = generateMockBlog(topic);
-      res.status(200).json({ title: fallbackData.title, blocks: fallbackData.blocks, fallback: true });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
 // Helper to notify subscribers of new articles
 const notifySubscribers = async (blog, authorUser) => {
   try {
@@ -1485,44 +1347,7 @@ export const checkSpam = async (req, res) => {
   }
 };
 
-// Enhance single blog block text via Gemini AI
-export const aiEnhanceBlock = async (req, res) => {
-  try {
-    const { content, type } = req.body;
-    if (!content) {
-      return res.status(400).json({ error: 'Content is required.' });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(200).json({ 
-        enhancedText: content + ' (AI Assist: Verified & polished)' 
-      });
-    }
-
-    const prompt = `You are a professional editor and writing assistant. Enhance the following "${type || 'paragraph'}" block of text: "${content}".
-    Improve flow, readability, and style. Keep the response natural, highly professional, and direct. Do NOT add meta comments, notes, intro words, or markdown headers. Return ONLY the polished text.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Gemini API call failed');
-    }
-
-    const result = await response.json();
-    const enhancedText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || content;
-
-    res.status(200).json({ enhancedText });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
+;
 
 // AI DocTutor Draft Reviewer
 export const aiTutorReview = async (req, res) => {
@@ -1745,6 +1570,134 @@ Only return the JSON object, do not include any markdown backticks or explanatio
 
     await brief.save();
     res.status(200).json({ brief });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Grammar & Spelling Check - finds errors but doesn't add new words
+export const grammarCheck = async (req, res) => {
+  try {
+    const { content } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Content is required for grammar check.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(200).json({ 
+        errors: [],
+        suggestions: ['Grammar check requires GEMINI_API_KEY to be configured.']
+      });
+    }
+
+    const prompt = `You are a professional proofreader. Analyze the following text for grammar, spelling, and punctuation errors ONLY.
+
+Text to analyze:
+"""
+${content}
+"""
+
+Rules:
+1. ONLY identify actual errors (spelling mistakes like "teh"->"the", grammar errors like "he go"->"he goes", punctuation errors)
+2. DO NOT suggest style improvements, rewording, or better vocabulary
+3. DO NOT add new words or change meaning
+4. Return ONLY a JSON object with this exact structure:
+{
+  "errors": [
+    {"type": "spelling|grammar|punctuation", "original": "incorrect word/phrase", "suggestion": "correct word/phrase", "context": "surrounding text snippet"}
+  ],
+  "suggestions": ["optional general suggestion like 'Consider proofreading for common typos'"]
+}
+
+Only return the raw JSON object, no markdown, no explanations.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Gemini API call failed');
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '{"errors":[],"suggestions":[]}';
+    
+    let cleanText = rawText;
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+    }
+    
+    const parsed = JSON.parse(cleanText);
+    res.status(200).json({ 
+      errors: parsed.errors || [], 
+      suggestions: parsed.suggestions || [] 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// AI Rewrite - user explains what they want to write, AI rewrites in proper English using ONLY user's words
+export const aiRewrite = async (req, res) => {
+  try {
+    const { content, instruction } = req.body;
+    if (!content || !content.trim()) {
+      return res.status(400).json({ error: 'Content is required for rewrite.' });
+    }
+    if (!instruction || !instruction.trim()) {
+      return res.status(400).json({ error: 'Instruction is required for rewrite.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(200).json({ 
+        rewrittenContent: content + ' (AI Rewrite requires GEMINI_API_KEY)' 
+      });
+    }
+
+    const prompt = `You are an English writing assistant. The user has provided a draft/notes (USER'S TEXT) and an explanation of what they want to express (USER'S INSTRUCTION). Your task is to rewrite the text in proper, grammatically correct English.
+
+USER'S TEXT:
+"""
+${content}
+"""
+
+USER'S INSTRUCTION (what they want to express):
+"""
+${instruction}
+"""
+
+CRITICAL RULES:
+1. Rewrite the user's text in proper, grammatically correct English based on what they want to express.
+2. Correct all syntax errors, sentence structures, and spelling mistakes (e.g. correcting "thgis" to "this", "sysntext" to "syntax").
+3. DO NOT add any new concepts, facts, or outside information not present in the user's text or user's instruction. Keep the content strictly limited to what the user has provided or explained.
+4. Do not invent or add new ideas. Only express the user's thoughts and instructions in proper English.
+5. Return ONLY the rewritten text, no explanations, no markdown.
+
+Rewritten text:`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Gemini API call failed');
+    }
+
+    const result = await response.json();
+    const rewrittenText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || content;
+
+    res.status(200).json({ rewrittenContent: rewrittenText });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

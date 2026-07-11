@@ -324,12 +324,12 @@ export default function Home() {
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-bold text-slate-800 dark:text-slate-100">{usr.name}</h4>
-                          <span className="px-2 py-0.5 text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-900/30">
+                          <span className="px-2 py-0.5 text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-full border border-indigo-100 dark:border-indigo-900/30">
                             {usr.badge || 'Writer'}
                           </span>
                         </div>
                         <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2">{usr.bio || 'No bio description yet.'}</p>
-                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-505">
+                        <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500">
                           <span>Reputation: <strong>{usr.reputationPoints || 0} pts</strong></span>
                           <Link to={`/profile/${usr._id}`} className="text-primary-600 dark:text-primary-400 font-semibold hover:underline">
                             Profile →
@@ -352,7 +352,7 @@ export default function Home() {
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Matching Categories</h3>
                     {[...new Set(blogs.map(b => b.category).filter(Boolean))].length === 0 ? (
-                      <p className="text-xs text-slate-405">No categories found matching your query.</p>
+                      <p className="text-xs text-slate-400">No categories found matching your query.</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {[...new Set(blogs.map(b => b.category).filter(Boolean))].map(cat => (
@@ -362,7 +362,7 @@ export default function Home() {
                               setSelectedCategory(cat);
                               setSearchType('blogs');
                             }}
-                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-slate-50 border border-slate-150 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-350 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
+                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-slate-50 border border-slate-100 dark:bg-slate-800 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
                           >
                             📁 {cat}
                           </button>
@@ -375,7 +375,7 @@ export default function Home() {
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Matching Tags & Hashtags</h3>
                     {[...new Set(blogs.flatMap(b => b.tags || []))].length === 0 ? (
-                      <p className="text-xs text-slate-405">No tags found matching your query.</p>
+                      <p className="text-xs text-slate-400">No tags found matching your query.</p>
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {[...new Set(blogs.flatMap(b => b.tags || []))].map(tg => (
@@ -385,7 +385,7 @@ export default function Home() {
                               setSelectedTag(tg);
                               setSearchType('blogs');
                             }}
-                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-indigo-50/40 border border-indigo-100/50 dark:bg-indigo-950/10 dark:border-indigo-900/20 text-indigo-650 dark:text-indigo-400 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
+                            className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-indigo-50/40 border border-indigo-100/50 dark:bg-indigo-950/10 dark:border-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-primary-50 dark:hover:bg-primary-950/20 hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-100 transition-all"
                           >
                             # {tg}
                           </button>

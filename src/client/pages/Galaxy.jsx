@@ -728,7 +728,7 @@ export default function Galaxy() {
               </button>
 
               <div className="text-center">
-                <span className="inline-flex p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-955/40 text-indigo-650 dark:text-indigo-400 mb-4 text-3xl animate-bounce">
+                 <span className="inline-flex p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 mb-4 text-3xl animate-bounce">
                   🌌
                 </span>
                 <h3 className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent dark:from-primary-400 dark:to-indigo-400">
@@ -831,7 +831,7 @@ export default function Galaxy() {
           >
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-slate-50/50 dark:bg-black/20">
-              <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/10 text-indigo-650 dark:text-indigo-300 border border-indigo-500/20 px-3 py-1 rounded-full">
+              <span className="text-[10px] uppercase font-bold tracking-widest bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 px-3 py-1 rounded-full">
                 {selectedBlog.category || 'Article'}
               </span>
               <button 
@@ -925,7 +925,7 @@ export default function Galaxy() {
                     <button
                       onClick={handleGenerateSummary}
                       disabled={generatingSummary}
-                      className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 hover:text-indigo-650 dark:hover:text-indigo-300 transition-colors uppercase tracking-wider flex items-center gap-1"
+                      className="text-[10px] font-extrabold text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300 transition-colors uppercase tracking-wider flex items-center gap-1"
                     >
                       {generatingSummary ? 'Scanning...' : 'Scan Star →'}
                     </button>

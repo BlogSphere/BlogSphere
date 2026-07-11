@@ -59,7 +59,7 @@ export default function Sidebar({ currentCategory, currentTag }) {
         </p>
         <Link
           to="/galaxy"
-          className="w-full py-2.5 rounded-2xl text-center text-xs font-extrabold bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-650 hover:to-violet-650 transition-all text-white block shadow-md shadow-indigo-500/20"
+          className="w-full py-2.5 rounded-2xl text-center text-xs font-extrabold bg-gradient-to-r from-indigo-500 to-violet-500 hover:from-indigo-600 hover:to-violet-600 transition-all text-white block shadow-md shadow-indigo-500/20"
         >
           Explore Galaxy View
         </Link>

@@ -186,7 +186,7 @@ export default function Communities() {
               {communityDetails.isMember && (
                 <Link
                   to={`/editor?community=${communityDetails._id}`}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-650 hover:bg-indigo-750 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-indigo-500/10"
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-indigo-500/10"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Post Article</span>
@@ -238,7 +238,7 @@ export default function Communities() {
             {isAuthenticated && (
               <button
                 onClick={() => setCreateOpen(!createOpen)}
-                className="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-650 hover:from-primary-750 hover:to-indigo-750 text-white rounded-full text-xs font-bold transition-all shadow-md"
+                className="flex items-center justify-center gap-1.5 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-full text-xs font-bold transition-all shadow-md"
               >
                 <Plus className="w-4 h-4" />
                 <span>Create Community</span>
