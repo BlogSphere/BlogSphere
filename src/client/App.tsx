@@ -21,11 +21,11 @@ export default function App() {
 
   // Validate session on startup
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
+    const hasLocalUser = localStorage.getItem('user');
+    if (hasLocalUser) {
       api.get('/api/auth/me')
         .then((res) => {
-          dispatch(authSuccess({ token, user: res.data.user }));
+          dispatch(authSuccess({ user: res.data.user }));
         })
         .catch((err) => {
           console.error('Session restore failed:', err);

@@ -33,6 +33,17 @@ const io = new Server(server, {
 
 // Middleware
 app.use(cors());
+app.use((req: any, res: any, next: any) => {
+  const cookieHeader = req.headers.cookie;
+  req.cookies = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach((cookie: string) => {
+      const parts = cookie.split('=');
+      req.cookies[parts.shift()!.trim()] = decodeURIComponent(parts.join('='));
+    });
+  }
+  next();
+});
 app.use(express.json());
 
 // Routes Hook

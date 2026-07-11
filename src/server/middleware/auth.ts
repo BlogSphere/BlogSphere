@@ -3,12 +3,17 @@ import User from '../models/User';
 
 export const auth = async (req: any, res: any, next: any) => {
   try {
-    const authHeader = req.header('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    let token = req.cookies?.token;
+    if (!token) {
+      const authHeader = req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '');
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token_key_2026_987654321');
     
     const user = await User.findById(decoded.id).select('-password');
@@ -37,9 +42,15 @@ export const requireRole = (roles: string[]) => {
 
 export const optionalAuth = async (req: any, res: any, next: any) => {
   try {
-    const authHeader = req.header('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.replace('Bearer ', '');
+    let token = req.cookies?.token;
+    if (!token) {
+      const authHeader = req.header('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.replace('Bearer ', '');
+      }
+    }
+
+    if (token) {
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'blog_sphere_super_secret_jwt_token_key_2026_987654321');
       
       const user = await User.findById(decoded.id).select('-password');

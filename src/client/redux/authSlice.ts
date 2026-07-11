@@ -8,13 +8,12 @@ interface AuthState {
   error: string | null;
 }
 
-const token = localStorage.getItem('token') || null;
 const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
 
 const initialState: AuthState = {
   user,
-  token,
-  isAuthenticated: !!token,
+  token: null,
+  isAuthenticated: !!user,
   loading: false,
   error: null,
 };
@@ -27,13 +26,12 @@ const authSlice = createSlice({
       state.loading = true;
       state.error = null;
     },
-    authSuccess: (state, action: PayloadAction<{ token: string; user: any }>) => {
+    authSuccess: (state, action: PayloadAction<{ token?: string; user: any }>) => {
       state.loading = false;
       state.isAuthenticated = true;
-      state.token = action.payload.token;
+      state.token = null;
       state.user = action.payload.user;
       state.error = null;
-      localStorage.setItem('token', action.payload.token);
       localStorage.setItem('user', JSON.stringify(action.payload.user));
     },
     authFailure: (state, action: PayloadAction<string>) => {
@@ -50,7 +48,6 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.loading = false;
       state.error = null;
-      localStorage.removeItem('token');
       localStorage.removeItem('user');
     },
     updateFollows: (state, action: PayloadAction<any[]>) => {
