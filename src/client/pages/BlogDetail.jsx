@@ -183,6 +183,43 @@ export default function BlogDetail() {
   const [replyTarget, setReplyTarget] = useState(null);
   const [replyText, setReplyText] = useState('');
 
+  // BlogSphere AI Features states
+  const [activeAITab, setActiveAITab] = useState(null);
+
+  // Debate State
+  const [debateList, setDebateList] = useState([]);
+  const [loadingDebate, setLoadingDebate] = useState(false);
+
+  // Quiz State
+  const [quizData, setQuizData] = useState(null);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState([null, null, null]);
+  const [quizResult, setQuizResult] = useState(null);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [currentQuizSlide, setCurrentQuizSlide] = useState(0);
+
+  // Podcast State
+  const [podcastScript, setPodcastScript] = useState([]);
+  const [loadingPodcast, setLoadingPodcast] = useState(false);
+  const [isPlayingPodcast, setIsPlayingPodcast] = useState(false);
+  const [podcastLineIndex, setPodcastLineIndex] = useState(0);
+  const podcastTimerRef = useRef(null);
+  const canvasVisualizerRef = useRef(null);
+  const visualizerAnimFrameRef = useRef(null);
+  const podcastSynthRef = useRef(window.speechSynthesis || null);
+  const podcastUtteranceRef = useRef(null);
+  const [podcastPaused, setPodcastPaused] = useState(false);
+
+  // Preload voices so they are available on first play
+  useEffect(() => {
+    const synth = podcastSynthRef.current;
+    if (!synth) return;
+    const load = () => synth.getVoices();
+    load();
+    synth.addEventListener('voiceschanged', load);
+    return () => synth.removeEventListener('voiceschanged', load);
+  }, []);
+
   // Load blog details
   useEffect(() => {
     setLoading(true);
@@ -296,6 +333,253 @@ export default function BlogDetail() {
       setReporting(false);
     }
   };
+
+  // BlogSphere AI Features action handlers
+  const handleLoadDebate = async () => {
+    if (debateList.length > 0) return;
+    setLoadingDebate(true);
+    try {
+      const res = await api.get(`/api/blogs/${blog._id}/ai-debate`);
+      setDebateList(res.data.debate || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingDebate(false);
+    }
+  };
+
+  const handleLoadQuiz = async () => {
+    if (quizData) return;
+    setLoadingQuiz(true);
+    try {
+      const res = await api.get(`/api/blogs/${blog._id}/quiz`);
+      setQuizData(res.data);
+      setQuizAnswers([null, null, null]);
+      setQuizResult(null);
+      setCurrentQuizSlide(0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingQuiz(false);
+    }
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (quizAnswers.some(ans => ans === null)) {
+      alert('Please answer all three questions.');
+      return;
+    }
+    setSubmittingQuiz(true);
+    try {
+      const res = await api.post(`/api/blogs/quiz/${quizData.quizId}/submit`, { answers: quizAnswers });
+      setQuizResult(res.data);
+      if (res.data.passed) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.8 }
+        });
+        if (res.data.reputationEarned > 0 && user) {
+          dispatch(updateCurrentUser({
+            ...user,
+            reputationPoints: (user.reputationPoints || 0) + res.data.reputationEarned,
+            badge: res.data.reputationEarned + (user.reputationPoints || 0) >= 100 ? 'Senior Scholar' : (res.data.reputationEarned + (user.reputationPoints || 0) >= 50 ? 'Active Learner' : 'Junior Scholar')
+          }));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit quiz.');
+    } finally {
+      setSubmittingQuiz(false);
+    }
+  };
+
+  const handleLoadPodcast = async () => {
+    if (podcastScript.length > 0) return;
+    setLoadingPodcast(true);
+    try {
+      const res = await api.get(`/api/blogs/${blog._id}/podcast`);
+      setPodcastScript(res.data.script || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPodcast(false);
+    }
+  };
+
+  // Speak a single podcast line via Web Speech API, then advance to next
+  const speakPodcastLine = (index) => {
+    if (!podcastSynthRef.current || index >= podcastScript.length) {
+      setIsPlayingPodcast(false);
+      stopVisualizer();
+      return;
+    }
+
+    const line = podcastScript[index];
+    if (!line) return;
+
+    // Cancel any currently speaking utterance
+    podcastSynthRef.current.cancel();
+
+    const utter = new SpeechSynthesisUtterance(line.text);
+    utter.rate = 1.0;
+    utter.pitch = line.speaker === 'Alex' ? 0.85 : 1.2;
+    utter.volume = 1;
+
+    // Pick a voice — prefer a matching one if available
+    const voices = podcastSynthRef.current.getVoices();
+    if (voices.length > 0) {
+      if (line.speaker === 'Alex') {
+        // Prefer a deep English male voice
+        const maleVoice = voices.find(v =>
+          /male|guy|david|mark|daniel|james/i.test(v.name) && /en/i.test(v.lang)
+        ) || voices.find(v => /en/i.test(v.lang) && !v.name.toLowerCase().includes('female'));
+        if (maleVoice) utter.voice = maleVoice;
+      } else {
+        // Prefer an English female voice for Jordan
+        const femaleVoice = voices.find(v =>
+          /female|woman|zira|samantha|karen|victoria|fiona|moira|ava/i.test(v.name) && /en/i.test(v.lang)
+        ) || voices.find(v => /en/i.test(v.lang));
+        if (femaleVoice) utter.voice = femaleVoice;
+      }
+    }
+
+    utter.onstart = () => {
+      setPodcastLineIndex(index);
+      startVisualizer();
+    };
+
+    utter.onend = () => {
+      if (index < podcastScript.length - 1) {
+        speakPodcastLine(index + 1);
+      } else {
+        // Episode finished
+        setIsPlayingPodcast(false);
+        setPodcastLineIndex(0);
+        stopVisualizer();
+      }
+    };
+
+    utter.onerror = () => {
+      // On error, try advancing anyway
+      if (index < podcastScript.length - 1) {
+        setTimeout(() => speakPodcastLine(index + 1), 500);
+      } else {
+        setIsPlayingPodcast(false);
+        stopVisualizer();
+      }
+    };
+
+    podcastUtteranceRef.current = utter;
+    podcastSynthRef.current.speak(utter);
+  };
+
+  // Toggle Podcast simulation
+  useEffect(() => {
+    if (isPlayingPodcast && podcastScript.length > 0) {
+      // Start speaking from the current line index
+      speakPodcastLine(podcastLineIndex);
+    } else {
+      // Pause / stop
+      if (podcastSynthRef.current) podcastSynthRef.current.cancel();
+      if (podcastTimerRef.current) clearInterval(podcastTimerRef.current);
+      stopVisualizer();
+    }
+
+    return () => {
+      if (podcastSynthRef.current) podcastSynthRef.current.cancel();
+      if (podcastTimerRef.current) clearInterval(podcastTimerRef.current);
+      stopVisualizer();
+    };
+  }, [isPlayingPodcast]);
+
+  const startVisualizer = () => {
+    const canvas = canvasVisualizerRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    let frame = 0;
+    const renderWave = () => {
+      frame++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      
+      const barCount = 40;
+      const barWidth = 3;
+      const gap = 4;
+      const center = canvas.height / 2;
+      
+      ctx.fillStyle = '#6366f1';
+      
+      for (let i = 0; i < barCount; i++) {
+        const scale = Math.sin(i * 0.15 + frame * 0.1) * Math.cos(i * 0.05 + frame * 0.05);
+        const height = Math.abs(scale) * (canvas.height - 10) + 4;
+        const x = i * (barWidth + gap) + 10;
+        const y = center - height / 2;
+        
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(x, y, barWidth, height, 2);
+        } else {
+          ctx.rect(x, y, barWidth, height);
+        }
+        ctx.fill();
+      }
+      
+      ctx.restore();
+      visualizerAnimFrameRef.current = requestAnimationFrame(renderWave);
+    };
+    renderWave();
+  };
+
+  const stopVisualizer = () => {
+    if (visualizerAnimFrameRef.current) {
+      cancelAnimationFrame(visualizerAnimFrameRef.current);
+      visualizerAnimFrameRef.current = null;
+    }
+    const canvas = canvasVisualizerRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    // Also cancel TTS if running
+    if (podcastSynthRef.current && podcastSynthRef.current.speaking) {
+      podcastSynthRef.current.cancel();
+    }
+  };
+
+  // Proper play/pause toggle for podcast
+  const handlePodcastToggle = () => {
+    const synth = podcastSynthRef.current;
+    if (!synth) return;
+
+    if (isPlayingPodcast && !podcastPaused) {
+      // Currently speaking — pause
+      synth.pause();
+      setPodcastPaused(true);
+      stopVisualizer();
+    } else if (isPlayingPodcast && podcastPaused) {
+      // Paused — resume
+      synth.resume();
+      setPodcastPaused(false);
+      startVisualizer();
+    } else {
+      // Not started yet — begin
+      setPodcastPaused(false);
+      setIsPlayingPodcast(true);
+    }
+  };
+
+  useEffect(() => {
+    if (activeAITab === 'debate') {
+      handleLoadDebate();
+    } else if (activeAITab === 'quiz') {
+      handleLoadQuiz();
+    } else if (activeAITab === 'podcast') {
+      handleLoadPodcast();
+    }
+  }, [activeAITab]);
 
   const fetchComments = async (blogId) => {
     try {
@@ -567,6 +851,258 @@ export default function BlogDetail() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const renderPodcastPlayer = () => {
+    if (loadingPodcast) {
+      return (
+        <div className="py-8 text-center text-xs text-slate-500 animate-pulse">
+          Analyzing content to draft natural podcast discussions...
+        </div>
+      );
+    }
+    if (podcastScript.length === 0) {
+      return (
+        <div className="py-4 text-center">
+          <button
+            onClick={handleLoadPodcast}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 hover:scale-[1.01] transition-all"
+          >
+            Generate Podcast Script
+          </button>
+        </div>
+      );
+    }
+
+    const currentLine = podcastScript[podcastLineIndex];
+
+    return (
+      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 space-y-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePodcastToggle}
+              className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-transform hover:scale-105"
+            >
+              {isPlayingPodcast && !podcastPaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
+            </button>
+            <div>
+              <span className="block text-xs font-extrabold text-slate-800 dark:text-slate-200">AI Audio Briefing</span>
+              <span className="block text-[10px] text-slate-400">Hosts: Alex & Jordan • Simulated Episode</span>
+            </div>
+          </div>
+          <canvas
+            ref={canvasVisualizerRef}
+            width="300"
+            height="40"
+            className="w-[250px] h-[30px] opacity-80"
+          />
+        </div>
+
+        <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-white/5 shadow-inner min-h-[90px] flex items-center justify-start gap-4">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase text-white shadow-sm flex-shrink-0 ${
+            currentLine?.speaker === 'Alex' ? 'bg-indigo-500' : 'bg-emerald-500'
+          }`}>
+            {currentLine?.speaker?.[0]}
+          </div>
+          <div className="flex-1 space-y-1">
+            <span className="block text-[10px] uppercase font-extrabold tracking-wider text-slate-400">{currentLine?.speaker}</span>
+            <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-350 italic font-medium">"{currentLine?.text}"</p>
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[8px] uppercase tracking-wider text-slate-400 font-bold">
+            <span>Alex</span>
+            <span>Progress {Math.round(((podcastLineIndex + 1) / podcastScript.length) * 100)}%</span>
+            <span>Jordan</span>
+          </div>
+          <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-indigo-500 transition-all duration-700"
+              style={{ width: `${((podcastLineIndex + 1) / podcastScript.length) * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderQuizContent = () => {
+    if (loadingQuiz) {
+      return (
+        <div className="py-8 text-center text-xs text-slate-500 animate-pulse">
+          Curating study questions...
+        </div>
+      );
+    }
+    if (!quizData) return null;
+
+    if (quizResult) {
+      return (
+        <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 space-y-4 text-center">
+          <h4 className="text-sm font-extrabold text-slate-800 dark:text-white">Quiz Results: {quizResult.score}/3 Correct</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {quizResult.passed 
+              ? 'Congratulations! You answered all questions correctly and unlocked +15 reputation points!'
+              : 'Keep reading closely! Review the article and try again to score 3/3.'}
+          </p>
+          
+          <div className="space-y-3 text-left max-w-md mx-auto pt-2">
+            {quizResult.details.map((d, index) => (
+              <div key={index} className="p-3 bg-white dark:bg-slate-900 rounded-xl border flex items-start gap-2.5">
+                <span className={`text-sm ${d.isCorrect ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {d.isCorrect ? '✓' : '✗'}
+                </span>
+                <div className="flex-1 space-y-1">
+                  <span className="block text-xs font-bold text-slate-700 dark:text-slate-350">{d.question}</span>
+                  <span className="block text-[10px] text-slate-400">
+                    Your Answer: <strong className={d.isCorrect ? 'text-emerald-600' : 'text-rose-600'}>Choice {['A', 'B', 'C', 'D'][d.userAnswerIndex]}</strong>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() => {
+              setQuizResult(null);
+              setQuizAnswers([null, null, null]);
+              setCurrentQuizSlide(0);
+            }}
+            className="mt-3 px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-full text-xs font-bold shadow-md shadow-primary-500/15"
+          >
+            Retake Quiz
+          </button>
+        </div>
+      );
+    }
+
+    const currentQuestion = quizData.questions[currentQuizSlide];
+    if (!currentQuestion) return null;
+
+    return (
+      <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 space-y-4">
+        <div className="flex justify-between items-center text-[10px] uppercase font-extrabold tracking-wider text-slate-455">
+          <span>Question {currentQuizSlide + 1} of 3</span>
+          <span className="bg-primary-500/10 text-primary-600 px-2.5 py-1 rounded-full border border-primary-500/20 font-bold">Rep Reward: +15</span>
+        </div>
+
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-relaxed">{currentQuestion.question}</h4>
+          
+          <div className="grid gap-2.5">
+            {currentQuestion.options.map((opt, oIdx) => {
+              const isSelected = quizAnswers[currentQuizSlide] === oIdx;
+              return (
+                <button
+                  key={oIdx}
+                  onClick={() => {
+                    const newAns = [...quizAnswers];
+                    newAns[currentQuizSlide] = oIdx;
+                    setQuizAnswers(newAns);
+                  }}
+                  className={`w-full text-left p-3 rounded-xl border text-xs font-semibold transition-all ${
+                    isSelected
+                      ? 'bg-primary-500/10 border-primary-500/35 text-primary-600 dark:text-primary-400'
+                      : 'bg-white hover:bg-slate-100 dark:bg-slate-900 border-slate-200/50 dark:border-white/5 text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span className="inline-block w-5 h-5 text-[10px] font-bold text-center border rounded-lg mr-2 select-none uppercase leading-5 bg-slate-100 dark:bg-white/5 border-slate-200/40">
+                    {['a', 'b', 'c', 'd'][oIdx]}
+                  </span>
+                  <span>{opt}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-2">
+          <button
+            onClick={() => setCurrentQuizSlide(prev => Math.max(0, prev - 1))}
+            disabled={currentQuizSlide === 0}
+            className="px-4 py-2 border rounded-xl text-xs font-bold text-slate-400 hover:text-slate-650 disabled:opacity-30"
+          >
+            Back
+          </button>
+          
+          {currentQuizSlide < 2 ? (
+            <button
+              onClick={() => setCurrentQuizSlide(prev => Math.min(2, prev + 1))}
+              disabled={quizAnswers[currentQuizSlide] === null}
+              className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmitQuiz}
+              disabled={submittingQuiz || quizAnswers.some(ans => ans === null)}
+              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold disabled:opacity-50"
+            >
+              <span>{submittingQuiz ? 'Submitting...' : 'Submit Quiz'}</span>
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderDebateContent = () => {
+    if (loadingDebate) {
+      return (
+        <div className="py-8 text-center text-xs text-slate-500 animate-pulse">
+          Simulating panel debate discussion from three developer perspectives...
+        </div>
+      );
+    }
+    if (debateList.length === 0) {
+      return (
+        <div className="py-4 text-center">
+          <button
+            onClick={handleLoadDebate}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 hover:scale-[1.01] transition-all"
+          >
+            Launch AI Debate
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 space-y-4 max-h-[400px] overflow-y-auto pr-1">
+        {debateList.map((msg, index) => {
+          const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${msg.avatarSeed}`;
+          return (
+            <m.div
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.15 }}
+              className="p-3 bg-white dark:bg-slate-905 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-start gap-3.5 max-w-[92%]"
+            >
+              <img src={avatarUrl} className="w-8 h-8 rounded-full border bg-slate-100 border-slate-200/30 flex-shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-850 dark:text-slate-200">{msg.persona}</span>
+                  <span className={`text-[8px] uppercase tracking-wide px-1.5 py-0.5 font-bold rounded ${
+                    msg.persona.includes('Skeptic') 
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-455' 
+                      : msg.persona.includes('Pragmatic')
+                        ? 'bg-amber-500/10 text-amber-655 dark:text-amber-455'
+                        : 'bg-indigo-500/10 text-indigo-655 dark:text-indigo-400'
+                  }`}>
+                    {msg.persona.includes('Skeptic') ? 'Critic' : msg.persona.includes('Pragmatic') ? 'Engineer' : 'Advocate'}
+                  </span>
+                </div>
+                <p className="text-xs leading-relaxed text-slate-650 dark:text-slate-355">{msg.message}</p>
+              </div>
+            </m.div>
+          );
+        })}
+      </div>
+    );
   };
 
   if (loading) {
@@ -885,6 +1421,67 @@ export default function BlogDetail() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* 🚀 BlogSphere AI Additions: Podcast, Quiz, & Debate Tabs */}
+      <div className="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap gap-2">
+          {[
+            { id: 'podcast', label: '🎙️ AI Podcast Simulator' },
+            { id: 'quiz', label: '🎓 Study Mode Quiz' },
+            { id: 'debate', label: '💬 AI Expert Debate' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveAITab(activeAITab === tab.id ? null : tab.id)}
+              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+                activeAITab === tab.id
+                  ? 'bg-indigo-650 text-white shadow-md'
+                  : 'bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {activeAITab === 'podcast' && (
+            <m.div
+              key="podcast"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {renderPodcastPlayer()}
+            </m.div>
+          )}
+
+          {activeAITab === 'quiz' && (
+            <m.div
+              key="quiz"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {renderQuizContent()}
+            </m.div>
+          )}
+
+          {activeAITab === 'debate' && (
+            <m.div
+              key="debate"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {renderDebateContent()}
+            </m.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Version history Comparison panel */}

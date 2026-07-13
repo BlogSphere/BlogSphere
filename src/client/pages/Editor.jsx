@@ -226,6 +226,14 @@ export default function Editor() {
   const [editorZoom, setEditorZoom] = useState(100);
   const [activeBlockIndex, setActiveBlockIndex] = useState(null);
 
+  // Timed collaborative sprint states
+  const [sprintActive, setSprintActive] = useState(false);
+  const [sprintGoal, setSprintGoal] = useState(500);
+  const [sprintDuration, setSprintDuration] = useState(15 * 60 * 1000); // 15 mins
+  const [sprintTimeRemaining, setSprintTimeRemaining] = useState(0);
+  const [sprintStartTime, setSprintStartTime] = useState(null);
+  const [sprintPartnerProgress, setSprintPartnerProgress] = useState({});
+
   // Grammar/Spell check states
   const [grammarCheckLoading, setGrammarCheckLoading] = useState(false);
   const [grammarErrors, setGrammarErrors] = useState([]);
@@ -519,6 +527,29 @@ export default function Editor() {
           }
         }
       });
+
+      // Listen for collaborative sprints
+      socket.on('sprint_started', ({ durationMs, wordCountGoal, startTime }) => {
+        setSprintActive(true);
+        setSprintGoal(wordCountGoal);
+        setSprintDuration(durationMs);
+        setSprintStartTime(startTime);
+        setSprintTimeRemaining(durationMs);
+        setSprintPartnerProgress({});
+        showToast('Collaborative Writing Sprint Started! Keep focus!', 'info');
+      });
+
+      socket.on('sprint_progress', ({ userId, wordCount }) => {
+        setSprintPartnerProgress(prev => ({
+          ...prev,
+          [userId]: wordCount
+        }));
+      });
+
+      socket.on('sprint_cancelled', () => {
+        setSprintActive(false);
+        showToast('Writing sprint was cancelled.', 'warning');
+      });
     }
 
     return () => {
@@ -526,6 +557,9 @@ export default function Editor() {
         socket.emit('leave_collab', { blogId: editId });
         socket.off('collab_users');
         socket.off('content_updated');
+        socket.off('sprint_started');
+        socket.off('sprint_progress');
+        socket.off('sprint_cancelled');
         socket.disconnect();
       }
     };
@@ -543,6 +577,55 @@ export default function Editor() {
         content: serialized,
         title
       });
+
+      if (sprintActive) {
+        const text = newBlocks.map(b => b.content || '').join(' ');
+        const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+        socket.emit('update_sprint_progress', {
+          blogId: editId,
+          userId: user._id,
+          wordCount: words
+        });
+      }
+    }
+  };
+
+  // Sprint countdown timer effect
+  useEffect(() => {
+    let timer;
+    if (sprintActive && sprintStartTime) {
+      timer = setInterval(() => {
+        const elapsed = Date.now() - sprintStartTime;
+        const remaining = Math.max(0, sprintDuration - elapsed);
+        setSprintTimeRemaining(remaining);
+        if (remaining === 0) {
+          setSprintActive(false);
+          confetti({ particleCount: 120, spread: 80 });
+          showToast('🏆 Writing Sprint Completed! Excellent job!', 'success');
+          clearInterval(timer);
+        }
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [sprintActive, sprintStartTime, sprintDuration]);
+
+  const handleStartSprint = () => {
+    if (!editId) {
+      showToast('Join a collaborative session by editing an existing blog to start a sprint.', 'warning');
+      return;
+    }
+    socket.emit('start_sprint', {
+      blogId: editId,
+      durationMs: sprintDuration,
+      wordCountGoal: sprintGoal
+    });
+  };
+
+  const handleCancelSprint = () => {
+    if (editId) {
+      socket.emit('cancel_sprint', { blogId: editId });
     }
   };
 
@@ -1754,6 +1837,126 @@ export default function Editor() {
                 )}
               </div>
             </div>
+
+            {/* Writing Sprint Controls */}
+            {editId && (
+              <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-primary-500" />
+                    <span>Writing Sprint</span>
+                  </h3>
+                  {sprintActive && (
+                    <button 
+                      onClick={handleCancelSprint}
+                      className="text-[10px] font-bold text-rose-500 hover:text-rose-600 transition-colors uppercase tracking-wider bg-transparent border-none cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+
+                {!sprintActive ? (
+                  <div className="space-y-3">
+                    <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
+                      Start a collaborative co-writing race. Set a timer and word count goal!
+                    </p>
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Goal (Words)</label>
+                      <input
+                        type="number"
+                        value={sprintGoal}
+                        onChange={(e) => setSprintGoal(Math.max(10, parseInt(e.target.value) || 100))}
+                        className="w-full text-xs px-3 py-1.5 border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-850 focus:outline-none focus:ring-1 focus:ring-primary-500 font-bold bg-transparent text-slate-700 dark:text-slate-300"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wide">Duration</label>
+                      <select
+                        value={sprintDuration}
+                        onChange={(e) => setSprintDuration(parseInt(e.target.value))}
+                        className="w-full text-xs px-3 py-1.5 border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-850 focus:outline-none focus:ring-1 focus:ring-primary-500 font-semibold cursor-pointer text-slate-700 dark:text-slate-300"
+                      >
+                        <option value={5 * 60 * 1000} className="bg-white dark:bg-slate-900">5 Minutes</option>
+                        <option value={10 * 60 * 1000} className="bg-white dark:bg-slate-900">10 Minutes</option>
+                        <option value={15 * 60 * 1000} className="bg-white dark:bg-slate-900">15 Minutes</option>
+                        <option value={20 * 60 * 1000} className="bg-white dark:bg-slate-900">20 Minutes</option>
+                        <option value={30 * 60 * 1000} className="bg-white dark:bg-slate-900">30 Minutes</option>
+                      </select>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleStartSprint}
+                      className="w-full py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-primary-500/10 cursor-pointer"
+                    >
+                      Start Sprint
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Time remaining */}
+                    <div className="text-center bg-slate-50 dark:bg-white/5 p-3 rounded-2xl border border-slate-100 dark:border-white/5">
+                      <span className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400">Time Remaining</span>
+                      <span className="text-sm font-black text-slate-800 dark:text-white font-mono flex items-center justify-center gap-1.5 mt-0.5 animate-pulse">
+                        <Clock className="w-4 h-4 text-amber-500" />
+                        {(() => {
+                          const m = Math.floor(sprintTimeRemaining / 60000);
+                          const s = Math.floor((sprintTimeRemaining % 60000) / 1000);
+                          return `${m}:${s < 10 ? '0' : ''}${s}`;
+                        })()}
+                      </span>
+                    </div>
+
+                    {/* Progress bars */}
+                    <div className="space-y-3">
+                      {/* My progress */}
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                          <span>You</span>
+                          <span>{(() => {
+                            const text = blocks.map(b => b.content || '').join(' ');
+                            return text.trim() ? text.trim().split(/\s+/).length : 0;
+                          })()} / {sprintGoal} w</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200/40 dark:border-white/5">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary-600 to-indigo-600 transition-all duration-305"
+                            style={{
+                              width: `${Math.min(100, ((() => {
+                                const text = blocks.map(b => b.content || '').join(' ');
+                                return text.trim() ? text.trim().split(/\s+/).length : 0;
+                              })() / sprintGoal) * 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Partners progress */}
+                      {activeCollaborators.map((c) => {
+                        const wordCount = sprintPartnerProgress[c.userId] || 0;
+                        return (
+                          <div key={c.userId} className="space-y-1 border-t border-slate-100 dark:border-slate-850 pt-2">
+                            <div className="flex justify-between text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                              <span>{c.userName}</span>
+                              <span>{wordCount} / {sprintGoal} w</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200/40 dark:border-white/5">
+                              <div
+                                className="h-full bg-gradient-to-r from-emerald-600 to-teal-600 transition-all duration-305"
+                                style={{ width: `${Math.min(100, (wordCount / sprintGoal) * 105)}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </aside>
         )}
       </div>

@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import DailyBrief from '../models/DailyBrief.js';
 import Notification from '../models/Notification.js';
 import Community from '../models/Community.js';
+import Quiz from '../models/Quiz.js';
 import { checkRestrictedContent } from './restrictedWordController.js';
 import { recalculateReputation } from './userController.js';
 
@@ -1800,5 +1801,301 @@ export const checkAndPublishScheduledBlogs = async () => {
     }
   } catch (error) {
     console.error('[Scheduler] Error checking and publishing scheduled blogs:', error.message);
+  }
+};
+
+export const getAIDebate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY is not defined in environment variables.' });
+    }
+
+    let plainText = blog.content;
+    try {
+      const parsed = JSON.parse(blog.content);
+      if (Array.isArray(parsed)) {
+        plainText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {}
+
+    const prompt = `You are a group of software engineering and industry experts participating in a constructive debate about the following blog post.
+Analyze the article's core arguments, implementation choices, and assumptions.
+Generate a simulated 3-way debate between three distinct personas:
+1. "Skeptic Sam" (The Critic): A developer who points out code quality, architectural assumptions, scaling problems, or trade-offs.
+2. "Pragmatic Pam" (The Engineer): A developer focused on real-world delivery, simplicity, and practical maintenance.
+3. "Optimistic Ollie" (The Advocate): A developer who loves clean concepts, new ideas, and structural elegance.
+
+The debate must flow naturally as a chat thread with exactly 6 messages (2 from each persona, replying to one another).
+
+Blog Title: ${blog.title}
+Blog Content:
+${plainText}
+
+You MUST return a JSON array containing exactly 6 messages with this structure:
+[
+  {
+    "persona": "Skeptic Sam",
+    "avatarSeed": "sam",
+    "message": "First comment analyzing a key assumption..."
+  },
+  {
+    "persona": "Optimistic Ollie",
+    "avatarSeed": "ollie",
+    "message": "Countering the critique and highlighting the benefit..."
+  },
+  ...
+]
+
+Return only the raw JSON array. Do not include any markdown blocks or formatting.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(500).json({ error: `Gemini API returned error: ${response.status} - ${errorText}` });
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!rawText) {
+      return res.status(500).json({ error: 'Failed to retrieve debate transcript.' });
+    }
+
+    const debate = JSON.parse(rawText);
+    res.status(200).json({ debate });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getBlogQuiz = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    let quiz = await Quiz.findOne({ blogId: id });
+    if (quiz) {
+      const clientQuestions = quiz.questions.map(q => ({
+        question: q.question,
+        options: q.options
+      }));
+      return res.status(200).json({ quizId: quiz._id, questions: clientQuestions });
+    }
+
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY is not defined in environment variables.' });
+    }
+
+    let plainText = blog.content;
+    try {
+      const parsed = JSON.parse(blog.content);
+      if (Array.isArray(parsed)) {
+        plainText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {}
+
+    const prompt = `You are an expert tutor creating a study quiz for a reader of the following blog post.
+Generate exactly 3 multiple-choice questions to test the reader's understanding of the concepts in the blog.
+Each question must have exactly 4 choices, with only 1 correct choice.
+
+Blog Title: ${blog.title}
+Blog Content:
+${plainText}
+
+You MUST return a JSON array containing exactly 3 question objects with this structure:
+[
+  {
+    "question": "A clear, specific question testing key information.",
+    "options": ["Option A text", "Option B text", "Option C text", "Option D text"],
+    "correctAnswerIndex": 1
+  },
+  ...
+]
+
+Return only the raw JSON array. Do not include any markdown blocks or formatting.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(500).json({ error: `Gemini API returned error: ${response.status} - ${errorText}` });
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!rawText) {
+      return res.status(500).json({ error: 'Failed to generate quiz.' });
+    }
+
+    const parsedQuestions = JSON.parse(rawText);
+    
+    quiz = new Quiz({
+      blogId: id,
+      questions: parsedQuestions
+    });
+    await quiz.save();
+
+    const clientQuestions = quiz.questions.map(q => ({
+      question: q.question,
+      options: q.options
+    }));
+
+    res.status(200).json({ quizId: quiz._id, questions: clientQuestions });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const submitBlogQuiz = async (req, res) => {
+  try {
+    const { id } = req.params; // quiz ID
+    const { answers } = req.body; // user answers [0, 1, 2]
+
+    if (!answers || !Array.isArray(answers) || answers.length !== 3) {
+      return res.status(400).json({ error: 'Exactly 3 answers are required.' });
+    }
+
+    const quiz = await Quiz.findById(id);
+    if (!quiz) {
+      return res.status(404).json({ error: 'Quiz not found.' });
+    }
+
+    let correctCount = 0;
+    const details = quiz.questions.map((q, idx) => {
+      const userAns = answers[idx];
+      const isCorrect = userAns === q.correctAnswerIndex;
+      if (isCorrect) correctCount++;
+      return {
+        question: q.question,
+        userAnswerIndex: userAns,
+        correctAnswerIndex: q.correctAnswerIndex,
+        isCorrect
+      };
+    });
+
+    const passed = correctCount === 3;
+    let reputationEarned = 0;
+
+    if (passed && req.user) {
+      reputationEarned = 15;
+      const user = await User.findById(req.user._id);
+      if (user) {
+        user.reputationPoints = (user.reputationPoints || 0) + reputationEarned;
+        if (user.reputationPoints >= 100) {
+          user.badge = 'Senior Scholar';
+        } else if (user.reputationPoints >= 50) {
+          user.badge = 'Active Learner';
+        } else if (user.reputationPoints >= 15) {
+          user.badge = 'Junior Scholar';
+        }
+        await user.save();
+      }
+    }
+
+    res.status(200).json({
+      score: correctCount,
+      passed,
+      reputationEarned,
+      details
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getBlogPodcast = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found.' });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY is not defined in environment variables.' });
+    }
+
+    let plainText = blog.content;
+    try {
+      const parsed = JSON.parse(blog.content);
+      if (Array.isArray(parsed)) {
+        plainText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {}
+
+    const prompt = `You are a professional podcast scriptwriter.
+Rewrite the following blog post into an engaging, conversational 2-minute dialogue between a host named "Alex" and an expert guest named "Jordan".
+The conversation must be structured as a natural discussion, explaining the key findings or details of the article in simple, engaging terms.
+
+Blog Title: ${blog.title}
+Blog Content:
+${plainText}
+
+You MUST return a JSON array containing exactly 8 dialogue turns with this structure:
+[
+  {
+    "speaker": "Alex",
+    "text": "Welcome back listeners! Today we are discussing an awesome post about..."
+  },
+  {
+    "speaker": "Jordan",
+    "text": "Thanks Alex. Yeah, this topic is really fascinating because..."
+  },
+  ...
+]
+
+Return only the raw JSON array. Do not include any markdown blocks or formatting.`;
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(500).json({ error: `Gemini API returned error: ${response.status} - ${errorText}` });
+    }
+
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!rawText) {
+      return res.status(500).json({ error: 'Failed to generate podcast script.' });
+    }
+
+    const script = JSON.parse(rawText);
+    res.status(200).json({ script });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

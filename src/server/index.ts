@@ -15,6 +15,7 @@ import notificationRoutes from './routes/notification';
 import userRoutes from './routes/user';
 import restrictedWordsRoutes from './routes/restrictedWords';
 import communityRoutes from './routes/community';
+import constellationRoutes from './routes/constellation';
 import Blog from './models/Blog';
 
 dotenv.config();
@@ -54,6 +55,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/restricted-words', restrictedWordsRoutes);
 app.use('/api/communities', communityRoutes);
+app.use('/api/constellations', constellationRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -124,6 +126,28 @@ io.on('connection', (socket: Socket) => {
   // Collaborative Editor: Sync content changes
   socket.on('edit_content', ({ blogId, content, title }: { blogId: string; content: string; title: string }) => {
     socket.to(`blog_collab_${blogId}`).emit('content_updated', { content, title });
+  });
+
+  // Collaborative Sprints: Start Sprint
+  socket.on('start_sprint', ({ blogId, durationMs, wordCountGoal }: { blogId: string; durationMs: number; wordCountGoal: number }) => {
+    io.to(`blog_collab_${blogId}`).emit('sprint_started', {
+      durationMs,
+      wordCountGoal,
+      startTime: Date.now()
+    });
+  });
+
+  // Collaborative Sprints: Update Word Count
+  socket.on('update_sprint_progress', ({ blogId, userId, wordCount }: { blogId: string; userId: string; wordCount: number }) => {
+    socket.to(`blog_collab_${blogId}`).emit('sprint_progress', {
+      userId,
+      wordCount
+    });
+  });
+
+  // Collaborative Sprints: Cancel Sprint
+  socket.on('cancel_sprint', ({ blogId }: { blogId: string }) => {
+    io.to(`blog_collab_${blogId}`).emit('sprint_cancelled');
   });
 
   // Collaborative Editor: Leave Room

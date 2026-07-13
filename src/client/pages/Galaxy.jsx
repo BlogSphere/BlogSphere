@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api.js';
 import { m, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 
 // Category color mappings
 const CATEGORY_COLORS = {
@@ -32,6 +33,9 @@ export default function Galaxy() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showTutorial, setShowTutorial] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [constellations, setConstellations] = useState([]);
+  const [selectedConstellation, setSelectedConstellation] = useState(null);
+  const [generatingAIConstellation, setGeneratingAIConstellation] = useState(false);
 
   // Physics simulation data stored in refs to prevent React re-renders on animation frames
   const nodesRef = useRef([]);
@@ -60,18 +64,22 @@ export default function Galaxy() {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch blogs data and build graph
+  // Fetch blogs and constellations data
   useEffect(() => {
     setLoading(true);
-    api.get('/api/blogs')
-      .then((res) => {
-        const blogsData = res.data.blogs || [];
+    Promise.all([
+      api.get('/api/blogs'),
+      api.get('/api/constellations')
+    ])
+      .then(([blogsRes, constsRes]) => {
+        const blogsData = blogsRes.data.blogs || [];
         setBlogs(blogsData);
         initializeGraph(blogsData);
+        setConstellations(constsRes.data.constellations || []);
         setLoading(false);
       })
       .catch((err) => {
-        console.error('Failed to load blogs for Galaxy View:', err);
+        console.error('Failed to load data for Galaxy View:', err);
         setLoading(false);
       });
   }, []);
@@ -402,8 +410,15 @@ export default function Galaxy() {
     const query = searchQuery.toLowerCase().trim();
     const isSearchActive = query.length > 0;
 
-    // Helper to check if node matches search query
+    // Helper to check if node matches search query or selected constellation
     const doesNodeMatchSearch = (node) => {
+      if (selectedConstellation) {
+        if (node.type === 'category') return true;
+        if (node.type === 'blog') {
+          return selectedConstellation.blogs.some(b => `blog-${b._id}` === node.id);
+        }
+        return false;
+      }
       if (!isSearchActive) return true;
       if (node.label.toLowerCase().includes(query)) return true;
       if (node.type === 'blog' && node.data?.category?.toLowerCase().includes(query)) return true;
@@ -459,6 +474,31 @@ export default function Galaxy() {
         }
       }
     });
+
+    // 1.5. Draw Constellation Paths (dashed glowing curve trails)
+    if (selectedConstellation && selectedConstellation.blogs) {
+      ctx.save();
+      ctx.lineWidth = 4;
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#10b981'; // green emerald glow
+      ctx.strokeStyle = '#10b981';
+      ctx.setLineDash([8, 8]);
+      ctx.lineDashOffset = -(time * 12) % 16;
+
+      for (let i = 0; i < selectedConstellation.blogs.length - 1; i++) {
+        const blogAId = `blog-${selectedConstellation.blogs[i]._id}`;
+        const blogBId = `blog-${selectedConstellation.blogs[i+1]._id}`;
+        const nodeA = nodes.find(n => n.id === blogAId);
+        const nodeB = nodes.find(n => n.id === blogBId);
+        if (nodeA && nodeB) {
+          ctx.beginPath();
+          ctx.moveTo(nodeA.x, nodeA.y);
+          ctx.lineTo(nodeB.x, nodeB.y);
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+    }
 
     // 2. Draw Nodes
     nodes.forEach((node) => {
@@ -702,6 +742,27 @@ export default function Galaxy() {
     }
   };
 
+  // AI Constellation generator trigger
+  const handleGenerateAIConstellation = async () => {
+    setGeneratingAIConstellation(true);
+    try {
+      const res = await api.post('/api/constellations/generate', {});
+      const newConst = res.data.constellation;
+      setConstellations(prev => [newConst, ...prev]);
+      setSelectedConstellation(newConst);
+      confetti({
+        particleCount: 80,
+        spread: 60,
+        origin: { y: 0.8 }
+      });
+    } catch (err) {
+      console.error('Failed to generate AI Constellation:', err);
+      alert(err.response?.data?.error || 'Failed to curate path. Make sure you have enough published blogs.');
+    } finally {
+      setGeneratingAIConstellation(false);
+    }
+  };
+
   return (
     <div className="relative w-full h-[calc(100vh-64px)] overflow-hidden bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-white select-none">
       
@@ -799,6 +860,60 @@ export default function Galaxy() {
             className="w-full pl-10 pr-4 py-2.5 rounded-2xl text-xs bg-white/90 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-850 dark:text-white placeholder-slate-450 dark:placeholder-slate-400"
           />
           <Search className="absolute w-4 h-4 text-slate-450 dark:text-slate-400 left-3.5 top-3" />
+        </div>
+
+        {/* Constellations Card */}
+        <div className="w-72 bg-white/90 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200 dark:border-white/10 p-4 rounded-2xl shadow-lg flex flex-col gap-3 max-h-[350px]">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs uppercase font-extrabold tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-500 animate-pulse" />
+              <span>Blog Constellations</span>
+            </h3>
+            {selectedConstellation && (
+              <button 
+                onClick={() => setSelectedConstellation(null)}
+                className="text-[10px] font-bold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          
+          <div className="overflow-y-auto pr-1 flex-1 space-y-2 max-h-[220px]">
+            {constellations.length === 0 ? (
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic text-center py-4">No active paths found.</p>
+            ) : (
+              constellations.map((c) => {
+                const isCurSelected = selectedConstellation && selectedConstellation._id === c._id;
+                return (
+                  <button
+                    key={c._id}
+                    onClick={() => setSelectedConstellation(isCurSelected ? null : c)}
+                    className={`w-full text-left p-2.5 rounded-xl border transition-all flex flex-col gap-1 ${
+                      isCurSelected
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-650 dark:text-emerald-300 shadow-sm'
+                        : 'bg-slate-50/50 hover:bg-slate-100 dark:bg-white/5 dark:hover:bg-white/10 border-slate-200/50 dark:border-white/5 text-slate-700 dark:text-slate-350'
+                    }`}
+                  >
+                    <span className="text-xs font-bold leading-tight">{c.name}</span>
+                    <span className="text-[10px] opacity-80 leading-normal line-clamp-2">{c.description}</span>
+                    <span className="text-[8px] opacity-60 uppercase font-semibold mt-1">
+                      {c.blogs?.length || 0} Star Nodes {c.isAIGenerated && '• AI Curated'}
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+          
+          <button
+            onClick={handleGenerateAIConstellation}
+            disabled={generatingAIConstellation}
+            className="w-full py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md hover:scale-[1.01] transition-all flex items-center justify-center gap-1.5"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>{generatingAIConstellation ? 'Configuring Theme...' : 'Curate AI Learning Path'}</span>
+          </button>
         </div>
       </div>
 

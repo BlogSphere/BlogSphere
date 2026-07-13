@@ -25,7 +25,11 @@ import {
   getDailyAnalytics,
   generateDailyBrief,
   grammarCheck,
-  aiRewrite
+  aiRewrite,
+  getAIDebate,
+  getBlogQuiz,
+  submitBlogQuiz,
+  getBlogPodcast
 } from '../controllers/blogController';
 import { auth, optionalAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/auth';
@@ -58,5 +62,9 @@ router.post('/:id/translate', translateBlog);
 router.post('/:id/ai-translate', auth, aiTranslateBlogBlocks);
 router.get('/:id/versions', auth, getBlogVersions);
 router.post('/:id/versions/:versionId/restore', auth, restoreVersion);
+router.get('/:id/ai-debate', optionalAuth, getAIDebate);
+router.get('/:id/quiz', optionalAuth, getBlogQuiz);
+router.post('/quiz/:id/submit', auth, submitBlogQuiz);
+router.get('/:id/podcast', optionalAuth, getBlogPodcast);
 
 export default router;
