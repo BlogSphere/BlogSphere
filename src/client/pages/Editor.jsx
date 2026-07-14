@@ -589,6 +589,131 @@ export default function Editor() {
       }
     }
   };
+  
+  const handleApplyTemplate = (templateType) => {
+    if (blocks.some(b => b.content && b.content !== 'Introduce your topic here' && b.content !== 'Start typing your paragraph block. Drag blocks from the palette to build your article easily.' && b.content.trim() !== '')) {
+      if (!window.confirm("Applying a template will overwrite your current editor blocks. Do you want to proceed?")) {
+        return;
+      }
+    }
+
+    let templateBlocks = [];
+    const baseId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
+
+    if (templateType === 'empty') {
+      templateBlocks = [
+        { id: baseId(), type: 'h1', content: 'Introduce your topic here' },
+        { id: baseId(), type: 'p', content: 'Start typing your paragraph block...' }
+      ];
+    } else if (templateType === 'tech') {
+      templateBlocks = [
+        { id: baseId(), type: 'h1', content: 'Tech Trends: Deciphering the Next Big Thing' },
+        { id: baseId(), type: 'p', content: 'In today\'s fast-paced tech landscape, new frameworks and tools emerge daily. In this article, we delve deep into the core concepts, discuss structural shifts, and look at practical applications.' },
+        { id: baseId(), type: 'h2', content: 'Understanding the Core Architecture' },
+        { id: baseId(), type: 'p', content: 'To understand why this is a game-changer, we must look at how standard implementations compare to modern decoupled solutions.' },
+        { id: baseId(), type: 'quote', content: 'Architecture is the learning of what to leave out, rather than what to put in.' },
+        { id: baseId(), type: 'h2', content: 'Practical Code Example' },
+        { id: baseId(), type: 'code', content: '// Example of optimized execution pattern\nasync function performHandshake(client) {\n  const session = await client.initializeSession();\n  console.log("Handshake successful. Session ID:", session.id);\n  return session;\n}', language: 'javascript' },
+        { id: baseId(), type: 'callout', content: 'Always make sure to properly clean up open sockets in development to avoid resource leaks.', icon: '💡' },
+        { id: baseId(), type: 'p', content: 'By adhering to these architectural patterns, developers can easily build scalable solutions.' }
+      ];
+    } else if (templateType === 'opinion') {
+      templateBlocks = [
+        { id: baseId(), type: 'h1', content: 'Why Simplicity is the Ultimate Sophistication: An Opinion' },
+        { id: baseId(), type: 'p', content: 'After spending the last few years working with bloated design systems, I\'ve come to realize that less is indeed more. Here is my take on the current state of UI/UX design.' },
+        { id: baseId(), type: 'h2', content: 'The Bloated Systems Problem' },
+        { id: baseId(), type: 'p', content: 'Every website feels the same today. Heavy animations, overlapping elements, and massive script bundles dominate our screens.' },
+        { id: baseId(), type: 'quote', content: 'Design is not just what it looks like and feels like. Design is how it works.' },
+        { id: baseId(), type: 'callout', content: 'Verdict: 8.5/10. Highly recommend returning to core principles.', icon: '🏆' },
+        { id: baseId(), type: 'p', content: 'What do you think? Let\'s discuss in the comments below.' }
+      ];
+    } else if (templateType === 'news') {
+      templateBlocks = [
+        { id: baseId(), type: 'h1', content: 'Weekly Community Round-up & Updates' },
+        { id: baseId(), type: 'p', content: 'Welcome to this week\'s community update! We have some exciting features, milestones, and announcements to share.' },
+        { id: baseId(), type: 'h2', content: 'Top Stories of the Week' },
+        { id: baseId(), type: 'list', content: '🚀 Released version 2.0 with improved state management.\n🎉 Community member list crossed 10,000 active creators!\n🏆 AI DocTutor features received major enhancements.' },
+        { id: baseId(), type: 'quote', content: 'This week saw our highest engagement rate since launching.' },
+        { id: baseId(), type: 'h2', content: 'Upcoming Events' },
+        { id: baseId(), type: 'p', content: 'Join us this Thursday at 5 PM UTC for a live AMA session.' }
+      ];
+    } else if (templateType === 'tutorial') {
+      templateBlocks = [
+        { id: baseId(), type: 'h1', content: 'Step-by-Step Guide: Building X from Scratch' },
+        { id: baseId(), type: 'p', content: 'In this detailed tutorial, we\'ll walk you through creating a highly performant application. We will start with setup, write the main logic, and discuss deployment.' },
+        { id: baseId(), type: 'h2', content: 'Prerequisites' },
+        { id: baseId(), type: 'list', content: 'Node.js installed (v18 or higher)\nBasic familiarity with terminal commands\nAn active internet connection' },
+        { id: baseId(), type: 'h2', content: 'Step 1: Setting up the environment' },
+        { id: baseId(), type: 'p', content: 'First, run the initialization command in your command line:' },
+        { id: baseId(), type: 'code', content: 'npm init -y\nnpm install express dotenv mongodb', language: 'bash' },
+        { id: baseId(), type: 'h2', content: 'Step 2: Coding the Core Server' },
+        { id: baseId(), type: 'p', content: 'Now, create a server.js file and add the following bootstrap code:' },
+        { id: baseId(), type: 'code', content: 'const express = require(\'express\');\nconst app = express();\nconst PORT = process.env.PORT || 3000;\n\napp.get(\'/\', (req, res) => res.send(\'Hello World!\'));\napp.listen(PORT, () => console.log(`Server running on port ${PORT}`));', language: 'javascript' },
+        { id: baseId(), type: 'callout', content: 'Pro tip: Use nodemon to auto-restart your server when code changes.', icon: '💡' },
+        { id: baseId(), type: 'h2', content: 'Wrapping Up' },
+        { id: baseId(), type: 'p', content: 'You now have a working bootstrap server! Let me know if you run into any issues.' }
+      ];
+    }
+
+    if (templateBlocks.length > 0) {
+      handleBlocksChange(templateBlocks);
+      showToast(`${templateType.charAt(0).toUpperCase() + templateType.slice(1)} template applied!`, 'success');
+    }
+  };
+
+  const handleApplyCorrection = (error) => {
+    let corrected = false;
+    const newBlocks = blocks.map(block => {
+      if (block.content && block.content.includes(error.original)) {
+        corrected = true;
+        return {
+          ...block,
+          content: block.content.replace(error.original, error.suggestion)
+        };
+      }
+      return block;
+    });
+
+    if (corrected) {
+      handleBlocksChange(newBlocks);
+      setGrammarErrors(prev => prev.filter(e => e !== error));
+      showToast(`Corrected "${error.original}" to "${error.suggestion}"`, 'success');
+    } else {
+      showToast(`Could not find the text "${error.original}" in the editor.`, 'warning');
+    }
+  };
+
+  const handleApplyAllCorrections = () => {
+    let correctedCount = 0;
+    let currentBlocks = [...blocks];
+
+    grammarErrors.forEach(error => {
+      if (error.suggestion) {
+        let errorCorrected = false;
+        currentBlocks = currentBlocks.map(block => {
+          if (block.content && block.content.includes(error.original)) {
+            errorCorrected = true;
+            return {
+              ...block,
+              content: block.content.replace(error.original, error.suggestion)
+            };
+          }
+          return block;
+        });
+        if (errorCorrected) {
+          correctedCount++;
+        }
+      }
+    });
+
+    if (correctedCount > 0) {
+      handleBlocksChange(currentBlocks);
+      setGrammarErrors([]);
+      showToast(`Successfully applied ${correctedCount} correction(s)!`, 'success');
+    } else {
+      showToast(`No corrections could be applied.`, 'warning');
+    }
+  };
 
   // Sprint countdown timer effect
   useEffect(() => {
@@ -1013,9 +1138,27 @@ export default function Editor() {
                   >
                     <Settings2 className="w-4 h-4" />
                   </button>
-                  <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 select-none">
-                    Toggle sidebars
-                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase select-none">Template:</span>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleApplyTemplate(e.target.value);
+                        e.target.value = ''; // Reset select after applying
+                      }
+                    }}
+                    defaultValue=""
+                    className="px-2.5 py-1 text-xs border rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold focus:outline-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select Layout...</option>
+                    <option value="empty">Empty Draft</option>
+                    <option value="tech">Tech Article</option>
+                    <option value="opinion">Opinion & Review</option>
+                    <option value="news">News & Announcement</option>
+                    <option value="tutorial">Tutorial & Guide</option>
+                  </select>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -2053,22 +2196,33 @@ export default function Editor() {
 
             {grammarErrors.length > 0 && (
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {grammarErrors.map((error) => (
-                  <div key={error.type + '-' + error.original + '-' + error.context} className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/20 rounded-2xl space-y-2">
-                    <div className="flex gap-2 text-xs text-slate-600 dark:text-slate-355 leading-relaxed">
-                      <span className="text-emerald-500 font-bold">•</span>
-                      <span className="font-semibold text-emerald-700 dark:text-emerald-300">{error.type}: </span>
-                      <span>"{error.original}"</span>
-                      {error.suggestion && (
-                        <span className="text-slate-500 dark:text-slate-400">→ Suggested: </span>
-                      )}
-                      {error.suggestion && (
-                        <span className="font-medium text-emerald-600 dark:text-emerald-400">"{error.suggestion}"</span>
-                      )}
+                {grammarErrors.map((error, idx) => (
+                  <div key={idx} className="p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/20 rounded-2xl flex flex-col justify-between md:flex-row md:items-center gap-3">
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex flex-wrap gap-2 text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        <span className="text-emerald-500 font-bold">•</span>
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-300 capitalize">{error.type}: </span>
+                        <span className="line-through text-rose-500 font-medium">"{error.original}"</span>
+                        {error.suggestion && (
+                          <span className="text-slate-500 dark:text-slate-400">→</span>
+                        )}
+                        {error.suggestion && (
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/40 px-1.5 py-0.5 rounded">"{error.suggestion}"</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+                        Context: ...{error.context}...
+                      </div>
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                      Context: ...{error.context}...
-                    </div>
+                    {error.suggestion && (
+                      <button
+                        type="button"
+                        onClick={() => handleApplyCorrection(error)}
+                        className="self-end md:self-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-[10px] font-bold shadow-sm transition-all"
+                      >
+                        Apply Fix
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2087,6 +2241,15 @@ export default function Editor() {
             )}
 
             <div className="flex justify-end gap-3 pt-2">
+              {grammarErrors.some(e => e.suggestion) && (
+                <button
+                  type="button"
+                  onClick={handleApplyAllCorrections}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                >
+                  Apply All Fixes
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setGrammarModalOpen(false)}

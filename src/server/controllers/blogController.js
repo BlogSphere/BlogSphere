@@ -1419,7 +1419,20 @@ export const aiTutorReview = async (req, res) => {
       });
     }
 
-    const prompt = `You are a professional writing tutor and editor named DocTutor. Analyze this draft:\nTitle: "${title || 'Untitled'}"\nContent:\n"${plainText}"\n\nProvide direct, practical, and highly constructive editing feedback, layout critique, and tips to make it more engaging. Format your response with standard markdown bold headers and numbered bullet lists. Return ONLY the review comments.`;
+    const prompt = `You are an expert writing coach, professional editor, and academic writing tutor named DocTutor. 
+Analyze the following blog draft:
+Title: "${title || 'Untitled'}"
+Content:
+"${plainText}"
+
+Please provide comprehensive, highly constructive, and detailed editing feedback. Structure your response using markdown with the following sections:
+1. 💡 **Hook & Introduction**: Evaluate the title and the first paragraph. Is it catchy? Does it draw the reader in?
+2. 🗺️ **Structure & Readability**: Assess the organization, headings, paragraph lengths, and logical transitions. Is it easy to read and scan?
+3. 🎭 **Tone, Style & Vocabulary**: Critique the tone (e.g., professional, casual, academic) and suggest ways to elevate vocabulary and style.
+4. 🚀 **Engagement Tips**: Suggest where a quote block, callout box, bullet list, code block, or image would improve the reading experience.
+5. 📝 **Actionable Checklist**: Provide exactly 3 specific, concrete steps the author should take next to polish this draft.
+
+Return ONLY these review sections. Be encouraging but precise, helping the author produce a top-tier article.`;
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
@@ -1526,24 +1539,23 @@ export const generateDailyBrief = async (req, res) => {
       return `Blog #${i+1}:\nTitle: ${b.title}\nCategory: ${b.category || 'General'}\nTags: ${(b.tags || []).join(', ')}\nPreview: ${text}`;
     }).join('\n\n');
 
-    const prompt = `You are a community director analyzing the blog posts published on our platform today (${date}). Provide a cohesive, daily summary briefing detailing what themes, topics, and discussions occupied our community today based on the posts listed below.
+    const prompt = `You are a professional Community Insights Director analyzing the blog posts published on our platform today (${date}). 
+Provide an insightful, engaging, and professional executive daily briefing detailing what themes, topics, and discussions occupied our community today based on the posts listed below.
 
 Posts published today:
 ${blogDescriptions}
 
 You MUST return a JSON object with this exact structure:
 {
-  "summary": "Provide a cohesive executive summary paragraph (around 3-4 sentences) analyzing the collective community output today.",
+  "summary": "Provide a comprehensive, engaging executive summary (about 5-8 sentences, 120-180 words) analyzing the collective community output today. Touch on the general tone, key insights shared, and how these posts enrich our community knowledge.",
   "keyThemes": [
-    "Theme 1 (e.g. Technology Trends - a short description explaining what was discussed)",
-    "Theme 2 (e.g. Health & Wellness - ...)",
-    "Theme 3 (e.g. Travel logs - ...)",
-    "Theme 4 (e.g. ...)",
-    "Theme 5 (e.g. ...)"
+    "Theme Title 1: A detailed 2-3 sentence analysis of what was discussed, referencing specific points or titles from today's posts.",
+    "Theme Title 2: A detailed 2-3 sentence analysis...",
+    "Theme Title 3: A detailed 2-3 sentence analysis..."
   ]
 }
 
-Only return the JSON object, do not include any markdown backticks or explanation text.`;
+Only return the raw JSON object. Do not wrap it in markdown block quotes (such as \`\`\`json). Provide clean, parseable JSON.`;
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {

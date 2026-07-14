@@ -113,21 +113,17 @@ export default function DailyBriefs() {
             key={idx}
             onClick={() => {
               const dateStr = format(day, 'yyyy-MM-dd');
-              const brief = getBriefForDate(dateStr);
-              if (brief && (brief.blogsCount > 0 || brief.hasBrief)) {
-                setSelectedDate(dateStr);
-              }
+              setSelectedDate(dateStr);
             }}
-            disabled={!getBriefForDate(format(day, 'yyyy-MM-dd')) || getBlogsCountForDate(format(day, 'yyyy-MM-dd')) === 0}
             className={`relative p-3 rounded-xl text-center transition-all ${
               format(day, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
                 ? 'ring-2 ring-primary-500 dark:ring-primary-400'
                 : ''
             } ${getBriefForDate(format(day, 'yyyy-MM-dd')) ? (
               hasBriefForDate(format(day, 'yyyy-MM-dd'))
-                ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/50'
+                ? 'bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-950/50 cursor-pointer'
                 : 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 cursor-pointer'
-            ) : 'bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-600 cursor-not-allowed'} ${selectedDate === format(day, 'yyyy-MM-dd') ? 'ring-2 ring-indigo-500 dark:ring-indigo-400' : ''}`}
+            ) : 'bg-slate-50 dark:bg-slate-900/40 text-slate-400 dark:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'} ${selectedDate === format(day, 'yyyy-MM-dd') ? 'ring-2 ring-indigo-500 dark:ring-indigo-400 shadow-md' : ''}`}
           >
             <div className="text-xs font-medium">{format(day, 'EEE')}</div>
             <div className="text-lg font-bold mt-1">{format(day, 'd')}</div>

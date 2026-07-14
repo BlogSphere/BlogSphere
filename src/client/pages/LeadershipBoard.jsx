@@ -308,6 +308,12 @@ export default function LeadershipBoard() {
           </div>
         </div>
       </div>
+      {selectedUser && (
+        <EarningsBreakdownModal
+          user={selectedUser}
+          onClose={() => setSelectedUser(null)}
+        />
+      )}
     </div>
   );
 }
