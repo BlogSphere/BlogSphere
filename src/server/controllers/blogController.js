@@ -5,6 +5,7 @@ import DailyBrief from '../models/DailyBrief.js';
 import Notification from '../models/Notification.js';
 import Community from '../models/Community.js';
 import Quiz from '../models/Quiz.js';
+import Comment from '../models/Comment.js';
 import { checkRestrictedContent } from './restrictedWordController.js';
 import { recalculateReputation } from './userController.js';
 import { recommendationEngine } from '../services/ai/recommendationEngine.js';
