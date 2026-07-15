@@ -32,7 +32,6 @@ class RecommendationEngine {
       nextOffset: offset + limit
     };
   }
-
   async getCandidateBlogs(user, options) {
     const { category, excludePublished } = options;
     const query = { status: 'published' };
@@ -42,48 +41,11 @@ class RecommendationEngine {
       query.author = { $ne: user._id };
     }
 
-    const interests = user.interests || [];
-    const subscribedCategories = user.subscribedCategories || [];
-    const hiddenTags = user.hiddenTags || [];
-    const followedUsers = user.followedUsers || [];
-    const readingHistory = user.readingHistory || [];
-
-    const orConditions = [];
-    
-    if (interests.length > 0) {
-      orConditions.push({ tags: { $in: interests } });
-    }
-    if (hiddenTags.length > 0) {
-      orConditions.push({ tags: { $in: hiddenTags } });
-    }
-    if (subscribedCategories.length > 0) {
-      orConditions.push({ category: { $in: subscribedCategories } });
-    }
-    if (followedUsers.length > 0) {
-      orConditions.push({ author: { $in: followedUsers } });
-    }
-    if (readingHistory.length > 0) {
-      const recentReads = await Blog.find({ _id: { $in: readingHistory.slice(-50) } })
-        .select('tags category author').lean();
-      const tags = [...new Set(recentReads.flatMap(b => b.tags))];
-      const categories = [...new Set(recentReads.map(b => b.category).filter(Boolean))];
-      const authors = [...new Set(recentReads.map(b => b.author.toString()))];
-      
-      if (tags.length) orConditions.push({ tags: { $in: tags } });
-      if (categories.length) orConditions.push({ category: { $in: categories } });
-      if (authors.length) orConditions.push({ author: { $in: authors } });
-    }
-
-    if (orConditions.length > 0) {
-      query.$or = orConditions;
-    }
-
     return Blog.find(query)
       .sort({ createdAt: -1 })
       .limit(200)
       .lean();
   }
-
   async scoreBlogsForUser(blogs, user) {
     const userInterests = new Set(user.interests || []);
     const userCategories = new Set(user.subscribedCategories || []);
@@ -151,11 +113,12 @@ class RecommendationEngine {
     const reactions = Object.values(blog.reactions || {}).flat().length;
 
     const engagementRate = views > 0 ? (likes + comments * 2 + reactions + completions * 3) / views : 0;
+    const confidenceFactor = Math.min(views / 10, 1.0);
     const velocity = this.calculateVelocity(blog);
 
     return Math.log10(likes + 1) * 5 + 
            Math.log10(comments + 1) * 3 + 
-           engagementRate * 100 + 
+           (engagementRate * 100 * confidenceFactor) + 
            velocity * 10;
   }
 
