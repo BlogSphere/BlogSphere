@@ -78,6 +78,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     trim: true
   }],
+  collections: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Collection'
+  }],
+  followedCollections: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Collection'
+  }],
   socialLinks: {
     twitter: { type: String, default: '' },
     github: { type: String, default: '' },

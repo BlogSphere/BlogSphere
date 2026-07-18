@@ -16,6 +16,7 @@ import userRoutes from './routes/user';
 import restrictedWordsRoutes from './routes/restrictedWords';
 import communityRoutes from './routes/community';
 import constellationRoutes from './routes/constellation';
+import collectionRoutes from './routes/collection';
 import Blog from './models/Blog';
 
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/restricted-words', restrictedWordsRoutes);
 app.use('/api/communities', communityRoutes);
 app.use('/api/constellations', constellationRoutes);
+app.use('/api/collections', collectionRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -106,6 +108,15 @@ io.on('connection', (socket: Socket) => {
   // Join private room for real-time notifications
   socket.on('join_user', (userId: string) => {
     socket.join(`user_${userId}`);
+  });
+
+  // Join collection room for real-time updates
+  socket.on('join_collection', (collectionId: string) => {
+    socket.join(`collection_${collectionId}`);
+  });
+
+  socket.on('leave_collection', (collectionId: string) => {
+    socket.leave(`collection_${collectionId}`);
   });
 
   // Collaborative Editor: Join Room

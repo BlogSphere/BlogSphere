@@ -142,6 +142,9 @@ export default function Navbar() {
               <Link to="/" className={`transition-colors ${location.pathname === '/' ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
                 Home
               </Link>
+              <Link to="/collections" className={`transition-colors ${location.pathname.startsWith('/collections') ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
+                Collections 📚
+              </Link>
               <Link to="/communities" className={`transition-colors ${location.pathname === '/communities' ? 'text-primary-600 dark:text-primary-455' : 'text-slate-550 dark:text-slate-400 hover:text-primary-600'}`}>
                 Communities
               </Link>
@@ -347,6 +350,13 @@ export default function Navbar() {
             className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-355 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
           >
             Communities
+          </Link>
+          <Link
+            to="/collections"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-sm font-bold text-slate-700 dark:text-slate-355 hover:text-primary-600 border-b border-slate-50 dark:border-slate-850"
+          >
+            Collections 📚
           </Link>
           <Link
             to="/galaxy"

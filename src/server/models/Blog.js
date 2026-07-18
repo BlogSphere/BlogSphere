@@ -119,6 +119,16 @@ const BlogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+BlogSchema.virtual('collections', {
+  ref: 'Collection',
+  localField: '_id',
+  foreignField: 'items.blog',
+  justOne: false
 });
 
 const Blog = mongoose.model('Blog', BlogSchema);

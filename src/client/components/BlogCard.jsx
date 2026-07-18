@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Heart, Clock, User } from 'lucide-react';
+import { Eye, Heart, Clock, User, FolderPlus } from 'lucide-react';
 import { m } from 'framer-motion';
+import { useDispatch, useSelector } from 'react-redux';
+import { setAddToCollectionModal } from '../redux/collectionSlice';
 
 // Clean text helper that handles both HTML and JSON block array structure
 const getCleanText = (content) => {
@@ -44,6 +46,9 @@ const sanitizeImageUrl = (src) => {
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&q=80&w=800';
 
 export default function BlogCard({ blog }) {
+  const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  
   const readTime = getReadTime(blog.content);
   const snippet = getSnippet(blog.content);
   const imageUrl = sanitizeImageUrl(blog.coverImage) || FALLBACK_IMAGE;
@@ -138,6 +143,19 @@ export default function BlogCard({ blog }) {
               <Clock className="w-3.5 h-3.5" />
               {readTime}m
             </span>
+            {isAuthenticated && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  dispatch(setAddToCollectionModal({ open: true, blogId: blog._id }));
+                }}
+                className="flex items-center gap-1 hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg"
+                title="Add to Collection"
+              >
+                <FolderPlus className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </div>

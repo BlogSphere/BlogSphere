@@ -2,11 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail } from 'lucide-react';
+import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail, FolderPlus } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
 import { m, AnimatePresence } from 'framer-motion';
 import { updateCurrentUser } from '../redux/authSlice.js';
+import { setAddToCollectionModal } from '../redux/collectionSlice';
 
 const parseInlineMarkdown = (text) => {
   if (!text) return '';
@@ -156,6 +157,7 @@ export default function BlogDetail() {
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [reactions, setReactions] = useState({ thumbsUp: [], heart: [], clap: [], laugh: [] });
+  const [inCollections, setInCollections] = useState([]);
 
   // Followers states
   const [followersCount, setFollowersCount] = useState(0);
@@ -252,6 +254,14 @@ export default function BlogDetail() {
 
         // Load comments
         fetchComments(data._id);
+        
+        // Fetch collections containing this blog
+        api.get(`/api/collections/blog/${data._id}`)
+          .then((cRes) => {
+            setInCollections(cRes.data.collections || []);
+          })
+          .catch(console.error);
+          
         setLoading(false);
       })
       .catch((err) => {
@@ -1414,6 +1424,17 @@ export default function BlogDetail() {
 
           {isAuthenticated && (
             <button
+              onClick={() => dispatch(setAddToCollectionModal({ open: true, blogId: blog._id }))}
+              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-indigo-650 transition-all hover:scale-105"
+              title="Add to Collection"
+            >
+              <FolderPlus className="w-5 h-5" />
+              <span>Save to Collection</span>
+            </button>
+          )}
+
+          {isAuthenticated && (
+            <button
               onClick={() => setReportOpen(true)}
               className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-rose-500 transition-all hover:scale-105"
               title="Report this article"
@@ -1584,6 +1605,28 @@ export default function BlogDetail() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Part of Collections Banner */}
+      {inCollections.length > 0 && (
+        <div className="mt-6 p-5 rounded-3xl border border-indigo-500/20 bg-indigo-500/5 text-left space-y-2">
+          <h4 className="text-xs font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4" />
+            <span>Featured in Curated Collections</span>
+          </h4>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {inCollections.map(col => (
+              <Link
+                key={col._id}
+                to={`/collections/${col.slug}`}
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-650 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-full shadow-sm hover:scale-102 transition-all"
+              >
+                <span>{col.title}</span>
+                <span className="text-[10px] text-slate-450 font-normal">({col.itemsCount || 0} items)</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Comments Section */}
       <div className="mt-12 border-t border-slate-200 dark:border-slate-800 pt-8">

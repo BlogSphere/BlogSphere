@@ -65,6 +65,23 @@ export default function Sidebar({ currentCategory, currentTag }) {
         </Link>
       </div>
 
+      {/* Curated Collections Panel */}
+      <div className="p-5 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-md">
+        <h3 className="text-xs font-extrabold tracking-wider text-slate-400 uppercase mb-2 flex items-center gap-1.5">
+          <BookMarked className="w-4 h-4 text-indigo-500" />
+          <span>Curated Reading Lists</span>
+        </h3>
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+          Explore structured article series and expert learning tracks.
+        </p>
+        <Link
+          to="/collections"
+          className="w-full py-2 rounded-xl text-center text-xs font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-650 dark:text-indigo-400 block transition-all border border-indigo-500/10"
+        >
+          Browse Collections
+        </Link>
+      </div>
+
       {/* Categories Panel */}
       <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
         <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">

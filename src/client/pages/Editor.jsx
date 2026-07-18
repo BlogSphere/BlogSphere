@@ -201,8 +201,8 @@ export default function Editor() {
 
   // Blocks builder state
   const [blocks, setBlocks] = useState([
-    { id: '1', type: 'h1', content: 'Introduce your topic here' },
-    { id: '2', type: 'p', content: 'Start typing your paragraph block. Drag blocks from the palette to build your article easily.' }
+    { id: '1', type: 'h1', content: '' },
+    { id: '2', type: 'p', content: '' }
   ]);
 
   // Collaborators
@@ -591,7 +591,7 @@ export default function Editor() {
   };
   
   const handleApplyTemplate = (templateType) => {
-    if (blocks.some(b => b.content && b.content !== 'Introduce your topic here' && b.content !== 'Start typing your paragraph block. Drag blocks from the palette to build your article easily.' && b.content.trim() !== '')) {
+    if (blocks.some(b => b.content && b.content.trim() !== '')) {
       if (!window.confirm("Applying a template will overwrite your current editor blocks. Do you want to proceed?")) {
         return;
       }
@@ -602,8 +602,8 @@ export default function Editor() {
 
     if (templateType === 'empty') {
       templateBlocks = [
-        { id: baseId(), type: 'h1', content: 'Introduce your topic here' },
-        { id: baseId(), type: 'p', content: 'Start typing your paragraph block...' }
+        { id: baseId(), type: 'h1', content: '' },
+        { id: baseId(), type: 'p', content: '' }
       ];
     } else if (templateType === 'tech') {
       templateBlocks = [

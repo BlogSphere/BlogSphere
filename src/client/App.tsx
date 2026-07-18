@@ -15,6 +15,10 @@ import Profile from './pages/Profile';
 import Galaxy from './pages/Galaxy';
 import Communities from './pages/Communities';
 import AdCenter from './pages/AdCenter';
+import Collections from './pages/Collections';
+import CollectionDetail from './pages/CollectionDetail';
+import CollectionEditor from './pages/CollectionEditor';
+import AddToCollectionModal from './components/collections/AddToCollectionModal.jsx';
 import api from './utils/api';
 import { LazyMotion, domAnimation, MotionConfig } from 'framer-motion';
 
@@ -43,6 +47,7 @@ export default function App() {
           <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
             {/* Navigation Bar */}
             <Navbar />
+            <AddToCollectionModal />
 
             {/* Core Layout Routes */}
             <div className="flex-1 w-full">
@@ -64,6 +69,10 @@ export default function App() {
                 <Route path="/profile/:id" element={<Profile />} />
                 <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/communities" element={<Communities />} />
+                <Route path="/collections" element={<Collections />} />
+                <Route path="/collections/:slug" element={<CollectionDetail />} />
+                <Route path="/collections/new" element={<CollectionEditor />} />
+                <Route path="/collections/:id/edit" element={<CollectionEditor />} />
               </Routes>
             </div>
 
