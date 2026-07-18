@@ -9,8 +9,14 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 ## ✨ Features
 
 - **⚡ Real-Time Collaboration**: Co-edit blog posts in real-time with other authors using Socket.io integration.
+- **🧠 Smart AI Recommendation Engine**: Tailor article feeds to each user utilizing a custom multi-factor scoring model that accounts for category/interest overlaps, read history, user recency, and collaborative filtering. Dynamically scales up lower-view count posts to boost feed diversity and exposure.
+- **🤖 AI Bio Classification**: On registration and profile edits, user bios are analyzed by Gemini to extract high-level categories (e.g. Technology, Travel, Food, Education, Sports) and a system-level hidden tag, immediately seeding high-relevance recommendations.
+- **🏆 Public Creator Leaderboard**: Real-time public rankings for creators showcasing estimated earnings breakdown (calculated from views, posts, likes, reactions, and comments) along with their top-performing article.
+- **🔒 Premium-Locked Daily AI Briefs**: Daily AI-generated newsletters and analytics are gated for authenticated users, featuring a beautiful premium lock screen for guest visitors.
+- **🔔 High-Fidelity Toast Notification System**: Custom React context-driven Toast alerts built with Framer Motion and Lucide React icons, offering success, error, warning, and informational pop-ups.
 - **🤖 Block AI Assistant**: Polish and expand text blocks (headings, paragraphs, lists, quotes) inside the editor dynamically using Gemini.
 - **🧑‍🏫 AI DocTutor**: An interactive writing coach drawer that scores your draft quality (0-100), offers formatting recommendations, and provides structured coaching feedback on demand.
+- **🏷️ Strict Tag Normalization**: Automatically sanitizes user tags to lowercase, single-word alphanumeric strings to enforce unified indexing.
 - **🛡️ Secure Admin Control**: Protected route mappings with automatic bootstrapping of a default system administrator (`admin@blogsphere.com` / `AdminPassword123!`) on startup. Dynamic signup requests for the `admin` role are blocked.
 - **🕵️ Anonymous Publishing**: Toggle anonymity for posts. Authors can choose to write anonymously to mask their details across feed directory views.
 - **🔒 Account Privacy Switches**: Toggle account visibility between public and private. Private accounts hide detailed profile fields.
@@ -21,6 +27,7 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 - **🔔 Live Notifications**: Real-time push updates for collaborative events, comments, and post updates.
 - **🎨 Glassmorphic UI**: Beautiful responsive design built with Tailwind CSS and smooth micro-interactions powered by Framer Motion.
 - **🌙 Seamless Dark Mode**: Fully automated class-based light/dark theme switcher.
+- **🔌 Local Network Testing Support**: Vite configured with `host: true` and Socket.io proxies to enable collaborative testing across local network devices.
 
 ---
 
@@ -29,6 +36,7 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 ### Frontend
 - **Framework**: React 19 (Vite)
 - **State Management**: Redux Toolkit
+- **Notifications**: Custom React Context Toast System (Framer Motion)
 - **State Slices**: authSlice
 - **Styling**: Tailwind CSS, PostCSS
 - **Animation**: Framer Motion
@@ -40,8 +48,8 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 - **Framework**: Express.js
 - **Database**: MongoDB (Mongoose ODM)
 - **Authentication**: JWT & bcryptjs
-- **Sockets**: Socket.io
-- **AI Engine**: Google Gemini API
+- **Sockets**: Socket.io (proxied through Vite in development)
+- **AI Engine**: Google Gemini API (used for DocTutor, Bio Classification, and automated content generation)
 
 ---
 
@@ -56,6 +64,7 @@ BlogSphere/
 │   ├── client/             # Frontend source code (Vite + React)
 │   │   ├── assets/         # Styles, images, SVGs
 │   │   ├── components/     # Reusable layout and ui components
+│   │   ├── context/        # React context providers (Toast alert system)
 │   │   ├── pages/          # View routing pages (Home, Editor, Admin, Auth, AdCenter)
 │   │   ├── redux/          # Redux Toolkit store and auth slices
 │   │   └── utils/          # API hooks and axios custom configurations
@@ -64,6 +73,7 @@ BlogSphere/
 │       ├── middleware/     # Auth and error handling guards
 │       ├── models/         # Mongoose DB schema definitions
 │       ├── routes/         # Express router endpoints mapping
+│       ├── services/       # Core business & AI logic (recommendation engine)
 │       └── index.js        # Backend entrypoint and websocket server config
 ├── .env                    # Unified server and local env configuration
 ├── index.html              # Vite React entry point template
