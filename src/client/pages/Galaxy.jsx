@@ -46,9 +46,10 @@ export default function Galaxy() {
   const linksRef = useRef([]);
   const backgroundStarsRef = useRef([]);
   
-  // Pan and zoom refs
+  // Pan, rotation, and zoom refs
   const panOffsetRef = useRef({ x: 0, y: 0 });
-  const zoomScaleRef = useRef(0.9);
+  const zoomScaleRef = useRef(1.0);
+  const cameraRotationRef = useRef({ x: 0.2, y: -0.3 }); // Starts with a nice tilt
   const isPanningRef = useRef(false);
   const startPanRef = useRef({ x: 0, y: 0 });
   const draggedNodeRef = useRef(null);
@@ -88,19 +89,18 @@ export default function Galaxy() {
       });
   }, []);
 
-  // Initialize nodes and links
+  // Initialize nodes and links in 3D
   const initializeGraph = (blogsList) => {
     const nodes = [];
     const links = [];
     const seenTags = new Set();
     const categoriesList = ['Technology', 'Travel', 'Food', 'Education', 'Sports'];
 
-    // 1. Create Category Hub Nodes
+    // 1. Create Category Hub Nodes in 3D (Placed in a ring on the X-Z plane)
     categoriesList.forEach((cat, index) => {
       const colors = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Default;
-      // Position categories in a circle around the center
       const angle = (index / categoriesList.length) * Math.PI * 2;
-      const radius = 250;
+      const radius = 320;
       
       nodes.push({
         id: `cat-${cat}`,
@@ -111,24 +111,28 @@ export default function Galaxy() {
         textColor: colors.text,
         radius: 26,
         x: Math.cos(angle) * radius,
-        y: Math.sin(angle) * radius,
+        y: (Math.random() - 0.5) * 60, // slight height displacement
+        z: Math.sin(angle) * radius,
         vx: 0,
         vy: 0,
+        vz: 0,
         fixed: true // Keep the category cores mostly anchored
       });
     });
 
-    // 2. Create Blog Nodes and connect them to their category hub
+    // 2. Create Blog Nodes and connect them to their category hub in 3D
     blogsList.forEach((blog) => {
       const cat = blog.category || 'Default';
       const colors = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Default;
       const angle = Math.random() * Math.PI * 2;
-      const dist = 80 + Math.random() * 80;
+      const pitch = (Math.random() - 0.5) * Math.PI;
+      const dist = 90 + Math.random() * 80;
       
       // Calculate starting position near their category core
       const parentCatNode = nodes.find(n => n.id === `cat-${cat}`);
       const parentX = parentCatNode ? parentCatNode.x : 0;
       const parentY = parentCatNode ? parentCatNode.y : 0;
+      const parentZ = parentCatNode ? parentCatNode.z : 0;
 
       const blogNodeId = `blog-${blog._id}`;
       nodes.push({
@@ -139,10 +143,12 @@ export default function Galaxy() {
         glowColor: colors.glow,
         textColor: isDarkMode ? '#cbd5e1' : '#334155',
         radius: 14,
-        x: parentX + Math.cos(angle) * dist,
-        y: parentY + Math.sin(angle) * dist,
+        x: parentX + Math.cos(angle) * Math.cos(pitch) * dist,
+        y: parentY + Math.sin(pitch) * dist,
+        z: parentZ + Math.sin(angle) * Math.cos(pitch) * dist,
         vx: (Math.random() - 0.5) * 2,
         vy: (Math.random() - 0.5) * 2,
+        vz: (Math.random() - 0.5) * 2,
         data: blog
       });
 
@@ -156,17 +162,16 @@ export default function Galaxy() {
 
       // 3. Process tags
       if (blog.tags && Array.isArray(blog.tags)) {
-        // Only map top 2 tags per blog to prevent galaxy clutter
         blog.tags.slice(0, 2).forEach((tag) => {
           const cleanTag = tag.trim();
           if (!cleanTag) return;
 
           const tagNodeId = `tag-${cleanTag.toLowerCase()}`;
           
-          // Add tag node if not seen yet
           if (!seenTags.has(tagNodeId)) {
             seenTags.add(tagNodeId);
             const tagAngle = Math.random() * Math.PI * 2;
+            const tagPitch = (Math.random() - 0.5) * Math.PI;
             const tagDist = 50 + Math.random() * 30;
             
             nodes.push({
@@ -177,10 +182,12 @@ export default function Galaxy() {
               glowColor: 'rgba(192, 132, 252, 0.2)',
               textColor: '#e9d5ff',
               radius: 8,
-              x: parentX + Math.cos(tagAngle) * (dist + tagDist),
-              y: parentY + Math.sin(tagAngle) * (dist + tagDist),
+              x: parentX + Math.cos(tagAngle) * Math.cos(tagPitch) * (dist + tagDist),
+              y: parentY + Math.sin(tagPitch) * (dist + tagDist),
+              z: parentZ + Math.sin(tagAngle) * Math.cos(tagPitch) * (dist + tagDist),
               vx: (Math.random() - 0.5) * 1.5,
-              vy: (Math.random() - 0.5) * 1.5
+              vy: (Math.random() - 0.5) * 1.5,
+              vz: (Math.random() - 0.5) * 1.5
             });
           }
 
@@ -199,13 +206,14 @@ export default function Galaxy() {
     nodesRef.current = nodes;
     linksRef.current = links;
 
-    // Create 150 background stars
+    // Create 200 background stars in a 3D field
     const backgroundStars = [];
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 200; i++) {
       backgroundStars.push({
-        x: (Math.random() - 0.5) * 3000,
-        y: (Math.random() - 0.5) * 3000,
-        size: Math.random() * 1.8 + 0.3,
+        x: (Math.random() - 0.5) * 5000,
+        y: (Math.random() - 0.5) * 5000,
+        z: (Math.random() - 0.5) * 5000,
+        size: Math.random() * 2.0 + 0.3,
         alpha: Math.random(),
         twinkleSpeed: 0.01 + Math.random() * 0.03
       });
@@ -213,7 +221,7 @@ export default function Galaxy() {
     backgroundStarsRef.current = backgroundStars;
   };
 
-  // Run the physics engine loop
+  // Run the physics engine loop in 3D
   useEffect(() => {
     let animationFrameId;
     const canvas = canvasRef.current;
@@ -222,7 +230,6 @@ export default function Galaxy() {
     const ctx = canvas.getContext('2d');
     let time = 0;
 
-    // Adjust canvas size to parent container
     const resizeCanvas = () => {
       const container = canvas.parentElement;
       canvas.width = container.clientWidth;
@@ -231,16 +238,16 @@ export default function Galaxy() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Physics constants
-    const K_REPULSION = 2200; // Force repelling nodes from each other
-    const K_CENTER_GRAVITY = 0.015; // Pull nodes towards the center
+    // 3D Physics constants
+    const K_REPULSION = 2600; 
+    const K_CENTER_GRAVITY = 0.015; 
 
     const animationLoop = () => {
       time += 0.05;
       const nodes = nodesRef.current;
       const links = linksRef.current;
 
-      // 1. Calculate Repulsion Forces (all pairs of nodes repel)
+      // 1. Calculate 3D Repulsion Forces
       for (let i = 0; i < nodes.length; i++) {
         const nodeA = nodes[i];
         if (nodeA.fixed) continue;
@@ -251,26 +258,26 @@ export default function Galaxy() {
 
           const dx = nodeA.x - nodeB.x;
           const dy = nodeA.y - nodeB.y;
-          // Avoid dividing by zero
-          const distSq = dx * dx + dy * dy + 0.1;
+          const dz = nodeA.z - nodeB.z;
+          const distSq = dx * dx + dy * dy + dz * dz + 0.1;
           const dist = Math.sqrt(distSq);
 
-          if (dist < 400) {
-            // Stronger repulsion when closer
+          if (dist < 450) {
             const force = K_REPULSION / distSq;
             nodeA.vx += (dx / dist) * force;
             nodeA.vy += (dy / dist) * force;
+            nodeA.vz += (dz / dist) * force;
           }
         }
 
-        // Pull slightly to center grid (gravity)
+        // Pull towards center gravity
         nodeA.vx -= nodeA.x * K_CENTER_GRAVITY;
         nodeA.vy -= nodeA.y * K_CENTER_GRAVITY;
+        nodeA.vz -= nodeA.z * K_CENTER_GRAVITY;
       }
 
-      // 2. Calculate Attraction Forces along links (spring force)
+      // 2. Calculate 3D Attraction Forces
       links.forEach((link) => {
-        // Resolve source and target
         const nodeA = nodes.find(n => n.id === link.source);
         const nodeB = nodes.find(n => n.id === link.target);
 
@@ -278,61 +285,69 @@ export default function Galaxy() {
 
         const dx = nodeB.x - nodeA.x;
         const dy = nodeB.y - nodeA.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 0.1;
+        const dz = nodeB.z - nodeA.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) || 0.1;
 
-        // Hooke's Law: F = k * (x - d0)
         const displacement = dist - link.length;
         const force = displacement * link.strength;
 
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
+        const fz = (dz / dist) * force;
 
         if (!nodeA.fixed) {
           nodeA.vx += fx;
           nodeA.vy += fy;
+          nodeA.vz += fz;
         }
         if (!nodeB.fixed) {
           nodeB.vx -= fx;
           nodeB.vy -= fy;
+          nodeB.vz -= fz;
         }
       });
 
-      // 3. Update Positions & Damping Friction
+      // 3. Update 3D Positions & Friction
       nodes.forEach((node) => {
         if (node.fixed) {
-          // Slowly rotate category hubs around center to add a subtle spinning galaxy look
+          // Slow spin of category nodes on the X-Z plane
           if (node.type === 'category') {
-            const currentAngle = Math.atan2(node.y, node.x);
-            const r = Math.sqrt(node.x * node.x + node.y * node.y);
+            const currentAngle = Math.atan2(node.z, node.x);
+            const r = Math.sqrt(node.x * node.x + node.z * node.z);
             const newAngle = currentAngle + 0.0003;
             node.x = Math.cos(newAngle) * r;
-            node.y = Math.sin(newAngle) * r;
+            node.z = Math.sin(newAngle) * r;
           }
           return;
         }
 
-        // If dragged, fix to mouse coordinates
         if (draggedNodeRef.current && draggedNodeRef.current.id === node.id) {
           return;
         }
 
-        // Apply friction
-        node.vx *= 0.82;
-        node.vy *= 0.82;
+        node.vx *= 0.83;
+        node.vy *= 0.83;
+        node.vz *= 0.83;
 
-        // Limit speed
-        const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
+        const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy + node.vz * node.vz);
         const maxSpeed = 10;
         if (speed > maxSpeed) {
           node.vx = (node.vx / speed) * maxSpeed;
           node.vy = (node.vy / speed) * maxSpeed;
+          node.vz = (node.vz / speed) * maxSpeed;
         }
 
         node.x += node.vx;
         node.y += node.vy;
+        node.z += node.vz;
       });
 
-      // 4. Render Layout
+      // Camera auto-rotation (Yaw) when idle
+      if (!isPanningRef.current && !draggedNodeRef.current) {
+        cameraRotationRef.current.y += 0.0006;
+      }
+
+      // 4. Render 3D Canvas
       drawCanvas(ctx, canvas.width, canvas.height, time);
 
       animationFrameId = requestAnimationFrame(animationLoop);
@@ -346,75 +361,130 @@ export default function Galaxy() {
     };
   }, [isDarkMode, searchQuery]);
 
-  // Main canvas drawing function
+  // Main 3D Canvas drawing function
   const drawCanvas = (ctx, width, height, time) => {
     ctx.clearRect(0, 0, width, height);
 
-    // Save context
     ctx.save();
     
-    // Fill background gradient
+    // Background gradient
     const bgGrad = ctx.createRadialGradient(width / 2, height / 2, 10, width / 2, height / 2, Math.max(width, height));
     if (isDarkMode) {
-      bgGrad.addColorStop(0, '#0f172a'); // slate-900
-      bgGrad.addColorStop(1, '#020617'); // slate-950
+      bgGrad.addColorStop(0, '#0f172a');
+      bgGrad.addColorStop(1, '#020617');
     } else {
-      bgGrad.addColorStop(0, '#f8fafc'); // slate-50
-      bgGrad.addColorStop(1, '#e2e8f0'); // slate-200
+      bgGrad.addColorStop(0, '#f8fafc');
+      bgGrad.addColorStop(1, '#e2e8f0');
     }
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, width, height);
 
-    // Grid Blueprint Effect (in light mode) or subtle grid (in dark mode)
-    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.015)' : 'rgba(0, 0, 0, 0.025)';
+    // 3D to 2D projection logic
+    const project3D = (x, y, z) => {
+      // Rotation around Y-axis (Yaw)
+      const cosY = Math.cos(cameraRotationRef.current.y);
+      const sinY = Math.sin(cameraRotationRef.current.y);
+      const x1 = x * cosY - z * sinY;
+      const z1 = x * sinY + z * cosY;
+
+      // Rotation around X-axis (Pitch)
+      const cosX = Math.cos(cameraRotationRef.current.x);
+      const sinX = Math.sin(cameraRotationRef.current.x);
+      const y2 = y * cosX - z1 * sinX;
+      const z2 = y * sinX + z1 * cosX;
+
+      // Perspective variables
+      const D = 900; 
+      const fov = 800; 
+      const zoomFactor = zoomScaleRef.current;
+      const depth = D / zoomFactor - z2;
+
+      if (depth <= 10) return null;
+
+      const scale = fov / depth;
+      return {
+        x: x1 * scale,
+        y: y2 * scale,
+        depth: depth,
+        scale: scale
+      };
+    };
+
+    // Draw Floor Grid in 3D (adds excellent spatial awareness)
+    ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(0, 0, 0, 0.035)';
     ctx.lineWidth = 1;
-    const gridSpacing = 40;
+    const gridSpacing = 80;
+    const gridLimit = 800;
+    const floorY = 150; 
     
-    // Adjust drawing viewport with user pan and zoom
-    ctx.translate(width / 2 + panOffsetRef.current.x, height / 2 + panOffsetRef.current.y);
-    ctx.scale(zoomScaleRef.current, zoomScaleRef.current);
-
-    // Draw background grid lines (infinitely matching viewport coordinate spaces)
-    const viewLeft = (-width / 2 - panOffsetRef.current.x) / zoomScaleRef.current;
-    const viewRight = (width / 2 - panOffsetRef.current.x) / zoomScaleRef.current;
-    const viewTop = (-height / 2 - panOffsetRef.current.y) / zoomScaleRef.current;
-    const viewBottom = (height / 2 - panOffsetRef.current.y) / zoomScaleRef.current;
-
-    ctx.beginPath();
-    for (let x = Math.floor(viewLeft / gridSpacing) * gridSpacing; x < viewRight; x += gridSpacing) {
-      ctx.moveTo(x, viewTop);
-      ctx.lineTo(x, viewBottom);
+    // Draw floor grid lines along X
+    for (let x = -gridLimit; x <= gridLimit; x += gridSpacing) {
+      ctx.beginPath();
+      let first = true;
+      for (let z = -gridLimit; z <= gridLimit; z += 40) {
+        const pt = project3D(x, floorY, z);
+        if (pt) {
+          const sx = pt.x + panOffsetRef.current.x + width / 2;
+          const sy = pt.y + panOffsetRef.current.y + height / 2;
+          if (first) {
+            ctx.moveTo(sx, sy);
+            first = false;
+          } else {
+            ctx.lineTo(sx, sy);
+          }
+        }
+      }
+      ctx.stroke();
     }
-    for (let y = Math.floor(viewTop / gridSpacing) * gridSpacing; y < viewBottom; y += gridSpacing) {
-      ctx.moveTo(viewLeft, y);
-      ctx.lineTo(viewRight, y);
+    
+    // Draw floor grid lines along Z
+    for (let z = -gridLimit; z <= gridLimit; z += gridSpacing) {
+      ctx.beginPath();
+      let first = true;
+      for (let x = -gridLimit; x <= gridLimit; x += 40) {
+        const pt = project3D(x, floorY, z);
+        if (pt) {
+          const sx = pt.x + panOffsetRef.current.x + width / 2;
+          const sy = pt.y + panOffsetRef.current.y + height / 2;
+          if (first) {
+            ctx.moveTo(sx, sy);
+            first = false;
+          } else {
+            ctx.lineTo(sx, sy);
+          }
+        }
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
 
-    // Draw Twinkling Background Stars (only in dark mode)
-    if (isDarkMode) {
-      ctx.fillStyle = '#ffffff';
-      backgroundStarsRef.current.forEach((star) => {
-        star.alpha += Math.sin(time * star.twinkleSpeed) * 0.03;
-        if (star.alpha < 0.1) star.alpha = 0.1;
-        if (star.alpha > 0.9) star.alpha = 0.9;
-        
+    // Draw 3D twinkling background stars (with parallax)
+    backgroundStarsRef.current.forEach((star) => {
+      star.alpha += Math.sin(time * star.twinkleSpeed) * 0.02;
+      if (star.alpha < 0.1) star.alpha = 0.1;
+      if (star.alpha > 0.9) star.alpha = 0.9;
+
+      const pt = project3D(star.x, star.y, star.z);
+      if (!pt) return;
+
+      const sx = pt.x + panOffsetRef.current.x * 0.35 + width / 2;
+      const sy = pt.y + panOffsetRef.current.y * 0.35 + height / 2;
+
+      if (sx >= 0 && sx <= width && sy >= 0 && sy <= height) {
         ctx.globalAlpha = star.alpha;
+        ctx.fillStyle = isDarkMode ? '#ffffff' : '#64748b';
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        const size = star.size * Math.max(0.1, pt.scale * 0.5);
+        ctx.arc(sx, sy, size, 0, Math.PI * 2);
         ctx.fill();
-      });
-      ctx.globalAlpha = 1.0;
-    }
+      }
+    });
+    ctx.globalAlpha = 1.0;
 
     const nodes = nodesRef.current;
     const links = linksRef.current;
-
-    // Check if query matches labels
     const query = searchQuery.toLowerCase().trim();
     const isSearchActive = query.length > 0;
 
-    // Helper to check if node matches search query or selected constellation
     const doesNodeMatchSearch = (node) => {
       if (selectedConstellation) {
         if (node.type === 'category') return true;
@@ -429,35 +499,63 @@ export default function Galaxy() {
       return false;
     };
 
-    // 1. Draw Links
-    ctx.lineWidth = 1.2;
+    // Projected coordinates calculation
+    nodes.forEach((node) => {
+      const pt = project3D(node.x, node.y, node.z);
+      if (pt) {
+        node.screenX = pt.x + width / 2;
+        node.screenY = pt.y + height / 2;
+        node.projectedDepth = pt.depth;
+        node.projectedScale = pt.scale;
+        node.onScreen = true;
+      } else {
+        node.onScreen = false;
+      }
+    });
+
+    // 1. Draw Links (Sorted by depth)
     links.forEach((link) => {
-      const sourceNode = nodes.find(n => n.id === link.source);
-      const targetNode = nodes.find(n => n.id === link.target);
+      const srcNode = nodes.find(n => n.id === link.source);
+      const tgtNode = nodes.find(n => n.id === link.target);
+      if (srcNode && tgtNode && srcNode.onScreen && tgtNode.onScreen) {
+        link.projectedDepth = (srcNode.projectedDepth + tgtNode.projectedDepth) / 2;
+        link.onScreen = true;
+      } else {
+        link.onScreen = false;
+      }
+    });
 
-      if (!sourceNode || !targetNode) return;
+    const sortedLinks = [...links].filter(l => l.onScreen).sort((a, b) => b.projectedDepth - a.projectedDepth);
+    ctx.lineWidth = 1.2;
 
-      const sourceMatch = doesNodeMatchSearch(sourceNode);
-      const targetMatch = doesNodeMatchSearch(targetNode);
+    sortedLinks.forEach((link) => {
+      const srcNode = nodes.find(n => n.id === link.source);
+      const tgtNode = nodes.find(n => n.id === link.target);
+      if (!srcNode || !tgtNode) return;
 
-      // Customize path color/style depending on relationship
+      const sourceMatch = doesNodeMatchSearch(srcNode);
+      const targetMatch = doesNodeMatchSearch(tgtNode);
+
+      // Depth transparency
+      const depthAlpha = Math.max(0.04, Math.min(1.0, 300 / link.projectedDepth));
+
       if (isDarkMode) {
-        ctx.strokeStyle = (sourceMatch && targetMatch) 
-          ? 'rgba(139, 92, 246, 0.28)' // Violet active path
-          : 'rgba(255, 255, 255, 0.035)'; // Faded path
+        ctx.strokeStyle = (sourceMatch && targetMatch)
+          ? `rgba(139, 92, 246, ${0.35 * depthAlpha})`
+          : `rgba(255, 255, 255, ${0.035 * depthAlpha})`;
       } else {
         ctx.strokeStyle = (sourceMatch && targetMatch)
-          ? 'rgba(99, 102, 241, 0.4)'
-          : 'rgba(0, 0, 0, 0.04)';
+          ? `rgba(99, 102, 241, ${0.45 * depthAlpha})`
+          : `rgba(0, 0, 0, ${0.05 * depthAlpha})`;
       }
 
       ctx.beginPath();
-      ctx.moveTo(sourceNode.x, sourceNode.y);
-      ctx.lineTo(targetNode.x, targetNode.y);
+      ctx.moveTo(srcNode.screenX + panOffsetRef.current.x, srcNode.screenY + panOffsetRef.current.y);
+      ctx.lineTo(tgtNode.screenX + panOffsetRef.current.x, tgtNode.screenY + panOffsetRef.current.y);
       ctx.stroke();
 
-      // Energy transmission pulse particle traveling down link paths
-      if (sourceMatch && targetMatch && Math.random() < 0.008) {
+      // Transmission energy pulse
+      if (sourceMatch && targetMatch && Math.random() < 0.005) {
         link.pulseProgress = 0;
       }
       
@@ -466,68 +564,72 @@ export default function Galaxy() {
         if (link.pulseProgress > 1.0) {
           delete link.pulseProgress;
         } else {
-          const px = sourceNode.x + (targetNode.x - sourceNode.x) * link.pulseProgress;
-          const py = sourceNode.y + (targetNode.y - sourceNode.y) * link.pulseProgress;
+          const sx = srcNode.screenX + (tgtNode.screenX - srcNode.screenX) * link.pulseProgress + panOffsetRef.current.x;
+          const sy = srcNode.screenY + (tgtNode.screenY - srcNode.screenY) * link.pulseProgress + panOffsetRef.current.y;
           ctx.beginPath();
-          ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+          const scaleFactor = (srcNode.projectedScale + tgtNode.projectedScale) / 2;
+          ctx.arc(sx, sy, 2.5 * scaleFactor, 0, Math.PI * 2);
           ctx.fillStyle = isDarkMode ? '#a78bfa' : '#6366f1';
-          ctx.shadowBlur = 10;
+          ctx.shadowBlur = 10 * scaleFactor;
           ctx.shadowColor = isDarkMode ? '#8b5cf6' : '#4f46e5';
           ctx.fill();
-          ctx.shadowBlur = 0; // Reset shadow
+          ctx.shadowBlur = 0;
         }
       }
     });
 
-    // 1.5. Draw Constellation Paths (dashed glowing curve trails)
+    // 1.5. Draw Constellations Paths (emerald curve dashed trails)
     if (selectedConstellation && selectedConstellation.blogs) {
       ctx.save();
-      ctx.lineWidth = 4;
-      ctx.shadowBlur = 18;
-      ctx.shadowColor = '#10b981'; // green emerald glow
+      ctx.lineWidth = 3.5;
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = '#10b981';
       ctx.strokeStyle = '#10b981';
-      ctx.setLineDash([8, 8]);
-      ctx.lineDashOffset = -(time * 12) % 16;
+      ctx.setLineDash([6, 6]);
+      ctx.lineDashOffset = -(time * 10) % 16;
 
       for (let i = 0; i < selectedConstellation.blogs.length - 1; i++) {
         const blogAId = `blog-${selectedConstellation.blogs[i]._id}`;
         const blogBId = `blog-${selectedConstellation.blogs[i+1]._id}`;
         const nodeA = nodes.find(n => n.id === blogAId);
         const nodeB = nodes.find(n => n.id === blogBId);
-        if (nodeA && nodeB) {
+        if (nodeA && nodeB && nodeA.onScreen && nodeB.onScreen) {
           ctx.beginPath();
-          ctx.moveTo(nodeA.x, nodeA.y);
-          ctx.lineTo(nodeB.x, nodeB.y);
+          ctx.moveTo(nodeA.screenX + panOffsetRef.current.x, nodeA.screenY + panOffsetRef.current.y);
+          ctx.lineTo(nodeB.screenX + panOffsetRef.current.x, nodeB.screenY + panOffsetRef.current.y);
           ctx.stroke();
         }
       }
       ctx.restore();
     }
 
-    // 2. Draw Nodes
-    nodes.forEach((node) => {
+    // 2. Draw Nodes (Depth sorted, furthest drawn first)
+    const sortedNodes = [...nodes].filter(n => n.onScreen).sort((a, b) => b.projectedDepth - a.projectedDepth);
+    
+    sortedNodes.forEach((node) => {
       const matchesSearch = doesNodeMatchSearch(node);
       const isSelected = selectedNode && selectedNode.id === node.id;
       
-      // Calculate opacity/scale based on search filtering
       let opacity = 1.0;
       let nodeScale = 1.0;
 
       if (isSearchActive) {
         if (!matchesSearch) {
           opacity = 0.22;
-          nodeScale = 0.85;
+          nodeScale = 0.8;
         } else {
           opacity = 1.0;
-          nodeScale = 1.15;
+          nodeScale = 1.2;
         }
       }
 
+      const scaleFactor = node.projectedScale;
+      const sizeScale = nodeScale * scaleFactor;
       ctx.globalAlpha = opacity;
 
-      // Glow effect for selected or category nodes (only in dark mode)
+      // Glow effect (dark mode)
       if (isDarkMode && (node.type === 'category' || isSelected)) {
-        ctx.shadowBlur = isSelected ? 22 : 14;
+        ctx.shadowBlur = (isSelected ? 20 : 12) * scaleFactor;
         ctx.shadowColor = node.glowColor || 'rgba(255,255,255,0.2)';
       } else {
         ctx.shadowBlur = 0;
@@ -538,49 +640,49 @@ export default function Galaxy() {
         ctx.strokeStyle = node.glowColor;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(node.x, node.y, 80, 0, Math.PI * 2);
+        ctx.arc(node.screenX + panOffsetRef.current.x, node.screenY + panOffsetRef.current.y, 80 * scaleFactor, 0, Math.PI * 2);
         ctx.stroke();
       }
 
       // Draw core circle
       ctx.beginPath();
-      const radius = node.radius * nodeScale;
-      ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+      const radius = node.radius * sizeScale;
+      const screenX = node.screenX + panOffsetRef.current.x;
+      const screenY = node.screenY + panOffsetRef.current.y;
+      ctx.arc(screenX, screenY, radius, 0, Math.PI * 2);
       ctx.fillStyle = node.coreColor;
       ctx.fill();
 
-      // Border outline for active nodes
+      // Border outline
       ctx.strokeStyle = isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.7)';
-      ctx.lineWidth = isSelected ? 3 : 1.5;
+      ctx.lineWidth = (isSelected ? 2.5 : 1.3) * scaleFactor;
       if (isSelected || (node.type === 'category')) {
         ctx.stroke();
       }
 
-      // Reset shadows
-      ctx.shadowBlur = 0;
+      ctx.shadowBlur = 0; // Reset shadow
 
-      // 3. Draw labels text (Category labels always show; blog labels show when zoomed in or hovered)
+      // Draw labels with perspective size scaling
       const shouldShowLabel = 
         node.type === 'category' || 
-        zoomScaleRef.current > 0.75 || 
+        scaleFactor > 0.6 || 
         isSelected ||
         (isSearchActive && matchesSearch);
 
       if (shouldShowLabel) {
+        const fontSize = Math.max(7.5, Math.min(14, (node.type === 'category' ? 12 : node.type === 'blog' ? 10 : 9) * scaleFactor));
         ctx.font = node.type === 'category' 
-          ? 'bold 12px "Outfit", "Inter", sans-serif'
+          ? `bold ${fontSize}px "Outfit", sans-serif`
           : node.type === 'blog'
-            ? '600 10px "Inter", sans-serif'
-            : '500 9px "Inter", sans-serif';
+            ? `600 ${fontSize}px "Inter", sans-serif`
+            : `500 ${fontSize}px "Inter", sans-serif`;
 
         ctx.fillStyle = isDarkMode ? node.textColor : '#1e293b';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
 
-        // Draw label text under core nodes
-        const textY = node.y + radius + 6;
+        const textY = screenY + radius + 4 * scaleFactor;
         
-        // Wrap long titles for blog nodes
         if (node.type === 'blog' && node.label.length > 25) {
           const lines = [];
           const words = node.label.split(' ');
@@ -596,12 +698,11 @@ export default function Galaxy() {
           });
           lines.push(currentLine.trim());
 
-          // Render first two lines maximum
           lines.slice(0, 2).forEach((line, index) => {
-            ctx.fillText(line, node.x, textY + index * 12);
+            ctx.fillText(line, screenX, textY + index * (fontSize + 2));
           });
         } else {
-          ctx.fillText(node.label, node.x, textY);
+          ctx.fillText(node.label, screenX, textY);
         }
       }
     });
@@ -610,25 +711,29 @@ export default function Galaxy() {
     ctx.restore();
   };
 
-  // Drag and Panning mouse event handlers
+  // Drag, Panning, and Rotation mouse event handlers
   const handleMouseDown = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Convert screen coordinates to world coordinates (accounting for pan and zoom)
-    const worldX = (mouseX - canvasRef.current.width / 2 - panOffsetRef.current.x) / zoomScaleRef.current;
-    const worldY = (mouseY - canvasRef.current.height / 2 - panOffsetRef.current.y) / zoomScaleRef.current;
-
-    // Check if clicked a node
+    // Check if clicked a node in projected 3D space
     let clickedNode = null;
     const nodes = nodesRef.current;
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const node = nodes[i];
-      const dx = node.x - worldX;
-      const dy = node.y - worldY;
+    
+    // Sort nodes by projected depth (closest to screen first) for precise clicks
+    const sortedNodes = [...nodes].filter(n => n.onScreen).sort((a, b) => a.projectedDepth - b.projectedDepth);
+    
+    for (let i = 0; i < sortedNodes.length; i++) {
+      const node = sortedNodes[i];
+      const sx = node.screenX + panOffsetRef.current.x;
+      const sy = node.screenY + panOffsetRef.current.y;
+      
+      const dx = sx - mouseX;
+      const dy = sy - mouseY;
       const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist <= node.radius) {
+      
+      if (dist <= node.radius * node.projectedScale) {
         clickedNode = node;
         break;
       }
@@ -648,9 +753,15 @@ export default function Galaxy() {
         draggedNodeRef.current = clickedNode;
       }
     } else {
-      // Panning active
       isPanningRef.current = true;
-      startPanRef.current = { x: mouseX - panOffsetRef.current.x, y: mouseY - panOffsetRef.current.y };
+      startPanRef.current = { 
+        x: mouseX, 
+        y: mouseY,
+        rotX: cameraRotationRef.current.x,
+        rotY: cameraRotationRef.current.y,
+        panX: panOffsetRef.current.x,
+        panY: panOffsetRef.current.y
+      };
     }
   };
 
@@ -660,19 +771,45 @@ export default function Galaxy() {
     const mouseY = e.clientY - rect.top;
 
     if (draggedNodeRef.current) {
-      // Convert screen coordinate moves to world coordinate moves
-      const worldX = (mouseX - canvasRef.current.width / 2 - panOffsetRef.current.x) / zoomScaleRef.current;
-      const worldY = (mouseY - canvasRef.current.height / 2 - panOffsetRef.current.y) / zoomScaleRef.current;
+      // Rotate mouse movement vector back to 3D space
+      const dx = (mouseX - startPanRef.current.x) / (zoomScaleRef.current * 8);
+      const dy = (mouseY - startPanRef.current.y) / (zoomScaleRef.current * 8);
       
-      draggedNodeRef.current.x = worldX;
-      draggedNodeRef.current.y = worldY;
+      const cosY = Math.cos(-cameraRotationRef.current.y);
+      const sinY = Math.sin(-cameraRotationRef.current.y);
+      const cosX = Math.cos(-cameraRotationRef.current.x);
+      const sinX = Math.sin(-cameraRotationRef.current.x);
+
+      const rx = dx * cosY;
+      const ry = dy * cosX;
+      const rz = dx * sinY;
+
+      draggedNodeRef.current.x += rx;
+      draggedNodeRef.current.y += ry;
+      draggedNodeRef.current.z += rz;
+      
       draggedNodeRef.current.vx = 0;
       draggedNodeRef.current.vy = 0;
+      draggedNodeRef.current.vz = 0;
+
+      startPanRef.current = { x: mouseX, y: mouseY };
     } else if (isPanningRef.current) {
-      panOffsetRef.current = {
-        x: mouseX - startPanRef.current.x,
-        y: mouseY - startPanRef.current.y
-      };
+      const dx = mouseX - startPanRef.current.x;
+      const dy = mouseY - startPanRef.current.y;
+
+      if (e.shiftKey) {
+        // Translation Panning
+        panOffsetRef.current = {
+          x: startPanRef.current.panX + dx,
+          y: startPanRef.current.panY + dy
+        };
+      } else {
+        // 3D Camera Rotation (Yaw/Pitch)
+        cameraRotationRef.current = {
+          x: Math.max(-Math.PI / 3, Math.min(Math.PI / 3, startPanRef.current.rotX + dy * 0.005)), // limit pitch
+          y: startPanRef.current.rotY + dx * 0.005
+        };
+      }
     }
   };
 
@@ -687,23 +824,24 @@ export default function Galaxy() {
     const delta = e.deltaY < 0 ? 1 : -1;
     let newScale = zoomScaleRef.current + delta * zoomIntensity;
     
-    // Clamp zoom scale between 0.2 and 2.5
-    newScale = Math.max(0.2, Math.min(2.5, newScale));
+    // Clamp zoom scale between 0.3 and 3.0
+    newScale = Math.max(0.3, Math.min(3.0, newScale));
     zoomScaleRef.current = newScale;
   };
 
   // Zoom control triggers
   const zoomIn = () => {
-    zoomScaleRef.current = Math.min(2.5, zoomScaleRef.current + 0.15);
+    zoomScaleRef.current = Math.min(3.0, zoomScaleRef.current + 0.15);
   };
 
   const zoomOut = () => {
-    zoomScaleRef.current = Math.max(0.2, zoomScaleRef.current - 0.15);
+    zoomScaleRef.current = Math.max(0.3, zoomScaleRef.current - 0.15);
   };
 
   const resetView = () => {
     panOffsetRef.current = { x: 0, y: 0 };
-    zoomScaleRef.current = 0.9;
+    zoomScaleRef.current = 1.0;
+    cameraRotationRef.current = { x: 0.2, y: -0.3 };
     setSelectedNode(null);
     setSelectedBlog(null);
     setSearchQuery('');
@@ -811,7 +949,7 @@ export default function Galaxy() {
                 </div>
                 <div className="flex gap-3 items-center">
                   <span className="w-6 h-6 flex items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-955/50 text-[10px] text-indigo-500 font-bold">2</span>
-                  <span><strong>Zoom & Pan</strong> by pinching, scroll wheel, or dragging the background grid space.</span>
+                  <span><strong>Zoom & Rotate</strong> by scroll wheel, or dragging to rotate in 3D. Hold <strong>Shift</strong> while dragging to pan.</span>
                 </div>
                 <div className="flex gap-3 items-center">
                   <span className="w-6 h-6 flex items-center justify-center rounded-lg bg-indigo-50 dark:bg-indigo-955/50 text-[10px] text-indigo-500 font-bold">3</span>

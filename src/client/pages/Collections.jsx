@@ -10,7 +10,7 @@ const CATEGORIES = ['All', 'Technology', 'Travel', 'Food', 'Education', 'Sports'
 
 export default function Collections() {
   const dispatch = useDispatch();
-  const { trendingCollections, searchResults } = useSelector((state) => state.collection);
+  const { trendingCollections = [], searchResults = [] } = useSelector((state) => state.collection);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');

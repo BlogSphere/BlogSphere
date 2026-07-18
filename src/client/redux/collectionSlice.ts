@@ -246,8 +246,8 @@ const collectionSlice = createSlice({
     });
     builder.addCase(fetchCollections.fulfilled, (state, action) => {
       state.loading = false;
-      state.collections = action.payload.collections;
-      state.pagination.hasMore = action.payload.hasMore;
+      state.collections = action.payload?.collections || [];
+      state.pagination.hasMore = action.payload?.hasMore || false;
     });
     builder.addCase(fetchCollections.rejected, (state, action) => {
       state.loading = false;
@@ -256,7 +256,7 @@ const collectionSlice = createSlice({
 
     // fetchTrendingCollections
     builder.addCase(fetchTrendingCollections.fulfilled, (state, action) => {
-      state.trendingCollections = action.payload.collections;
+      state.trendingCollections = action.payload?.collections || [];
     });
 
     // fetchCollectionBySlug
@@ -350,7 +350,7 @@ const collectionSlice = createSlice({
 
     // searchCollections
     builder.addCase(searchCollections.fulfilled, (state, action) => {
-      state.searchResults = action.payload.collections;
+      state.searchResults = action.payload?.collections || [];
     });
 
     // fetchMyCollections
