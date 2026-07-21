@@ -104,36 +104,34 @@ export default function Home() {
     <div className="min-h-screen pb-16">
       {/* Hero Header Section */}
       {!category && !tag && !search && (
-        <section className="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 text-white border-b border-indigo-900/30">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-900/20 via-transparent to-transparent pointer-events-none" />
-          <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 animate-fade-in">
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 uppercase tracking-wider">
-              Smart Community Blog Sphere
+        <section className="relative overflow-hidden py-16 sm:py-24 bg-gradient-to-b from-indigo-50/90 via-white to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-b border-indigo-100/80 dark:border-slate-800/80 transition-colors">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-200/40 via-transparent to-transparent dark:from-indigo-900/30 pointer-events-none" />
+          <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 animate-fade-in space-y-6">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black bg-indigo-100/80 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/50 uppercase tracking-widest shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 animate-pulse" />
+              <span>Next-Gen Creator & Knowledge Platform</span>
             </span>
-            <h1 className="mt-6 text-4xl sm:text-6xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-              Read. Write. Collaborate.
+            <h1 className="text-4xl sm:text-7xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+              Read. Write.{' '}
+              <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                Collaborate.
+              </span>
             </h1>
-            <p className="mt-4 max-w-xl mx-auto text-lg text-slate-400 font-medium">
-              Discover stories, collaborate on code reviews, translate articles instantly, and participate in peer editing.
+            <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+              Explore insightful blogs, curate collections, collaborate on draft versions, and engage in real-time AI discussions.
             </p>
-            <div className="mt-10 flex flex-col sm:flex-row justify-center items-stretch sm:items-center gap-4 max-w-xs sm:max-w-none mx-auto">
+            <div className="pt-2 flex flex-col sm:flex-row justify-center items-center gap-4 max-w-xs sm:max-w-none mx-auto">
               <a
                 href="#feed-start"
-                className="px-6 py-3 rounded-full text-sm font-semibold bg-primary-600 hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/20 text-center"
+                className="px-8 py-3.5 rounded-full text-xs font-black uppercase tracking-wider bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 text-white transition-all shadow-xl shadow-indigo-500/20 text-center hover:scale-105"
               >
-                Start Reading
+                Start Exploring
               </a>
               <Link
-                to="/galaxy"
-                className="px-6 py-3 rounded-full text-sm font-semibold bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 transition-all border border-indigo-500/30 flex items-center justify-center gap-1.5 shadow-lg shadow-indigo-500/20 text-white"
-              >
-                Explore Galaxy 🌌
-              </Link>
-              <Link
                 to="/editor"
-                className="px-6 py-3 rounded-full text-sm font-semibold bg-slate-800 hover:bg-slate-700 transition-colors border border-slate-700 text-center"
+                className="px-8 py-3.5 rounded-full text-xs font-black uppercase tracking-wider bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 transition-all border border-slate-200 dark:border-slate-800 text-center text-slate-800 dark:text-slate-200 shadow-sm hover:scale-105"
               >
-                Create Article
+                Publish Article
               </Link>
             </div>
           </div>
@@ -293,12 +291,6 @@ export default function Home() {
                   <Search className="w-4 h-4" />
                   <span>Explore & Search</span>
                 </button>
-                <Link
-                  to="/galaxy"
-                  className="py-3.5 px-5 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 flex items-center gap-2 transition-all"
-                >
-                  <span>Galaxy View 🌌</span>
-                </Link>
               </div>
             )}
 

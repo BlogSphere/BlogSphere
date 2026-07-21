@@ -15,7 +15,6 @@ import notificationRoutes from './routes/notification';
 import userRoutes from './routes/user';
 import restrictedWordsRoutes from './routes/restrictedWords';
 import communityRoutes from './routes/community';
-import constellationRoutes from './routes/constellation';
 import collectionRoutes from './routes/collection';
 import Blog from './models/Blog';
 
@@ -56,7 +55,6 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/restricted-words', restrictedWordsRoutes);
 app.use('/api/communities', communityRoutes);
-app.use('/api/constellations', constellationRoutes);
 app.use('/api/collections', collectionRoutes);
 
 const __filename = fileURLToPath(import.meta.url);
@@ -208,16 +206,6 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 server.listen(PORT, () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
   
-  // Trigger AI Auto Poster immediately on startup
-  (async () => {
-    try {
-      const { generateTrendingAutoPost } = await import('./services/trendingPoster.js');
-      await generateTrendingAutoPost();
-    } catch (err: any) {
-      console.error('Initial startup auto-post error:', err.message);
-    }
-  })();
-
   // Create default admin user if not exists
   (async () => {
     try {
@@ -242,17 +230,6 @@ server.listen(PORT, () => {
       console.error('Default admin check error:', err.message);
     }
   })();
-
-  // Start automated AI Trending poster scheduler interval (every 6 hours)
-  const SIX_HOURS = 6 * 60 * 60 * 1000;
-  setInterval(async () => {
-    try {
-      const { generateTrendingAutoPost } = await import('./services/trendingPoster.js');
-      await generateTrendingAutoPost();
-    } catch (err: any) {
-      console.error('Auto-post scheduler error:', err.message);
-    }
-  }, SIX_HOURS);
 
   // Start automated scheduled blog publisher (every 30 seconds)
   const THIRTY_SECONDS = 30 * 1000;

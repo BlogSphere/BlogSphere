@@ -190,8 +190,6 @@ export default function Editor() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledTime, setScheduledTime] = useState('');
-  const [docTutorFeedback, setDocTutorFeedback] = useState('');
-  const [docTutorLoading, setDocTutorLoading] = useState(false);
 
   // Spam warning states
   const [spamModalOpen, setSpamModalOpen] = useState(false);
@@ -204,6 +202,7 @@ export default function Editor() {
     { id: '1', type: 'h1', content: '' },
     { id: '2', type: 'p', content: '' }
   ]);
+  const [selectedTemplate, setSelectedTemplate] = useState('');
 
   // Collaborators
   const [collaborators, setCollaborators] = useState([]);
@@ -597,6 +596,8 @@ export default function Editor() {
       }
     }
 
+    setSelectedTemplate(templateType);
+
     let templateBlocks = [];
     const baseId = () => Date.now().toString() + Math.random().toString(36).substr(2, 5);
 
@@ -607,57 +608,57 @@ export default function Editor() {
       ];
     } else if (templateType === 'tech') {
       templateBlocks = [
-        { id: baseId(), type: 'h1', content: 'Tech Trends: Deciphering the Next Big Thing' },
-        { id: baseId(), type: 'p', content: 'In today\'s fast-paced tech landscape, new frameworks and tools emerge daily. In this article, we delve deep into the core concepts, discuss structural shifts, and look at practical applications.' },
-        { id: baseId(), type: 'h2', content: 'Understanding the Core Architecture' },
-        { id: baseId(), type: 'p', content: 'To understand why this is a game-changer, we must look at how standard implementations compare to modern decoupled solutions.' },
-        { id: baseId(), type: 'quote', content: 'Architecture is the learning of what to leave out, rather than what to put in.' },
-        { id: baseId(), type: 'h2', content: 'Practical Code Example' },
-        { id: baseId(), type: 'code', content: '// Example of optimized execution pattern\nasync function performHandshake(client) {\n  const session = await client.initializeSession();\n  console.log("Handshake successful. Session ID:", session.id);\n  return session;\n}', language: 'javascript' },
-        { id: baseId(), type: 'callout', content: 'Always make sure to properly clean up open sockets in development to avoid resource leaks.', icon: '💡' },
-        { id: baseId(), type: 'p', content: 'By adhering to these architectural patterns, developers can easily build scalable solutions.' }
+        { id: baseId(), type: 'h1', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'quote', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'code', content: '', language: 'javascript' },
+        { id: baseId(), type: 'callout', content: '', icon: '💡' },
+        { id: baseId(), type: 'p', content: '' }
       ];
     } else if (templateType === 'opinion') {
       templateBlocks = [
-        { id: baseId(), type: 'h1', content: 'Why Simplicity is the Ultimate Sophistication: An Opinion' },
-        { id: baseId(), type: 'p', content: 'After spending the last few years working with bloated design systems, I\'ve come to realize that less is indeed more. Here is my take on the current state of UI/UX design.' },
-        { id: baseId(), type: 'h2', content: 'The Bloated Systems Problem' },
-        { id: baseId(), type: 'p', content: 'Every website feels the same today. Heavy animations, overlapping elements, and massive script bundles dominate our screens.' },
-        { id: baseId(), type: 'quote', content: 'Design is not just what it looks like and feels like. Design is how it works.' },
-        { id: baseId(), type: 'callout', content: 'Verdict: 8.5/10. Highly recommend returning to core principles.', icon: '🏆' },
-        { id: baseId(), type: 'p', content: 'What do you think? Let\'s discuss in the comments below.' }
+        { id: baseId(), type: 'h1', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'quote', content: '' },
+        { id: baseId(), type: 'callout', content: '', icon: '🏆' },
+        { id: baseId(), type: 'p', content: '' }
       ];
     } else if (templateType === 'news') {
       templateBlocks = [
-        { id: baseId(), type: 'h1', content: 'Weekly Community Round-up & Updates' },
-        { id: baseId(), type: 'p', content: 'Welcome to this week\'s community update! We have some exciting features, milestones, and announcements to share.' },
-        { id: baseId(), type: 'h2', content: 'Top Stories of the Week' },
-        { id: baseId(), type: 'list', content: '🚀 Released version 2.0 with improved state management.\n🎉 Community member list crossed 10,000 active creators!\n🏆 AI DocTutor features received major enhancements.' },
-        { id: baseId(), type: 'quote', content: 'This week saw our highest engagement rate since launching.' },
-        { id: baseId(), type: 'h2', content: 'Upcoming Events' },
-        { id: baseId(), type: 'p', content: 'Join us this Thursday at 5 PM UTC for a live AMA session.' }
+        { id: baseId(), type: 'h1', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'list', content: '' },
+        { id: baseId(), type: 'quote', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' }
       ];
     } else if (templateType === 'tutorial') {
       templateBlocks = [
-        { id: baseId(), type: 'h1', content: 'Step-by-Step Guide: Building X from Scratch' },
-        { id: baseId(), type: 'p', content: 'In this detailed tutorial, we\'ll walk you through creating a highly performant application. We will start with setup, write the main logic, and discuss deployment.' },
-        { id: baseId(), type: 'h2', content: 'Prerequisites' },
-        { id: baseId(), type: 'list', content: 'Node.js installed (v18 or higher)\nBasic familiarity with terminal commands\nAn active internet connection' },
-        { id: baseId(), type: 'h2', content: 'Step 1: Setting up the environment' },
-        { id: baseId(), type: 'p', content: 'First, run the initialization command in your command line:' },
-        { id: baseId(), type: 'code', content: 'npm init -y\nnpm install express dotenv mongodb', language: 'bash' },
-        { id: baseId(), type: 'h2', content: 'Step 2: Coding the Core Server' },
-        { id: baseId(), type: 'p', content: 'Now, create a server.js file and add the following bootstrap code:' },
-        { id: baseId(), type: 'code', content: 'const express = require(\'express\');\nconst app = express();\nconst PORT = process.env.PORT || 3000;\n\napp.get(\'/\', (req, res) => res.send(\'Hello World!\'));\napp.listen(PORT, () => console.log(`Server running on port ${PORT}`));', language: 'javascript' },
-        { id: baseId(), type: 'callout', content: 'Pro tip: Use nodemon to auto-restart your server when code changes.', icon: '💡' },
-        { id: baseId(), type: 'h2', content: 'Wrapping Up' },
-        { id: baseId(), type: 'p', content: 'You now have a working bootstrap server! Let me know if you run into any issues.' }
+        { id: baseId(), type: 'h1', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'list', content: '' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'code', content: '', language: 'bash' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' },
+        { id: baseId(), type: 'code', content: '', language: 'javascript' },
+        { id: baseId(), type: 'callout', content: '', icon: '💡' },
+        { id: baseId(), type: 'h2', content: '' },
+        { id: baseId(), type: 'p', content: '' }
       ];
     }
 
     if (templateBlocks.length > 0) {
       handleBlocksChange(templateBlocks);
-      showToast(`${templateType.charAt(0).toUpperCase() + templateType.slice(1)} template applied!`, 'success');
+      showToast(`${templateType.charAt(0).toUpperCase() + templateType.slice(1)} layout structure applied!`, 'success');
     }
   };
 
@@ -886,24 +887,6 @@ export default function Editor() {
       list.push("Include a quote or bullet list to engage readers.");
     }
     return list;
-  };
-
-  const handleDocTutorReview = async () => {
-    setDocTutorLoading(true);
-    try {
-      const res = await api.post('/api/blogs/ai-tutor-review', {
-        title,
-        content: JSON.stringify(blocks)
-      });
-      if (res.data.review) {
-        setDocTutorFeedback(res.data.review);
-      }
-    } catch (e) {
-      console.error(e);
-      showToast('DocTutor review session failed. Please retry.', 'error');
-    } finally {
-      setDocTutorLoading(false);
-    }
   };
 
   const moveBlock = (index, direction) => {
@@ -1159,13 +1142,12 @@ export default function Editor() {
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase select-none">Template:</span>
                   <select
+                    value={selectedTemplate}
                     onChange={(e) => {
                       if (e.target.value) {
                         handleApplyTemplate(e.target.value);
-                        e.target.value = ''; // Reset select after applying
                       }
                     }}
-                    defaultValue=""
                     className="px-2.5 py-1 text-xs border rounded-xl bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-semibold focus:outline-none cursor-pointer"
                   >
                     <option value="" disabled>Select Layout...</option>
@@ -1863,81 +1845,6 @@ export default function Editor() {
                     <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
                       Save your draft first to unlock AI translation.
                     </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* AI DocTutor Panel */}
-            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm">
-              <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/30 dark:to-violet-950/30 border-b border-indigo-100/60 dark:border-indigo-900/30">
-                <span className="flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-950/50">
-                  <Lightbulb className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                </span>
-                <span className="text-xs font-extrabold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">AI DocTutor</span>
-              </div>
-              <div className="p-4 space-y-4">
-                {/* Score Ring */}
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-shrink-0 w-14 h-14">
-                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                      <circle cx="28" cy="28" r="22" fill="none" stroke="currentColor" className="text-slate-100 dark:text-slate-800" strokeWidth="5" />
-                      <circle
-                        cx="28" cy="28" r="22" fill="none"
-                        stroke={calculateDraftScore() >= 80 ? '#10b981' : calculateDraftScore() >= 50 ? '#f59e0b' : '#f43f5e'}
-                        strokeWidth="5"
-                        strokeDasharray={`${2 * Math.PI * 22}`}
-                        strokeDashoffset={`${2 * Math.PI * 22 * (1 - calculateDraftScore() / 100)}`}
-                        strokeLinecap="round"
-                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-                      />
-                    </svg>
-                    <span className={`absolute inset-0 flex items-center justify-center text-xs font-extrabold ${calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
-                      }`}>{calculateDraftScore()}</span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Draft Score</p>
-                    <p className={`text-sm font-extrabold ${calculateDraftScore() >= 80 ? 'text-emerald-600' : calculateDraftScore() >= 50 ? 'text-amber-600' : 'text-rose-600'
-                      }`}>
-                      {calculateDraftScore() >= 80 ? '🏆 Excellent!' : calculateDraftScore() >= 50 ? '⚡ Getting there' : '📝 Needs work'}
-                    </p>
-                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 mt-1.5">
-                      <div
-                        className={`h-1.5 rounded-full transition-all duration-500 ${calculateDraftScore() >= 80 ? 'bg-emerald-500' : calculateDraftScore() >= 50 ? 'bg-amber-500' : 'bg-rose-500'
-                          }`}
-                        style={{ width: `${calculateDraftScore()}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {getSuggestions().length > 0 && (
-                  <div className="space-y-1.5">
-                    <span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Recommendations</span>
-                    <div className="space-y-1.5">
-                      {getSuggestions().map((sug) => (
-                        <div key={sug} className="flex gap-2 text-[11px] text-slate-600 dark:text-slate-400 leading-snug bg-slate-50 dark:bg-slate-800/60 px-3 py-2 rounded-xl">
-                          <span className="text-indigo-400 font-bold mt-0.5">→</span>
-                          <span>{sug}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  type="button"
-                  onClick={handleDocTutorReview}
-                  disabled={docTutorLoading}
-                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10 flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{docTutorLoading ? 'Consulting AI...' : 'Deep Review with DocTutor'}</span>
-                </button>
-
-                {docTutorFeedback && (
-                  <div className="p-3 rounded-xl bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100/40 dark:border-indigo-900/30 text-[11px] text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                    {docTutorFeedback}
                   </div>
                 )}
               </div>

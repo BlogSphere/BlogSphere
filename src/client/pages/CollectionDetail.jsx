@@ -268,12 +268,13 @@ export default function CollectionDetail() {
           ) : (
             <div className="space-y-4">
               {items.map((item, index) => {
-                const blog = item.blog || {};
-                const author = blog.author || {};
+                const blogObj = typeof item.blog === 'object' && item.blog !== null ? item.blog : {};
+                const articleSlug = blogObj.slug || blogObj._id || (typeof item.blog === 'string' ? item.blog : '');
+                const authorObj = typeof blogObj.author === 'object' && blogObj.author !== null ? blogObj.author : {};
                 
                 return (
                   <motion.div
-                    key={blog._id || index}
+                    key={blogObj._id || index}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -286,8 +287,8 @@ export default function CollectionDetail() {
 
                     {/* Blog Cover */}
                     <img 
-                      src={blog.coverImage || FALLBACK_COVER} 
-                      alt={blog.title}
+                      src={blogObj.coverImage || FALLBACK_COVER} 
+                      alt={blogObj.title || 'Article Cover'}
                       className="w-full md:w-28 aspect-video md:aspect-[4/3] rounded-2xl object-cover shrink-0 border border-slate-200 dark:border-slate-850"
                       onError={(e) => { e.target.src = FALLBACK_COVER; }}
                     />
@@ -295,22 +296,22 @@ export default function CollectionDetail() {
                     {/* Blog details */}
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        {blog.category && (
+                        {blogObj.category && (
                           <span className="text-[9px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
-                            {blog.category}
+                            {blogObj.category}
                           </span>
                         )}
                         <span className="text-[10px] text-slate-400">•</span>
                         <span className="text-[10px] text-slate-450 dark:text-slate-500 font-bold">
-                          by @{author.username || 'author'}
+                          by @{authorObj.username || 'author'}
                         </span>
                       </div>
 
                       <Link 
-                        to={`/blog/${blog.slug}`}
+                        to={articleSlug ? `/blog/${articleSlug}` : '#'}
                         className="block text-base font-black text-slate-900 dark:text-white hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors line-clamp-2 leading-snug"
                       >
-                        {blog.title || 'Untitled Article'}
+                        {blogObj.title || 'Untitled Article'}
                       </Link>
 
                       {/* Curator note */}
@@ -328,7 +329,7 @@ export default function CollectionDetail() {
                     {/* Actions */}
                     <div className="flex items-center gap-2 md:self-center shrink-0 self-end">
                       <Link
-                        to={`/blog/${blog.slug}`}
+                        to={articleSlug ? `/blog/${articleSlug}` : '#'}
                         className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-all"
                         title="Read Article"
                       >

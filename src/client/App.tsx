@@ -12,7 +12,6 @@ import Admin from './pages/Admin';
 import DailyBriefs from './pages/DailyBriefs';
 import LeadershipBoard from './pages/LeadershipBoard';
 import Profile from './pages/Profile';
-import Galaxy from './pages/Galaxy';
 import Communities from './pages/Communities';
 import AdCenter from './pages/AdCenter';
 import Collections from './pages/Collections';
@@ -53,7 +52,6 @@ export default function App() {
             <div className="flex-1 w-full">
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/galaxy" element={<Galaxy />} />
                 <Route path="/login" element={<Auth />} />
                 <Route path="/register" element={<Auth />} />
                 <Route path="/blog/:slug" element={<BlogDetail />} />

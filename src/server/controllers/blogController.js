@@ -341,15 +341,15 @@ export const getBlogBySlug = async (req, res) => {
     // Check if slug is a valid MongoDB ObjectId
     if (slug && /^[0-9a-fA-F]{24}$/.test(slug)) {
       blog = await Blog.findById(slug)
-        .populate('author', 'name profileImage bio followers')
-        .populate('collaborators', 'name profileImage email');
+        .populate('author', 'name username profileImage bio followers reputationPoints badge newsletterSubscribers')
+        .populate('collaborators', 'name username profileImage email');
     }
 
     // Fall back to slug lookup if not found or not an ObjectId
     if (!blog) {
       blog = await Blog.findOne({ slug })
-        .populate('author', 'name profileImage bio followers')
-        .populate('collaborators', 'name profileImage email');
+        .populate('author', 'name username profileImage bio followers reputationPoints badge newsletterSubscribers')
+        .populate('collaborators', 'name username profileImage email');
     }
 
     if (!blog) {
@@ -846,6 +846,8 @@ export const reactToBlog = async (req, res) => {
       blog.reactions = { thumbsUp: [], heart: [], clap: [], laugh: [] };
     }
 
+    const authorId = blog.author?._id || blog.author;
+
     // Find if the user already has a reaction of any type on this blog
     let existingReactionType = null;
     for (const type of reactionTypes) {
@@ -870,17 +872,17 @@ export const reactToBlog = async (req, res) => {
         blog.reactions[reactionType].push(req.user._id);
         isReacted = true;
 
-        // Notify author
-        if (blog.author._id.toString() !== req.user._id.toString()) {
+        // Notify author if author exists
+        if (authorId && authorId.toString() !== req.user._id.toString()) {
           const notif = new Notification({
-            userId: blog.author._id,
+            userId: authorId,
             message: `${req.user.name} reacted with ${reactionType} on your blog "${blog.title}"`,
             type: 'reaction',
             referenceId: blog._id
           });
           await notif.save();
           if (global.io) {
-            global.io.to(`user_${blog.author._id}`).emit('notification_received', notif);
+            global.io.to(`user_${authorId}`).emit('notification_received', notif);
           }
         }
       }
@@ -889,17 +891,17 @@ export const reactToBlog = async (req, res) => {
       blog.reactions[reactionType].push(req.user._id);
       isReacted = true;
 
-      // Notify author
-      if (blog.author._id.toString() !== req.user._id.toString()) {
+      // Notify author if author exists
+      if (authorId && authorId.toString() !== req.user._id.toString()) {
         const notif = new Notification({
-          userId: blog.author._id,
+          userId: authorId,
           message: `${req.user.name} reacted with ${reactionType} on your blog "${blog.title}"`,
           type: 'reaction',
           referenceId: blog._id
         });
         await notif.save();
         if (global.io) {
-          global.io.to(`user_${blog.author._id}`).emit('notification_received', notif);
+          global.io.to(`user_${authorId}`).emit('notification_received', notif);
         }
       }
     }
@@ -907,7 +909,9 @@ export const reactToBlog = async (req, res) => {
     // Save and mark reactions as modified
     blog.markModified('reactions');
     await blog.save();
-    await recalculateReputation(blog.author._id);
+    if (authorId) {
+      await recalculateReputation(authorId);
+    }
 
     res.status(200).json({
       message: isReacted ? 'Reaction added' : 'Reaction removed',
@@ -1356,69 +1360,6 @@ export const checkSpam = async (req, res) => {
       isSpam: spamScore > 50,
       reasons
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-;
-
-// AI DocTutor Draft Reviewer
-export const aiTutorReview = async (req, res) => {
-  try {
-    const { title, content } = req.body;
-    if (!content) {
-      return res.status(400).json({ error: 'Content is required.' });
-    }
-
-    let plainText = '';
-    try {
-      const parsed = JSON.parse(content);
-      if (Array.isArray(parsed)) {
-        plainText = parsed.map(b => b.content || '').join('\n');
-      }
-    } catch (e) {
-      plainText = content;
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(200).json({ 
-        review: "**DocTutor Review Feedback:**\n\n1. 📖 **Draft Setup**: Great draft structure. Consider appending a brief summary at the end.\n2. ✍️ **Formatting**: Ensure you use H2 headings to segment sections.\n3. 💡 **Engagement**: Add some relevant tags to increase discoverability."
-      });
-    }
-
-    const prompt = `You are an expert writing coach, professional editor, and academic writing tutor named DocTutor. 
-Analyze the following blog draft:
-Title: "${title || 'Untitled'}"
-Content:
-"${plainText}"
-
-Please provide comprehensive, highly constructive, and detailed editing feedback. Structure your response using markdown with the following sections:
-1. 💡 **Hook & Introduction**: Evaluate the title and the first paragraph. Is it catchy? Does it draw the reader in?
-2. 🗺️ **Structure & Readability**: Assess the organization, headings, paragraph lengths, and logical transitions. Is it easy to read and scan?
-3. 🎭 **Tone, Style & Vocabulary**: Critique the tone (e.g., professional, casual, academic) and suggest ways to elevate vocabulary and style.
-4. 🚀 **Engagement Tips**: Suggest where a quote block, callout box, bullet list, code block, or image would improve the reading experience.
-5. 📝 **Actionable Checklist**: Provide exactly 3 specific, concrete steps the author should take next to polish this draft.
-
-Return ONLY these review sections. Be encouraging but precise, helping the author produce a top-tier article.`;
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Gemini API call failed');
-    }
-
-    const result = await response.json();
-    const review = result.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Review complete. Content looks ready to publish!';
-
-    res.status(200).json({ review });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

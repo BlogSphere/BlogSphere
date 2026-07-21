@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail, FolderPlus } from 'lucide-react';
+import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail, FolderPlus, BookOpen } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
-import { m, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { updateCurrentUser } from '../redux/authSlice.js';
 import { setAddToCollectionModal } from '../redux/collectionSlice';
 
@@ -60,7 +60,7 @@ const renderBlogContent = (contentString) => {
                 );
               case 'code':
                 return (
-                  <div key={block.id} className="relative my-6 rounded-2xl overflow-hidden border border-slate-200/50 dark:border-slate-800 bg-slate-950 dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 font-mono text-sm shadow-inner">
+                  <div key={block.id} className="relative my-6 rounded-2xl overflow-hidden border border-slate-200/50 dark:border-slate-800 bg-slate-900 dark:bg-slate-900/60 text-slate-100 dark:text-slate-100 font-mono text-sm shadow-inner">
                     <div className="flex items-center justify-between px-4 py-1.5 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/50 dark:border-slate-800 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                       <span>{block.language || 'code'}</span>
                     </div>
@@ -487,25 +487,6 @@ export default function BlogDetail() {
     podcastSynthRef.current.speak(utter);
   };
 
-  // Toggle Podcast simulation
-  useEffect(() => {
-    if (isPlayingPodcast && podcastScript.length > 0) {
-      // Start speaking from the current line index
-      speakPodcastLine(podcastLineIndex);
-    } else {
-      // Pause / stop
-      if (podcastSynthRef.current) podcastSynthRef.current.cancel();
-      if (podcastTimerRef.current) clearInterval(podcastTimerRef.current);
-      stopVisualizer();
-    }
-
-    return () => {
-      if (podcastSynthRef.current) podcastSynthRef.current.cancel();
-      if (podcastTimerRef.current) clearInterval(podcastTimerRef.current);
-      stopVisualizer();
-    };
-  }, [isPlayingPodcast]);
-
   const startVisualizer = () => {
     const canvas = canvasVisualizerRef.current;
     if (!canvas) return;
@@ -555,33 +536,55 @@ export default function BlogDetail() {
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    // Also cancel TTS if running
     if (podcastSynthRef.current && podcastSynthRef.current.speaking) {
       podcastSynthRef.current.cancel();
     }
   };
 
-  // Proper play/pause toggle for podcast
-  const handlePodcastToggle = () => {
-    const synth = podcastSynthRef.current;
-    if (!synth) return;
-
-    if (isPlayingPodcast && !podcastPaused) {
-      // Currently speaking — pause
-      synth.pause();
-      setPodcastPaused(true);
-      stopVisualizer();
-    } else if (isPlayingPodcast && podcastPaused) {
-      // Paused — resume
-      synth.resume();
-      setPodcastPaused(false);
-      startVisualizer();
+  const handlePodcastPlay = () => {
+    if (podcastScript.length === 0) return;
+    
+    // If not actively paused mid-episode, start fresh from the first speaker (index 0)
+    let targetIndex = 0;
+    if (podcastPaused && podcastLineIndex < podcastScript.length - 1) {
+      targetIndex = podcastLineIndex;
     } else {
-      // Not started yet — begin
-      setPodcastPaused(false);
-      setIsPlayingPodcast(true);
+      setPodcastLineIndex(0);
     }
+
+    setPodcastPaused(false);
+    setIsPlayingPodcast(true);
+    speakPodcastLine(targetIndex);
   };
+
+  const handlePodcastPause = () => {
+    if (podcastSynthRef.current) {
+      podcastSynthRef.current.cancel();
+    }
+    setPodcastPaused(true);
+    stopVisualizer();
+  };
+
+  const handlePodcastStop = () => {
+    if (podcastSynthRef.current) {
+      podcastSynthRef.current.cancel();
+    }
+    setIsPlayingPodcast(false);
+    setPodcastPaused(false);
+    setPodcastLineIndex(0);
+    stopVisualizer();
+  };
+
+  // Cleanup podcast speech synthesis on tab switch
+  useEffect(() => {
+    if (activeAITab !== 'podcast') {
+      if (podcastSynthRef.current) podcastSynthRef.current.cancel();
+      setIsPlayingPodcast(false);
+      setPodcastPaused(false);
+      setPodcastLineIndex(0);
+      stopVisualizer();
+    }
+  }, [activeAITab]);
 
   useEffect(() => {
     if (activeAITab === 'debate') {
@@ -641,21 +644,64 @@ export default function BlogDetail() {
     }
   };
 
-  // Toggle reaction to blog post
+  // Toggle reaction to blog post with optimistic state update
   const handleReact = async (reactionType) => {
-    if (!isAuthenticated) return navigate('/login');
+    if (!isAuthenticated) {
+      showToast('Please log in to react to articles.', 'warning');
+      return navigate('/login');
+    }
+
+    if (!user?._id) return;
+
+    const userId = user._id;
+    const oldReactions = { ...reactions };
+    const reactionTypes = ['thumbsUp', 'heart', 'clap', 'laugh'];
+    let updatedReactions = {
+      thumbsUp: [...(reactions.thumbsUp || [])],
+      heart: [...(reactions.heart || [])],
+      clap: [...(reactions.clap || [])],
+      laugh: [...(reactions.laugh || [])]
+    };
+
+    let existingType = null;
+    for (const t of reactionTypes) {
+      if ((updatedReactions[t] || []).some(id => (id._id || id).toString() === userId.toString())) {
+        existingType = t;
+        break;
+      }
+    }
+
+    let isReacted = false;
+    if (existingType) {
+      updatedReactions[existingType] = updatedReactions[existingType].filter(id => (id._id || id).toString() !== userId.toString());
+      if (existingType !== reactionType) {
+        updatedReactions[reactionType].push(userId);
+        isReacted = true;
+      }
+    } else {
+      updatedReactions[reactionType].push(userId);
+      isReacted = true;
+    }
+
+    setReactions(updatedReactions);
+
+    if (isReacted) {
+      confetti({
+        particleCount: 40,
+        spread: 55,
+        origin: { y: 0.85 }
+      });
+    }
+
     try {
       const res = await api.post(`/api/blogs/${blog._id}/react`, { reactionType });
-      setReactions(res.data.reactions);
-      if (res.data.isReacted) {
-        confetti({
-          particleCount: 50,
-          spread: 60,
-          origin: { y: 0.85 }
-        });
+      if (res.data?.reactions) {
+        setReactions(res.data.reactions);
       }
     } catch (err) {
       console.error(err);
+      setReactions(oldReactions);
+      showToast(err.response?.data?.error || 'Failed to update reaction.', 'error');
     }
   };
 
@@ -886,18 +932,46 @@ export default function BlogDetail() {
       );
     }
 
-    const currentLine = podcastScript[podcastLineIndex];
+    const isStopped = !isPlayingPodcast && !podcastPaused;
+    const activeIndex = isStopped ? 0 : podcastLineIndex;
+    const currentLine = podcastScript[activeIndex] || podcastScript[0];
+    const progressPercent = isStopped ? 0 : Math.round(((activeIndex + 1) / podcastScript.length) * 100);
 
     return (
       <div className="p-5 rounded-2xl bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <button
-              onClick={handlePodcastToggle}
-              className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-transform hover:scale-105"
-            >
-              {isPlayingPodcast && !podcastPaused ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
-            </button>
+            {isPlayingPodcast && !podcastPaused ? (
+              <button
+                type="button"
+                onClick={handlePodcastPause}
+                title="Pause Podcast"
+                className="p-3 bg-amber-500 hover:bg-amber-600 text-white rounded-full shadow-lg transition-transform hover:scale-105"
+              >
+                <Pause className="w-4 h-4 fill-current" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handlePodcastPlay}
+                title={podcastPaused ? "Resume Podcast" : "Start Podcast"}
+                className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-transform hover:scale-105"
+              >
+                <Play className="w-4 h-4 fill-current" />
+              </button>
+            )}
+
+            {(isPlayingPodcast || podcastPaused || podcastLineIndex > 0) && (
+              <button
+                type="button"
+                onClick={handlePodcastStop}
+                title="Stop Podcast"
+                className="p-3 bg-rose-500 hover:bg-rose-600 text-white rounded-full shadow-lg transition-transform hover:scale-105"
+              >
+                <Square className="w-4 h-4 fill-current" />
+              </button>
+            )}
+
             <div>
               <span className="block text-xs font-extrabold text-slate-800 dark:text-slate-200">AI Audio Briefing</span>
               <span className="block text-[10px] text-slate-400">Hosts: Alex & Jordan • Simulated Episode</span>
@@ -919,20 +993,20 @@ export default function BlogDetail() {
           </div>
           <div className="flex-1 space-y-1">
             <span className="block text-[10px] uppercase font-extrabold tracking-wider text-slate-400">{currentLine?.speaker}</span>
-            <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-350 italic font-medium">"{currentLine?.text}"</p>
+            <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 italic font-medium">"{currentLine?.text}"</p>
           </div>
         </div>
 
         <div className="space-y-1">
           <div className="flex justify-between text-[8px] uppercase tracking-wider text-slate-400 font-bold">
             <span>Alex</span>
-            <span>Progress {Math.round(((podcastLineIndex + 1) / podcastScript.length) * 100)}%</span>
+            <span>Progress {progressPercent}%</span>
             <span>Jordan</span>
           </div>
           <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-indigo-500 transition-all duration-700"
-              style={{ width: `${((podcastLineIndex + 1) / podcastScript.length) * 100}%` }}
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
@@ -1087,30 +1161,30 @@ export default function BlogDetail() {
         {debateList.map((msg, index) => {
           const avatarUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${msg.avatarSeed}`;
           return (
-            <m.div
+            <motion.div
               key={index}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.15 }}
-              className="p-3 bg-white dark:bg-slate-905 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-start gap-3.5 max-w-[92%]"
+              className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex items-start gap-3.5 max-w-[92%]"
             >
               <img src={avatarUrl} className="w-8 h-8 rounded-full border bg-slate-100 border-slate-200/30 flex-shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-850 dark:text-slate-200">{msg.persona}</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{msg.persona}</span>
                   <span className={`text-[8px] uppercase tracking-wide px-1.5 py-0.5 font-bold rounded ${
                     msg.persona.includes('Skeptic') 
-                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-455' 
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' 
                       : msg.persona.includes('Pragmatic')
-                        ? 'bg-amber-500/10 text-amber-655 dark:text-amber-455'
-                        : 'bg-indigo-500/10 text-indigo-655 dark:text-indigo-400'
+                        ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
                   }`}>
                     {msg.persona.includes('Skeptic') ? 'Critic' : msg.persona.includes('Pragmatic') ? 'Engineer' : 'Advocate'}
                   </span>
                 </div>
-                <p className="text-xs leading-relaxed text-slate-650 dark:text-slate-355">{msg.message}</p>
+                <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{msg.message}</p>
               </div>
-            </m.div>
+            </motion.div>
           );
         })}
       </div>
@@ -1180,25 +1254,39 @@ export default function BlogDetail() {
       {/* Author Card Row */}
       <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pb-6 border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3">
-          <Link to={`/profile/${blog.author?._id}`}>
+          {blog.author?._id ? (
+            <Link to={`/profile/${blog.author._id}`}>
+              <img
+                src={blog.author?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                alt={blog.author?.name || 'Author'}
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10"
+              />
+            </Link>
+          ) : (
             <img
-              src={blog.author?.profileImage}
-              alt={blog.author?.name}
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
+              alt="Anonymous"
               className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10"
             />
-          </Link>
+          )}
           <div>
             <div className="flex items-center gap-2">
-              <Link to={`/profile/${blog.author?._id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">
-                {blog.author?.name}
-              </Link>
+              {blog.author?._id ? (
+                <Link to={`/profile/${blog.author._id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">
+                  {blog.author?.name || 'Anonymous Creator'}
+                </Link>
+              ) : (
+                <span className="font-bold text-slate-800 dark:text-slate-100">
+                  {blog.author?.name || 'Anonymous Creator'}
+                </span>
+              )}
               {blog.author?.reputationPoints !== undefined && (
                 <span className="text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-400 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm" title="Reputation Level">
                   <span>✨ {blog.author.badge || 'Reader'}</span>
                   <span className="text-slate-400 font-medium">({blog.author.reputationPoints} pts)</span>
                 </span>
               )}
-              {(!user || blog.author?._id !== user?._id) && (
+              {blog.author?._id && (!user || blog.author._id !== user?._id) && (
                 <>
                   <button
                     onClick={handleFollow}
@@ -1327,7 +1415,7 @@ export default function BlogDetail() {
 
       {/* AI Summary Highlight Card */}
       {showSummary && (blog.summary || blog.keyPoints?.length > 0) && (
-        <m.div
+        <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           className="mt-6 p-6 rounded-2xl border border-amber-100 dark:border-amber-900/30 bg-amber-50/40 dark:bg-amber-950/5"
@@ -1352,7 +1440,7 @@ export default function BlogDetail() {
               </ul>
             </div>
           )}
-        </m.div>
+        </motion.div>
       )}
 
       {/* Blog Content */}
@@ -1379,7 +1467,7 @@ export default function BlogDetail() {
       <div className="mt-8 flex flex-col md:flex-row justify-between gap-4 bg-slate-50 dark:bg-slate-900/30 p-5 rounded-3xl border border-slate-200/50 dark:border-slate-800">
         <div className="flex flex-wrap items-center gap-6">
           {/* Emojis Reactions */}
-          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-150 dark:border-slate-800">
+          <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-3.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-800">
             {[
               { type: 'thumbsUp', label: '👍', name: 'Like' },
               { type: 'heart', label: '❤️', name: 'Love' },
@@ -1387,18 +1475,20 @@ export default function BlogDetail() {
               { type: 'laugh', label: '😂', name: 'Haha' }
             ].map((emoji) => {
               const list = reactions[emoji.type] || [];
-              const hasReacted = isAuthenticated && list.includes(user?._id);
+              const hasReacted = isAuthenticated && user?._id && list.some(id => (id._id || id).toString() === user._id.toString());
               return (
                 <button
                   key={emoji.type}
                   onClick={() => handleReact(emoji.type)}
                   title={emoji.name}
-                  className={`flex items-center gap-1 text-sm transition-all hover:scale-125 px-1.5 py-0.5 rounded-md ${
-                    hasReacted ? 'bg-primary-50 dark:bg-primary-950/20' : ''
+                  className={`flex items-center gap-1.5 text-sm transition-all hover:scale-125 px-2 py-1 rounded-full ${
+                    hasReacted 
+                      ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/40 dark:text-primary-400 font-bold border border-primary-200 dark:border-primary-800' 
+                      : 'hover:bg-slate-100 dark:hover:bg-slate-800'
                   }`}
                 >
-                  <span className="text-base">{emoji.label}</span>
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{list.length}</span>
+                  <span className="text-base select-none">{emoji.label}</span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{list.length}</span>
                 </button>
               );
             })}
@@ -1459,8 +1549,8 @@ export default function BlogDetail() {
               onClick={() => setActiveAITab(activeAITab === tab.id ? null : tab.id)}
               className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
                 activeAITab === tab.id
-                  ? 'bg-indigo-650 text-white shadow-md'
-                  : 'bg-slate-50 dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 text-slate-700 dark:text-slate-300'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                  : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
               }`}
             >
               {tab.label}
@@ -1470,7 +1560,7 @@ export default function BlogDetail() {
 
         <AnimatePresence mode="wait">
           {activeAITab === 'podcast' && (
-            <m.div
+            <motion.div
               key="podcast"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1478,11 +1568,11 @@ export default function BlogDetail() {
               className="space-y-4"
             >
               {renderPodcastPlayer()}
-            </m.div>
+            </motion.div>
           )}
 
           {activeAITab === 'quiz' && (
-            <m.div
+            <motion.div
               key="quiz"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1490,11 +1580,11 @@ export default function BlogDetail() {
               className="space-y-4"
             >
               {renderQuizContent()}
-            </m.div>
+            </motion.div>
           )}
 
           {activeAITab === 'debate' && (
-            <m.div
+            <motion.div
               key="debate"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1502,7 +1592,7 @@ export default function BlogDetail() {
               className="space-y-4"
             >
               {renderDebateContent()}
-            </m.div>
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
@@ -1511,7 +1601,7 @@ export default function BlogDetail() {
       <AnimatePresence>
         {showVersions && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-            <m.div
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
@@ -1601,7 +1691,7 @@ export default function BlogDetail() {
                   )}
                 </div>
               </div>
-            </m.div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>

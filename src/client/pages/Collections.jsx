@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Sparkles, Search, Compass, BookOpen, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Sparkles, Search, Compass, BookOpen, ChevronRight, FolderPlus } from 'lucide-react';
 import { fetchTrendingCollections, searchCollections } from '../redux/collectionSlice';
 import CollectionCard from '../components/collections/CollectionCard.jsx';
 import CollectionSEO from '../components/collections/CollectionSEO.jsx';
@@ -66,6 +67,15 @@ export default function Collections() {
           <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
             Discover organized learning paths, article series, and favorite reads assembled by our community of authors.
           </p>
+          <div className="pt-2">
+            <Link
+              to="/collections/new"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition-all active:scale-95"
+            >
+              <FolderPlus className="w-4 h-4" />
+              <span>Create New Collection</span>
+            </Link>
+          </div>
         </div>
 
         {/* Search & Filter Bar */}
@@ -164,9 +174,23 @@ export default function Collections() {
                   ))}
                 </div>
               ) : searchResults.length === 0 ? (
-                <div className="py-12 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-6">
-                  <BookOpen className="w-10 h-10 mx-auto text-slate-455 mb-3" />
-                  <p className="text-sm font-semibold">No collections available yet.</p>
+                <div className="py-16 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-8 space-y-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-sm">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-500 border border-indigo-100 dark:border-indigo-900/40 shadow-sm">
+                    <BookOpen className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-slate-800 dark:text-white">No Curated Collections Found</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
+                      Be the first author to organize top articles into a public reading list for the community.
+                    </p>
+                  </div>
+                  <Link
+                    to="/collections/new"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10 active:scale-95"
+                  >
+                    <FolderPlus className="w-4 h-4" />
+                    <span>Create Collection</span>
+                  </Link>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

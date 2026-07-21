@@ -21,7 +21,6 @@ import {
   reportBlog,
   checkSpam,
   dismissReports,
-  aiTutorReview,
   getDailyAnalytics,
   generateDailyBrief,
   grammarCheck,
@@ -46,7 +45,6 @@ router.get('/trending', optionalAuth, getTrendingBlogs);
 router.get('/flagged', auth, requireRole(['admin']), getFlaggedBlogs);
 router.post('/:id/dismiss-reports', auth, requireRole(['admin']), dismissReports);
 router.post('/check-spam', auth, checkSpam);
-router.post('/ai-tutor-review', auth, aiTutorReview);
 router.post('/grammar-check', auth, grammarCheck);
 router.post('/ai-rewrite', auth, aiRewrite);
 router.get('/:slug', getBlogBySlug);

@@ -50,9 +50,79 @@ export const createCollection = async (req, res) => {
   }
 };
 
+const ensureDefaultCollections = async () => {
+  try {
+    let curatorUser = await User.findOne({ role: 'admin' });
+    if (!curatorUser) {
+      curatorUser = await User.findOne();
+    }
+    if (!curatorUser) return;
+
+    const publishedBlogs = await Blog.find({ status: 'published' }).limit(10);
+    const blogIds = publishedBlogs.map((b, idx) => ({
+      blog: b._id,
+      order: idx + 1,
+      note: 'Key article in this curated series',
+      addedAt: new Date()
+    }));
+
+    const defaults = [
+      {
+        title: '🚀 Full-Stack Web Architecture',
+        slug: 'full-stack-web-architecture',
+        description: 'A hand-picked roadmap of essential articles covering modern frontend frameworks, backend APIs, and database patterns.',
+        curator: curatorUser._id,
+        visibility: 'public',
+        category: 'Technology',
+        tags: ['webdev', 'javascript', 'react', 'architecture'],
+        items: blogIds.slice(0, 3),
+        itemsCount: blogIds.slice(0, 3).length,
+        viewsCount: 142,
+        followersCount: 18
+      },
+      {
+        title: '💡 AI & Machine Learning Insights',
+        slug: 'ai-machine-learning-insights',
+        description: 'Deep dives, tutorials, and executive briefs on artificial intelligence, prompt engineering, and modern LLM developments.',
+        curator: curatorUser._id,
+        visibility: 'public',
+        category: 'Education',
+        tags: ['ai', 'machinelearning', 'tech', 'future'],
+        items: blogIds.slice(3, 6),
+        itemsCount: blogIds.slice(3, 6).length,
+        viewsCount: 98,
+        followersCount: 12
+      },
+      {
+        title: '🌍 Community Essentials & Guides',
+        slug: 'community-essentials-guides',
+        description: 'Must-read articles, best practices, and writing tips assembled by the BlogSphere creator community.',
+        curator: curatorUser._id,
+        visibility: 'public',
+        category: 'Education',
+        tags: ['community', 'writing', 'guides', 'productivity'],
+        items: blogIds.slice(6, 9),
+        itemsCount: blogIds.slice(6, 9).length,
+        viewsCount: 75,
+        followersCount: 9
+      }
+    ];
+
+    for (const item of defaults) {
+      const exists = await Collection.findOne({ slug: item.slug });
+      if (!exists) {
+        await Collection.create(item);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to seed default collections:', err.message);
+  }
+};
+
 // Get all collections (paginated, with visibility checks)
 export const getCollections = async (req, res) => {
   try {
+    await ensureDefaultCollections();
     const { curator, category, tag, search, visibility = 'public', limit = 10, offset = 0 } = req.query;
     
     const query = {};
@@ -507,6 +577,7 @@ export const getCollectionsContainingBlog = async (req, res) => {
 // Search across public collections
 export const searchCollections = async (req, res) => {
   try {
+    await ensureDefaultCollections();
     const { q, category } = req.query;
     const query = { visibility: 'public' };
 
@@ -536,6 +607,7 @@ export const searchCollections = async (req, res) => {
 // Get trending collections
 export const getTrendingCollections = async (req, res) => {
   try {
+    await ensureDefaultCollections();
     // Formula: Score = followers × 0.4 + views × 0.3 + items × 0.2 + recency × 0.1
     const collections = await Collection.find({ visibility: 'public' })
       .populate('curator', 'name username profileImage')
