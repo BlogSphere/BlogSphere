@@ -109,9 +109,17 @@ const ensureDefaultCollections = async () => {
     ];
 
     for (const item of defaults) {
-      const exists = await Collection.findOne({ slug: item.slug });
+      const exists = await Collection.findOne({ 
+        $or: [{ slug: item.slug }, { title: item.title }] 
+      });
       if (!exists) {
-        await Collection.create(item);
+        try {
+          await Collection.create(item);
+        } catch (err) {
+          if (err.code !== 11000) {
+            console.error(`Error creating default collection "${item.title}":`, err.message);
+          }
+        }
       }
     }
   } catch (err) {

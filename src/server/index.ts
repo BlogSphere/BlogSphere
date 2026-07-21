@@ -189,7 +189,7 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Graceful port-conflict handler — prevents unhandled crash on EADDRINUSE
 server.on('error', (err: NodeJS.ErrnoException) => {
@@ -204,7 +204,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
   }
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
 
   // Create default admin user if not exists
