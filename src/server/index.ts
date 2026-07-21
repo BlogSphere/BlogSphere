@@ -121,14 +121,14 @@ io.on('connection', (socket: Socket) => {
   // Collaborative Editor: Join Room
   socket.on('join_collab', ({ blogId, userId, userName }: { blogId: string; userId: string; userName: string }) => {
     socket.join(`blog_collab_${blogId}`);
-    
+
     if (!activeCollaborators[blogId]) {
       activeCollaborators[blogId] = {};
     }
-    
+
     // Add collaborator
     activeCollaborators[blogId][socket.id] = { userId, userName };
-    
+
     // Broadcast active contributors to the room
     io.to(`blog_collab_${blogId}`).emit('collab_users', Object.values(activeCollaborators[blogId]));
   });
@@ -206,7 +206,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 
 server.listen(PORT, () => {
   console.log(`BlogSphere backend running on port ${PORT}`);
-  
+
   // Create default admin user if not exists
   (async () => {
     try {
