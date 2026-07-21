@@ -50,6 +50,11 @@ export default function BlogCard({ blog }) {
   
   const readTime = getReadTime(blog.content);
   const snippet = getSnippet(blog.content);
+  const totalReactions = (blog.likes?.length || 0)
+    + (blog.reactions?.thumbsUp?.length || 0)
+    + (blog.reactions?.heart?.length || 0)
+    + (blog.reactions?.clap?.length || 0)
+    + (blog.reactions?.laugh?.length || 0);
   const imageUrl = sanitizeImageUrl(blog.coverImage) || FALLBACK_IMAGE;
 
   return (
@@ -136,7 +141,7 @@ export default function BlogCard({ blog }) {
             </span>
             <span className="flex items-center gap-1">
               <Heart className="w-3.5 h-3.5 text-rose-500" />
-              {blog.likes?.length || 0}
+              {totalReactions}
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3.5 h-3.5 text-amber-500" />
