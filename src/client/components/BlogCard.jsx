@@ -46,7 +46,7 @@ export default function BlogCard({ blog }) {
     + (blog.reactions?.heart?.length || 0)
     + (blog.reactions?.clap?.length || 0)
     + (blog.reactions?.laugh?.length || 0);
-  const imageUrl = sanitizeImageUrl(blog.coverImage) || FALLBACK_IMAGE;
+  const imageUrl = getCoverImageForBlog(blog);
 
   return (
     <motion.article
