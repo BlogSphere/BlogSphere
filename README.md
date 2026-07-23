@@ -96,7 +96,7 @@ Ensure you have the following installed on your machine:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/pateldeep04/BlogSphere.git
+   git clone https://github.com/<YOUR - URL>/BlogSphere.git
    cd BlogSphere
    ```
 
