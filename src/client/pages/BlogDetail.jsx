@@ -906,6 +906,8 @@ export default function BlogDetail() {
       setCommentText('');
     } catch (err) {
       console.error(err);
+      const errorMsg = err.response?.data?.error || 'Failed to post comment.';
+      showToast(errorMsg, 'error');
     }
   };
 
@@ -925,6 +927,8 @@ export default function BlogDetail() {
       setReplyTarget(null);
     } catch (err) {
       console.error(err);
+      const errorMsg = err.response?.data?.error || 'Failed to post reply.';
+      showToast(errorMsg, 'error');
     }
   };
 
