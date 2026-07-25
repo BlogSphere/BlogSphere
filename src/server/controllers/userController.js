@@ -1,3 +1,4 @@
+import { getGeminiApiKey, reportKeyFailure } from '../utils/gemini.js';
 import User from '../models/User.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
@@ -180,7 +181,7 @@ export const updateOwnProfile = async (req, res) => {
       
       // If bio actually changed and is not empty, reclassify
       if (user.bio !== oldBio && user.bio.length > 0) {
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiKey = getGeminiApiKey();
         if (apiKey) {
           try {
             const aiPrompt = `Analyze the following user profile bio: "${user.bio}"
@@ -233,6 +234,7 @@ export const updateOwnProfile = async (req, res) => {
               }
             }
           } catch (aiErr) {
+            reportKeyFailure(apiKey);
             console.error('AI Bio Re-classification failed:', aiErr.message);
           }
         }

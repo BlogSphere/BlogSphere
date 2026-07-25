@@ -1,3 +1,4 @@
+import { getGeminiApiKey, reportKeyFailure } from '../utils/gemini.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
@@ -50,7 +51,7 @@ export const register = async (req, res) => {
     // Call Gemini API to classify bio and set subscribedCategories & hiddenTags
     let subscribedCategories = ['Technology', 'Education', 'Travel']; // default fallbacks
     let hiddenTags = [];
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey && bio && bio.trim()) {
       try {
         const aiPrompt = `Analyze the following user profile bio: "${bio}"
@@ -103,6 +104,7 @@ export const register = async (req, res) => {
           }
         }
       } catch (aiErr) {
+        reportKeyFailure(apiKey);
         console.error('AI Bio Classification failed:', aiErr.message);
       }
     }

@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { getGeminiApiKey, reportKeyFailure } from '../utils/gemini.js';
 import Blog from '../models/Blog.js';
 import BlogVersion from '../models/BlogVersion.js';
 import User from '../models/User.js';
@@ -113,12 +115,13 @@ const summarizeContent = (htmlContent) => {
 
 // Real AI summary helper via Gemini API
 const generateGeminiSummary = async (title, contentText) => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not defined in environment variables.');
   }
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -158,26 +161,31 @@ Only return the JSON object, do not include any markdown backticks or explanatio
     })
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Gemini API returned error: ${response.status} - ${errorText}`);
-  }
+    if (!response.ok) {
+      reportKeyFailure(apiKey);
+      const errorText = await response.text();
+      throw new Error(`Gemini API returned error: ${response.status} - ${errorText}`);
+    }
 
-  const result = await response.json();
-  const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!rawText) {
-    throw new Error('Invalid response structure from Gemini API');
-  }
+    const result = await response.json();
+    const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!rawText) {
+      throw new Error('Invalid response structure from Gemini API');
+    }
 
-  let cleanText = rawText.trim();
-  if (cleanText.startsWith('```')) {
-    cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+    let cleanText = rawText.trim();
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(json)?/, '').replace(/```$/, '').trim();
+    }
+    const parsed = JSON.parse(cleanText);
+    return {
+      summary: parsed.summary,
+      keyPoints: parsed.keyPoints || []
+    };
+  } catch (err) {
+    reportKeyFailure(apiKey);
+    throw err;
   }
-  const parsed = JSON.parse(cleanText);
-  return {
-    summary: parsed.summary,
-    keyPoints: parsed.keyPoints || []
-  };
 };
 
 export const createBlog = async (req, res) => {
@@ -338,14 +346,16 @@ export const createBlog = async (req, res) => {
 
 export const getBlogs = async (req, res) => {
   try {
-    const { category, tag, author, search, status } = req.query;
+    const { category, tag, author, search, status, page, limit, sortBy } = req.query;
     const query = {};
 
     if (category) query.category = category;
     if (tag) query.tags = tag;
     
     if (author) {
-      query.author = author;
+      query.author = mongoose.Types.ObjectId.isValid(author)
+        ? new mongoose.Types.ObjectId(author)
+        : author;
       // If someone else is querying this author's profile page, hide their anonymous posts!
       if (!req.user || req.user._id.toString() !== author.toString()) {
         query.isAnonymous = { $ne: true };
@@ -372,13 +382,59 @@ export const getBlogs = async (req, res) => {
       ];
     }
 
-    const blogs = await Blog.find(query)
-      .populate('author', 'name profileImage bio')
-      .populate('collaborators', 'name profileImage')
-      .sort({ createdAt: -1 });
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    let blogs;
+    const totalBlogs = await Blog.countDocuments(query);
+
+    if (!isNaN(pageNum) && !isNaN(limitNum)) {
+      const pipeline = [
+        { $match: query },
+        { $addFields: { likesCount: { $size: { $ifNull: ['$likes', []] } } } }
+      ];
+
+      if (sortBy === 'likes') {
+        pipeline.push({ $sort: { likesCount: -1, createdAt: -1 } });
+      } else if (sortBy === 'views') {
+        pipeline.push({ $sort: { views: -1, createdAt: -1 } });
+      } else {
+        pipeline.push({ $sort: { createdAt: -1 } });
+      }
+
+      pipeline.push({ $skip: (pageNum - 1) * limitNum });
+      pipeline.push({ $limit: limitNum });
+
+      const aggregatedBlogs = await Blog.aggregate(pipeline);
+      
+      blogs = await Blog.populate(aggregatedBlogs, [
+        { path: 'author', select: 'name profileImage bio' },
+        { path: 'collaborators', select: 'name profileImage' }
+      ]);
+    } else {
+      let blogsQuery = Blog.find(query)
+        .populate('author', 'name profileImage bio')
+        .populate('collaborators', 'name profileImage');
+
+      if (sortBy === 'views') {
+        blogsQuery = blogsQuery.sort({ views: -1, createdAt: -1 });
+      } else if (sortBy === 'likes') {
+        const results = await blogsQuery.sort({ createdAt: -1 });
+        results.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+        blogs = results;
+      } else {
+        blogs = await blogsQuery.sort({ createdAt: -1 });
+      }
+    }
 
     const sanitizedBlogs = blogs.map(b => sanitizeBlogObject(b));
-    res.status(200).json({ blogs: sanitizedBlogs });
+    res.status(200).json({ 
+      blogs: sanitizedBlogs,
+      total: totalBlogs,
+      currentPage: pageNum || 1,
+      totalPages: limitNum ? Math.ceil(totalBlogs / limitNum) : 1,
+      hasMore: !isNaN(pageNum) && !isNaN(limitNum) ? (pageNum * limitNum < totalBlogs) : false
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -679,27 +735,43 @@ export const getRecommendations = async (req, res) => {
       return res.status(401).json({ error: 'Authentication required.' });
     }
 
-    // Retrieve personalized feed from the recommendation engine
-    const { blogs: personalizedFeed } = await recommendationEngine.getPersonalizedFeed(userId, { limit: 10 });
-    let recommended = personalizedFeed || [];
+    const { page, limit } = req.query;
+    const pageNum = parseInt(page, 10) || 1;
+    const limitNum = parseInt(limit, 10) || 10;
+    const offset = (pageNum - 1) * limitNum;
 
-    // Ensure we exclude the user's own blogs and get at least 10 blogs
-    if (recommended.length < 10) {
-      const remainingCount = 10 - recommended.length;
+    // Retrieve personalized feed from the recommendation engine
+    const { blogs: personalizedFeed, hasMore: engineHasMore } = await recommendationEngine.getPersonalizedFeed(userId, { 
+      limit: limitNum, 
+      offset: offset 
+    });
+    let recommended = personalizedFeed || [];
+    let hasMore = engineHasMore;
+
+    if (recommended.length < limitNum) {
+      const remainingCount = limitNum - recommended.length;
       const idsToExclude = recommended.map(b => b._id);
       idsToExclude.push(userId); // Exclude the user's own id
 
-      const generalBlogs = await Blog.find({
+      const query = {
         status: 'published',
         _id: { $nin: idsToExclude },
         author: { $ne: userId }
-      })
-      .populate('author', 'name username profileImage isVerified badge')
-      .populate('community', 'name slug avatar')
-      .sort({ views: -1, likes: -1 })
-      .limit(remainingCount);
+      };
+
+      const skipCount = Math.max(0, offset - (personalizedFeed ? personalizedFeed.length : 0));
+
+      const generalBlogs = await Blog.find(query)
+        .populate('author', 'name username profileImage isVerified badge')
+        .populate('community', 'name slug avatar')
+        .sort({ views: -1, likes: -1 })
+        .skip(skipCount)
+        .limit(remainingCount);
 
       recommended = recommended.concat(generalBlogs);
+
+      const totalGeneralBlogs = await Blog.countDocuments(query);
+      hasMore = hasMore || (totalGeneralBlogs > skipCount + remainingCount);
     }
 
     // Populate collaborators for all recommendations
@@ -708,7 +780,11 @@ export const getRecommendations = async (req, res) => {
     ]);
 
     const sanitizedRecommended = populated.map(b => sanitizeBlogObject(b));
-    res.status(200).json({ blogs: sanitizedRecommended });
+    res.status(200).json({ 
+      blogs: sanitizedRecommended,
+      currentPage: pageNum,
+      hasMore: hasMore
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -736,7 +812,7 @@ export const generateSummary = async (req, res) => {
     cleanText = cleanText.replace(/\s+/g, ' ').trim();
 
     let summaryData;
-    if (process.env.GEMINI_API_KEY) {
+    if (getGeminiApiKey()) {
       try {
         summaryData = await generateGeminiSummary(blog.title, cleanText);
       } catch (err) {
@@ -1011,7 +1087,7 @@ export const reactToBlog = async (req, res) => {
 
 // Helper for Gemini block-by-block translation
 const translateTextWithGemini = async (text, targetLang) => {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = getGeminiApiKey();
   if (!apiKey || !text) return text;
   try {
     const langName = targetLang === 'hi' ? 'Hindi' : targetLang === 'gu' ? 'Gujarati' : 'English';
@@ -1026,11 +1102,15 @@ const translateTextWithGemini = async (text, targetLang) => {
         }]
       })
     });
-    if (!response.ok) return translateText(text, targetLang);
+    if (!response.ok) {
+      reportKeyFailure(apiKey);
+      return translateText(text, targetLang);
+    }
     const result = await response.json();
     const rawText = result.candidates?.[0]?.content?.parts?.[0]?.text;
     return rawText ? rawText.trim() : translateText(text, targetLang);
   } catch (e) {
+    reportKeyFailure(apiKey);
     return translateText(text, targetLang);
   }
 };
@@ -1112,7 +1192,7 @@ export const suggestMetadata = async (req, res) => {
     }
     cleanText = cleanText.substring(0, 5000); // limit payload size
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -1154,8 +1234,11 @@ export const suggestMetadata = async (req, res) => {
             const parsed = JSON.parse(cleanText);
             return res.status(200).json(parsed);
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (apiError) {
+        reportKeyFailure(apiKey);
         console.error('Gemini metadata suggest failed, falling back:', apiError.message);
       }
     }
@@ -1199,6 +1282,7 @@ export const triggerTrendingAutoPost = async (req, res) => {
 // Smart Trending Algorithm (Gravity Decay)
 export const getTrendingBlogs = async (req, res) => {
   try {
+    const { page, limit } = req.query;
     const blogs = await Blog.find({ status: 'published' })
       .populate('author', 'name profileImage badge')
       .populate('collaborators', 'name profileImage');
@@ -1237,7 +1321,22 @@ export const getTrendingBlogs = async (req, res) => {
 
     const sortedBlogs = trendingList.map(item => sanitizeBlogObject(item.blog));
 
-    res.status(200).json({ blogs: sortedBlogs });
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    if (!isNaN(pageNum) && !isNaN(limitNum)) {
+      const startIndex = (pageNum - 1) * limitNum;
+      const paginatedBlogs = sortedBlogs.slice(startIndex, startIndex + limitNum);
+      res.status(200).json({
+        blogs: paginatedBlogs,
+        total: sortedBlogs.length,
+        currentPage: pageNum,
+        totalPages: Math.ceil(sortedBlogs.length / limitNum),
+        hasMore: startIndex + limitNum < sortedBlogs.length
+      });
+    } else {
+      res.status(200).json({ blogs: sortedBlogs });
+    }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1554,8 +1653,9 @@ You MUST return a JSON object with this exact structure:
 
 Only return the raw JSON object. Do not wrap it in markdown block quotes (such as \`\`\`json). Provide clean, parseable JSON.`;
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    let apiKey = null;
+    const nowKey = getGeminiApiKey();
+    if (!nowKey) {
       const mockSummary = `Today's blogs highlighted key insights in community writing. Contributors shared articles exploring various themes including ${blogs.map(b => b.category).filter(Boolean).slice(0, 3).join(', ') || 'personal logs'}.`;
       const mockThemes = [
         'Community collaboration and writing logs',
@@ -1582,6 +1682,7 @@ Only return the raw JSON object. Do not wrap it in markdown block quotes (such a
       return res.status(200).json({ brief });
     }
 
+    apiKey = nowKey;
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1625,6 +1726,7 @@ Only return the raw JSON object. Do not wrap it in markdown block quotes (such a
     await brief.save();
     res.status(200).json({ brief });
   } catch (error) {
+    if (apiKey) reportKeyFailure(apiKey);
     res.status(500).json({ error: error.message });
   }
 };
@@ -1637,7 +1739,7 @@ export const grammarCheck = async (req, res) => {
       return res.status(400).json({ error: 'Content is required for grammar check.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         const prompt = `You are a professional proofreader. Analyze the following text for grammar, spelling, and punctuation errors ONLY.
@@ -1684,8 +1786,11 @@ Only return the raw JSON object, no markdown, no explanations.`;
               suggestions: parsed.suggestions || [] 
             });
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('Grammar check Gemini call failed, returning clean result:', err.message);
       }
     }
@@ -1709,7 +1814,7 @@ export const aiRewrite = async (req, res) => {
       return res.status(400).json({ error: 'Instruction is required for rewrite.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         const prompt = `You are an English writing assistant. The user has provided a draft/notes (USER'S TEXT) and an explanation of what they want to express (USER'S INSTRUCTION). Your task is to rewrite the text in proper, grammatically correct English.
@@ -1747,8 +1852,11 @@ Rewritten text:`;
           if (rewrittenText) {
             return res.status(200).json({ rewrittenContent: rewrittenText });
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('AI Rewrite Gemini call failed, returning original text:', err.message);
       }
     }
@@ -1926,7 +2034,7 @@ export const getAIDebate = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         let plainText = blog.content;
@@ -1986,8 +2094,11 @@ Return only the raw JSON array. Do not include any markdown blocks or formatting
             const debate = JSON.parse(clean);
             return res.status(200).json({ debate });
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('Gemini debate generation failed, using fallback:', err.message);
       }
     }
@@ -2018,7 +2129,7 @@ export const getBlogQuiz = async (req, res) => {
     }
 
     let parsedQuestions = null;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         let plainText = blog.content;
@@ -2067,8 +2178,11 @@ Return only the raw JSON array. Do not include any markdown blocks or formatting
             }
             parsedQuestions = JSON.parse(clean);
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('Gemini quiz generation failed, using fallback:', err.message);
       }
     }
@@ -2159,7 +2273,7 @@ export const getBlogPodcast = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found.' });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
     if (apiKey) {
       try {
         let plainText = blog.content;
@@ -2212,8 +2326,11 @@ Return only the raw JSON array. Do not include any markdown blocks or formatting
             const script = JSON.parse(clean);
             return res.status(200).json({ script });
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('Gemini podcast generation failed, using fallback:', err.message);
       }
     }

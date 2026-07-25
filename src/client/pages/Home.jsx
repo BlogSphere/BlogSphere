@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Sparkles, TrendingUp, Flame, AlertCircle, Search, X } from 'lucide-react';
@@ -20,6 +20,11 @@ export default function Home() {
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchType, setSearchType] = useState('blogs'); // 'blogs', 'authors', 'topics'
+  
+  // Pagination States
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   // Search & Filter States
   const [searchInput, setSearchInput] = useState(search || '');
@@ -46,8 +51,12 @@ export default function Home() {
   }, [isAuthenticated, category, tag, search]);
 
   // Fetch blogs based on active feed tab and filters
-  useEffect(() => {
-    setLoading(true);
+  const fetchBlogs = (pageNum, isAppend = false) => {
+    if (isAppend) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
 
     if (activeFeedTab === 'all' && searchType === 'authors') {
       api.get('/api/users/search/authors', { params: { search: searchInput } })
@@ -55,10 +64,14 @@ export default function Home() {
           setUsersList(res.data.users || []);
           setBlogs([]);
           setLoading(false);
+          setLoadingMore(false);
+          setHasMore(false);
         })
         .catch((err) => {
           console.error(err);
           setLoading(false);
+          setLoadingMore(false);
+          setHasMore(false);
         });
       return;
     }
@@ -70,35 +83,70 @@ export default function Home() {
       endpoint = '/api/blogs/trending';
     }
 
-    const params = {};
+    const params = {
+      page: pageNum,
+      limit: 10
+    };
+
     if (activeFeedTab === 'all') {
       if (selectedCategory) params.category = selectedCategory;
       if (selectedTag) params.tag = selectedTag;
       if (searchInput) params.search = searchInput;
+      if (sortOption) params.sortBy = sortOption;
     }
 
     api.get(endpoint, { params })
       .then((res) => {
-        let list = res.data.blogs || [];
-        // Apply sorting (only relevant for search/all list since recommended/trending are pre-sorted)
-        if (activeFeedTab === 'all') {
-          if (sortOption === 'views') {
-            list = [...list].sort((a, b) => (b.views || 0) - (a.views || 0));
-          } else if (sortOption === 'likes') {
-            list = [...list].sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
-          } else {
-            list = [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-          }
+        const list = res.data.blogs || [];
+        const resHasMore = res.data.hasMore || false;
+
+        if (isAppend) {
+          setBlogs((prev) => [...prev, ...list]);
+        } else {
+          setBlogs(list);
         }
-        setBlogs(list);
         setUsersList([]);
+        setHasMore(resHasMore);
+        setPage(pageNum);
         setLoading(false);
+        setLoadingMore(false);
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
+        setLoadingMore(false);
+        setHasMore(false);
       });
+  };
+
+  useEffect(() => {
+    fetchBlogs(1, false);
   }, [activeFeedTab, selectedCategory, selectedTag, searchInput, sortOption, searchType]);
+
+  const loaderRef = useRef(null);
+
+  useEffect(() => {
+    if (loading || loadingMore || !hasMore) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        fetchBlogs(page + 1, true);
+      }
+    }, {
+      rootMargin: '200px'
+    });
+
+    const currentLoader = loaderRef.current;
+    if (currentLoader) {
+      observer.observe(currentLoader);
+    }
+
+    return () => {
+      if (currentLoader) {
+        observer.unobserve(currentLoader);
+      }
+    };
+  }, [loading, loadingMore, hasMore, page]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -407,11 +455,31 @@ export default function Home() {
                 </Link>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 gap-6">
-                {blogs.map((blog) => (
-                  <BlogCard key={blog._id} blog={blog} />
-                ))}
-              </div>
+              <>
+                <div className="grid sm:grid-cols-2 gap-6">
+                  {blogs.map((blog) => (
+                    <BlogCard key={blog._id} blog={blog} />
+                  ))}
+                  
+                  {/* Infinite scroll skeletons */}
+                  {loadingMore && [1, 2].map((i) => (
+                    <div key={`skeleton-more-${i}`} className="animate-pulse bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl h-80 flex flex-col justify-between p-5">
+                      <div className="bg-slate-200 dark:bg-slate-800 h-40 rounded-xl mb-4" />
+                      <div className="bg-slate-200 dark:bg-slate-800 h-6 w-3/4 rounded-md mb-2" />
+                      <div className="bg-slate-200 dark:bg-slate-800 h-4 w-1/2 rounded-md" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Infinite Scroll Trigger */}
+                <div ref={loaderRef} className="h-10 mt-6 flex items-center justify-center">
+                  {hasMore && !loadingMore && (
+                    <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 animate-pulse">
+                      Loading more articles...
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </main>
 

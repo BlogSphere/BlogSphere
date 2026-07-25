@@ -1,4 +1,4 @@
-// Native fetch is available globally in Node 18+ — no import needed
+import { getGeminiApiKey, reportKeyFailure } from '../utils/gemini.js';
 import User from '../models/User.js';
 import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
@@ -38,7 +38,7 @@ export const generateTrendingAutoPost = async (force = false) => {
     }
 
     let articleData = null;
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = getGeminiApiKey();
 
     if (apiKey) {
       try {
@@ -83,8 +83,11 @@ export const generateTrendingAutoPost = async (force = false) => {
             }
             articleData = JSON.parse(cleanText);
           }
+        } else {
+          reportKeyFailure(apiKey);
         }
       } catch (err) {
+        reportKeyFailure(apiKey);
         console.error('Failed fetching trending topic from Gemini:', err.message);
       }
     }
