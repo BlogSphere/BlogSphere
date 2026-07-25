@@ -187,7 +187,7 @@ export default function Auth() {
             { 
               theme: document.documentElement.classList.contains('dark') ? 'filled_blue' : 'outline', 
               size: 'large', 
-              width: '100%',
+              width: Math.min(Math.max(btnContainer.offsetWidth, 200), 400),
               shape: 'pill'
             }
           );
@@ -442,7 +442,7 @@ export default function Auth() {
 
           {/* Google Sign-in Button */}
           <div className="w-full flex justify-center">
-            <div id="google-signin-button" className="w-full"></div>
+            <div id="google-signin-button" className="w-full flex justify-center"></div>
           </div>
         </form>
       </div>
