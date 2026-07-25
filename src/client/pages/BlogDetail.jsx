@@ -25,6 +25,46 @@ const parseInlineMarkdown = (text) => {
   });
 };
 
+const parseChatMessage = (text) => {
+  if (!text) return '';
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, index) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={index} className="h-1" />;
+        }
+
+        const isBullet = trimmed.startsWith('*') || trimmed.startsWith('-');
+        const cleanLine = isBullet ? trimmed.replace(/^[*\-•]\s*/, '') : line;
+
+        const parts = cleanLine.split('**');
+        const renderedLine = parts.map((part, pId) => {
+          if (pId % 2 === 1) {
+            return <strong key={pId} className="font-bold text-slate-900 dark:text-white">{part}</strong>;
+          }
+          return part;
+        });
+
+        if (isBullet) {
+          return (
+            <li key={index} className="ml-4 list-disc list-outside my-0.5 text-slate-700 dark:text-slate-300">
+              {renderedLine}
+            </li>
+          );
+        }
+
+        return (
+          <p key={index} className="text-slate-700 dark:text-slate-300">
+            {renderedLine}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 const renderBlogContent = (contentString) => {
   if (!contentString) return null;
   
@@ -215,6 +255,13 @@ export default function BlogDetail() {
   const podcastUtteranceRef = useRef(null);
   const [podcastPaused, setPodcastPaused] = useState(false);
   const isPodcastPlayingRef = useRef(false);
+
+  // Chat with Blog State
+  const [chatMessages, setChatMessages] = useState([
+    { sender: 'assistant', text: 'Hi! I am your AI Co-Pilot for this article. Ask me any question about its content, architecture, or concepts!' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [sendingChat, setSendingChat] = useState(false);
 
   // Preload voices so they are available on first play
   useEffect(() => {
@@ -1222,6 +1269,119 @@ export default function BlogDetail() {
     );
   };
 
+  const renderChatContent = () => {
+    if (!isAuthenticated) {
+      return (
+        <div className="flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl h-[250px] text-center space-y-4">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-full">
+            <BookOpen className="w-6 h-6 animate-pulse" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 font-poppins">AI Co-Pilot is Locked</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[280px]">Log in to your account to chat, ask questions, and dissect this article with AI.</p>
+          </div>
+          <Link
+            to="/login"
+            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10 hover:scale-[1.02]"
+          >
+            Sign In to Unlock
+          </Link>
+        </div>
+      );
+    }
+
+    const handleSendChat = async (e) => {
+      e.preventDefault();
+      if (!chatInput.trim() || sendingChat) return;
+
+      const userMsg = { sender: 'user', text: chatInput.trim() };
+      setChatMessages(prev => [...prev, userMsg]);
+      setChatInput('');
+      setSendingChat(true);
+
+      try {
+        const history = chatMessages.slice(-6);
+        const res = await api.post(`/api/blogs/${blog._id}/chat`, {
+          message: userMsg.text,
+          chatHistory: history
+        });
+        
+        setChatMessages(prev => [...prev, { sender: 'assistant', text: res.data.reply }]);
+      } catch (err) {
+        showToast(err.response?.data?.error || 'Failed to get answer from AI Co-Pilot.', 'error');
+      } finally {
+        setSendingChat(false);
+      }
+    };
+
+    return (
+      <div className="flex flex-col h-[450px] bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl overflow-hidden">
+        {/* Messages List */}
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto pr-2">
+          {chatMessages.map((msg, index) => {
+            const isUser = msg.sender === 'user';
+            const avatarUrl = isUser 
+              ? `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(user?.name || 'reader')}`
+              : `https://api.dicebear.com/7.x/bottts/svg?seed=copilot`;
+
+            return (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex gap-3 max-w-[85%] ${isUser ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
+              >
+                <img 
+                  src={avatarUrl} 
+                  className="w-8 h-8 rounded-full border bg-slate-100 border-slate-200/30 flex-shrink-0" 
+                  alt={isUser ? 'User Avatar' : 'AI Avatar'} 
+                />
+                <div className={`p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
+                  isUser 
+                    ? 'bg-indigo-600 text-white rounded-tr-none' 
+                    : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none'
+                }`}>
+                  {isUser ? msg.text : parseChatMessage(msg.text)}
+                </div>
+              </motion.div>
+            );
+          })}
+          {sendingChat && (
+            <div className="flex gap-3 max-w-[85%] mr-auto items-center">
+              <img 
+                src="https://api.dicebear.com/7.x/bottts/svg?seed=copilot" 
+                className="w-8 h-8 rounded-full border bg-slate-100 border-slate-200/30 flex-shrink-0" 
+                alt="AI Avatar" 
+              />
+              <div className="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl rounded-tl-none text-slate-500 animate-pulse text-[10px]">
+                AI Co-Pilot is typing...
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Input Form */}
+        <form onSubmit={handleSendChat} className="p-3 border-t border-slate-200/50 dark:border-white/5 bg-white dark:bg-slate-900 flex gap-2">
+          <input
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Ask a question about this article..."
+            className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+            disabled={sendingChat}
+          />
+          <button
+            type="submit"
+            disabled={sendingChat || !chatInput.trim()}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 animate-pulse">
@@ -1569,7 +1729,8 @@ export default function BlogDetail() {
           {[
             { id: 'podcast', label: '🎙️ AI Podcast Simulator' },
             { id: 'quiz', label: '🎓 Study Mode Quiz' },
-            { id: 'debate', label: '💬 AI Expert Debate' }
+            { id: 'debate', label: '💬 AI Expert Debate' },
+            { id: 'chat', label: '🤖 Chat with Blog' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1619,6 +1780,18 @@ export default function BlogDetail() {
               className="space-y-4"
             >
               {renderDebateContent()}
+            </motion.div>
+          )}
+
+          {activeAITab === 'chat' && (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-4"
+            >
+              {renderChatContent()}
             </motion.div>
           )}
         </AnimatePresence>

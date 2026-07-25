@@ -14,7 +14,7 @@ export const getGeminiApiKey = () => {
     return null;
   }
 
-  const keys = mainKey.split(',').map(k => k.trim()).filter(Boolean);
+  const keys = mainKey.split(',').map(k => k.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
   if (keys.length === 0) {
     return null;
   }
@@ -60,4 +60,48 @@ export const getGeminiApiKey = () => {
   currentIndex = (soonestIndex + 1) % keys.length;
 
   return soonestKey;
+};
+
+export const callGeminiWithRetry = async (payload) => {
+  const mainKey = process.env.GEMINI_API_KEY;
+  if (!mainKey) {
+    throw new Error('No API keys configured.');
+  }
+
+  const keys = mainKey.split(',').map(k => k.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  const maxRetries = Math.min(keys.length, 5); // Retry up to 5 times or keys count
+  let attempts = 0;
+  let lastError = null;
+
+  while (attempts < maxRetries) {
+    const apiKey = getGeminiApiKey();
+    if (!apiKey) {
+      throw new Error('No API keys configured or all keys are exhausted.');
+    }
+
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      const errorText = await response.text();
+      lastError = new Error(`Gemini API returned status ${response.status}: ${errorText}`);
+      console.warn(`[Gemini Failover] Key returned status ${response.status}. Retrying with next key...`);
+      reportKeyFailure(apiKey);
+    } catch (err) {
+      lastError = err;
+      console.warn(`[Gemini Failover] Request failed: ${err.message}. Retrying with next key...`);
+      reportKeyFailure(apiKey);
+    }
+
+    attempts++;
+  }
+
+  throw lastError || new Error('All Gemini API keys failed after multiple retries.');
 };

@@ -28,7 +28,8 @@ import {
   getAIDebate,
   getBlogQuiz,
   submitBlogQuiz,
-  getBlogPodcast
+  getBlogPodcast,
+  chatWithBlog
 } from '../controllers/blogController';
 import { auth, optionalAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/auth';
@@ -66,5 +67,6 @@ router.get('/:id/ai-debate', optionalAuth, getAIDebate);
 router.get('/:id/quiz', optionalAuth, getBlogQuiz);
 router.post('/quiz/:id/submit', auth, submitBlogQuiz);
 router.get('/:id/podcast', optionalAuth, getBlogPodcast);
+router.post('/:id/chat', auth, chatWithBlog);
 
 export default router;

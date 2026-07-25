@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { getGeminiApiKey, reportKeyFailure } from '../utils/gemini.js';
+import { getGeminiApiKey, reportKeyFailure, callGeminiWithRetry } from '../utils/gemini.js';
 import Blog from '../models/Blog.js';
 import BlogVersion from '../models/BlogVersion.js';
 import User from '../models/User.js';
@@ -2338,6 +2338,74 @@ Return only the raw JSON array. Do not include any markdown blocks or formatting
     // Fallback script if Gemini API key is missing or failed
     const script = generateFallbackPodcastScript(blog);
     res.status(200).json({ script });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const chatWithBlog = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message, chatHistory } = req.body;
+    const blog = await Blog.findById(id);
+    if (!blog) {
+      return res.status(404).json({ error: 'Blog not found.' });
+    }
+
+    let plainText = blog.content;
+    try {
+      const parsed = JSON.parse(blog.content);
+      if (Array.isArray(parsed)) {
+        plainText = parsed.map(b => b.content || '').join(' ');
+      }
+    } catch (e) {}
+
+    const systemInstruction = {
+      parts: [{
+        text: `You are "AI Author Assistant", co-author of the blog post titled "${blog.title}".
+Here is the full text of the blog post:
+\"\"\"
+${plainText}
+\"\"\"
+
+Your task is to answer the user's questions about this blog post.
+Be helpful, friendly, and explain complex concepts simply. Keep answers relatively concise (1-3 paragraphs max).
+Only answer questions that are related to the blog post, its tech stack, or its topics. If the user asks something completely unrelated, politely guide them back to the article's topics.`
+      }]
+    };
+
+    // Build alternating contents array (Gemini strictly requires alternating user/model roles)
+    const contents = [];
+    const rawHistory = chatHistory.map(ch => ({
+      role: ch.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: ch.text }]
+    }));
+
+    // Merge consecutive messages from same role to ensure strict alternating order
+    for (const msg of rawHistory) {
+      if (contents.length > 0 && contents[contents.length - 1].role === msg.role) {
+        contents[contents.length - 1].parts[0].text += `\n${msg.parts[0].text}`;
+      } else {
+        contents.push(msg);
+      }
+    }
+
+    // Append the current message
+    if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+      contents[contents.length - 1].parts[0].text += `\n${message}`;
+    } else {
+      contents.push({ role: 'user', parts: [{ text: message }] });
+    }
+
+    // Call Gemini with our transparent automatic key rotation and failover retry wrapper!
+    const response = await callGeminiWithRetry({
+      contents,
+      systemInstruction
+    });
+
+    const result = await response.json();
+    const reply = result.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't process that question. Please try again.";
+    res.status(200).json({ reply });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
