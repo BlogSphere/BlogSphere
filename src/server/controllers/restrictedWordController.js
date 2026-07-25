@@ -57,14 +57,18 @@ export const checkRestrictedContent = async (text) => {
   
   const found = [];
   for (const item of restrictedList) {
-    // Escape regex characters
-    const escaped = item.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // Word boundary match (using word boundaries to prevent false positives like 'class' containing 'ass')
-    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+    const rawWord = item.word ? item.word.trim() : '';
+    if (!rawWord) continue;
+
+    const escaped = rawWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const isAlphanumeric = /^[a-zA-Z0-9_\-]+$/.test(rawWord);
+    // Use word boundaries for alphanumeric words to prevent false positives, or direct regex for symbols
+    const regex = isAlphanumeric ? new RegExp(`\\b${escaped}\\b`, 'i') : new RegExp(escaped, 'i');
+
     if (regex.test(text)) {
-      found.push(item.word);
+      found.push(rawWord);
     }
   }
   
-  return found.length > 0 ? found : null;
+  return found.length > 0 ? [...new Set(found)] : null;
 };
