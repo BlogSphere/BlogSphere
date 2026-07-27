@@ -138,7 +138,7 @@ export default function CollectionDetail() {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-xl p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start"
+          className="relative rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-xl p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start"
         >
           {/* Cover image (scaled) */}
           <div className="w-full md:w-56 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-850 shrink-0 border border-slate-250/20 dark:border-slate-800/40">
