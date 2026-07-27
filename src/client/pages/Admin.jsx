@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, Sparkles, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award } from 'lucide-react';
+import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, Sparkles, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../utils/api.js';
 
 export default function Admin() {
@@ -23,6 +23,27 @@ export default function Admin() {
   const [earningsReport, setEarningsReport] = useState([]);
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // Pagination states
+  const [usersPage, setUsersPage] = useState(1);
+  const [blogsPage, setBlogsPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const getPageNumbers = (current, total) => {
+    const pages = [];
+    if (total <= 7) {
+      for (let i = 1; i <= total; i++) pages.push(i);
+    } else {
+      if (current <= 4) {
+        pages.push(1, 2, 3, 4, 5, '...', total);
+      } else if (current >= total - 3) {
+        pages.push(1, '...', total - 4, total - 3, total - 2, total - 1, total);
+      } else {
+        pages.push(1, '...', current - 1, current, current + 1, '...', total);
+      }
+    }
+    return pages;
+  };
 
   // Daily AI Brief states
   const [dailyReport, setDailyReport] = useState([]);
@@ -126,6 +147,24 @@ export default function Admin() {
       navigate('/');
     }
   }, [isAuthenticated, user, navigate]);
+
+  // Handle page out-of-bounds due to deletions or role updates
+  const totalUsersPages = Math.ceil(usersList.length / itemsPerPage);
+  const totalBlogsPages = Math.ceil(blogsList.length / itemsPerPage);
+  const displayedUsers = usersList.slice((usersPage - 1) * itemsPerPage, usersPage * itemsPerPage);
+  const displayedBlogs = blogsList.slice((blogsPage - 1) * itemsPerPage, blogsPage * itemsPerPage);
+
+  useEffect(() => {
+    if (usersPage > 1 && usersPage > totalUsersPages) {
+      setUsersPage(totalUsersPages);
+    }
+  }, [usersList.length, totalUsersPages, usersPage]);
+
+  useEffect(() => {
+    if (blogsPage > 1 && blogsPage > totalBlogsPages) {
+      setBlogsPage(totalBlogsPages);
+    }
+  }, [blogsList.length, totalBlogsPages, blogsPage]);
 
   // Load Admin Data
   useEffect(() => {
@@ -334,7 +373,7 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {usersList.map((usr) => (
+                {displayedUsers.map((usr) => (
                   <tr key={usr._id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-colors">
                     <td className="py-4 pl-2 flex items-center gap-3">
                       <img src={usr.profileImage} className="w-9 h-9 rounded-full object-cover" />
@@ -385,6 +424,57 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+
+            {/* Users Pagination */}
+            {totalUsersPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-4 py-4 mt-2">
+                <div className="text-xs text-slate-500 dark:text-slate-405">
+                  Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{(usersPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {Math.min(usersPage * itemsPerPage, usersList.length)}
+                  </span>{' '}
+                  of <span className="font-semibold text-slate-700 dark:text-slate-300">{usersList.length}</span> users
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setUsersPage(p => Math.max(p - 1, 1))}
+                    disabled={usersPage === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {getPageNumbers(usersPage, totalUsersPages).map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`dots-u-${index}`} className="px-1 text-slate-400 dark:text-slate-600 text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setUsersPage(page)}
+                        className={`w-7 h-7 text-xs font-bold rounded-lg transition-colors ${
+                          usersPage === page
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setUsersPage(p => Math.min(p + 1, totalUsersPages))}
+                    disabled={usersPage === totalUsersPages}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : activeTab === 'blogs' ? (
           /* Blogs Management Table */
@@ -400,7 +490,7 @@ export default function Admin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {blogsList.map((blog) => (
+                {displayedBlogs.map((blog) => (
                   <tr key={blog._id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-colors">
                     <td className="py-4 pl-2 font-semibold text-slate-800 dark:text-slate-100 max-w-xs truncate">
                       <Link to={`/blog/${blog.slug}`} className="hover:underline">{blog.title}</Link>
@@ -426,6 +516,57 @@ export default function Admin() {
                 ))}
               </tbody>
             </table>
+
+            {/* Blogs Pagination */}
+            {totalBlogsPages > 1 && (
+              <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 px-4 py-4 mt-2">
+                <div className="text-xs text-slate-500 dark:text-slate-405">
+                  Showing <span className="font-semibold text-slate-700 dark:text-slate-300">{(blogsPage - 1) * itemsPerPage + 1}</span> to{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {Math.min(blogsPage * itemsPerPage, blogsList.length)}
+                  </span>{' '}
+                  of <span className="font-semibold text-slate-700 dark:text-slate-300">{blogsList.length}</span> blogs
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setBlogsPage(p => Math.max(p - 1, 1))}
+                    disabled={blogsPage === 1}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  {getPageNumbers(blogsPage, totalBlogsPages).map((page, index) => {
+                    if (page === '...') {
+                      return (
+                        <span key={`dots-b-${index}`} className="px-1 text-slate-400 dark:text-slate-600 text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setBlogsPage(page)}
+                        className={`w-7 h-7 text-xs font-bold rounded-lg transition-colors ${
+                          blogsPage === page
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                  <button
+                    onClick={() => setBlogsPage(p => Math.min(p + 1, totalBlogsPages))}
+                    disabled={blogsPage === totalBlogsPages}
+                    className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : activeTab === 'restricted' ? (
           /* Restricted Words Tab */

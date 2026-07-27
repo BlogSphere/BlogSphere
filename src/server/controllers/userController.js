@@ -198,7 +198,7 @@ export const updateOwnProfile = async (req, res) => {
             
             Only return the raw JSON object. Do not wrap it in markdown block quotes (such as \`\`\`json). Provide clean, parseable JSON.`;
 
-            const aiResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            const aiResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`, {
               contents: [{ parts: [{ text: aiPrompt }] }],
               generationConfig: { responseMimeType: "application/json" }
             }, {
