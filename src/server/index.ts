@@ -221,7 +221,7 @@ server.listen(PORT, '0.0.0.0', () => {
         const hashedPassword = await bcrypt.hash('admin123', 10);
         const newAdmin = new User({
           name: 'System Admin',
-          username: 'admin',
+          username: 'admin1',
           email: 'admin@admin.com',
           password: hashedPassword,
           role: 'admin',
