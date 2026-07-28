@@ -24,6 +24,7 @@ export default function Home() {
   // Pagination States
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
+  const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
 
   // Search & Filter States
@@ -99,6 +100,7 @@ export default function Home() {
       .then((res) => {
         const list = res.data.blogs || [];
         const resHasMore = res.data.hasMore || false;
+        const resTotalPages = res.data.totalPages || 1;
 
         if (isAppend) {
           setBlogs((prev) => [...prev, ...list]);
@@ -107,6 +109,7 @@ export default function Home() {
         }
         setUsersList([]);
         setHasMore(resHasMore);
+        setTotalPages(resTotalPages);
         setPage(pageNum);
         setLoading(false);
         setLoadingMore(false);
@@ -123,30 +126,7 @@ export default function Home() {
     fetchBlogs(1, false);
   }, [activeFeedTab, selectedCategory, selectedTag, searchInput, sortOption, searchType]);
 
-  const loaderRef = useRef(null);
 
-  useEffect(() => {
-    if (loading || loadingMore || !hasMore) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        fetchBlogs(page + 1, true);
-      }
-    }, {
-      rootMargin: '200px'
-    });
-
-    const currentLoader = loaderRef.current;
-    if (currentLoader) {
-      observer.observe(currentLoader);
-    }
-
-    return () => {
-      if (currentLoader) {
-        observer.unobserve(currentLoader);
-      }
-    };
-  }, [loading, loadingMore, hasMore, page]);
 
   return (
     <div className="min-h-screen pb-16">
@@ -455,31 +435,38 @@ export default function Home() {
                 </Link>
               </div>
             ) : (
-              <>
-                <div className="grid sm:grid-cols-2 gap-6">
-                  {blogs.map((blog) => (
-                    <BlogCard key={blog._id} blog={blog} />
-                  ))}
-                  
-                  {/* Infinite scroll skeletons */}
-                  {loadingMore && [1, 2].map((i) => (
-                    <div key={`skeleton-more-${i}`} className="animate-pulse bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl h-80 flex flex-col justify-between p-5">
-                      <div className="bg-slate-200 dark:bg-slate-800 h-40 rounded-xl mb-4" />
-                      <div className="bg-slate-200 dark:bg-slate-800 h-6 w-3/4 rounded-md mb-2" />
-                      <div className="bg-slate-200 dark:bg-slate-800 h-4 w-1/2 rounded-md" />
-                    </div>
-                  ))}
-                </div>
+              <div className="grid sm:grid-cols-2 gap-6">
+                {blogs.map((blog) => (
+                  <BlogCard key={blog._id} blog={blog} />
+                ))}
+              </div>
+            )}
 
-                {/* Infinite Scroll Trigger */}
-                <div ref={loaderRef} className="h-10 mt-6 flex items-center justify-center">
-                  {hasMore && !loadingMore && (
-                    <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 animate-pulse">
-                      Loading more articles...
-                    </div>
-                  )}
+            {/* Pagination Controls */}
+            {(page > 1 || hasMore || totalPages > 1) && (
+              <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-150 dark:border-slate-800 pt-6">
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  {totalPages > 1 ? `Page ${page} of ${totalPages}` : `Page ${page}`}
                 </div>
-              </>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => fetchBlogs(page - 1, false)}
+                    disabled={page === 1}
+                    className="px-5 py-2 rounded-full border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-55 dark:bg-slate-900 dark:hover:bg-slate-800 text-xs font-extrabold text-slate-600 dark:text-slate-350 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+                  >
+                    ← Previous
+                  </button>
+                  
+                  <button
+                    onClick={() => fetchBlogs(page + 1, false)}
+                    disabled={!hasMore}
+                    className="px-6 py-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-xs font-extrabold transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-md shadow-indigo-500/10"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
             )}
           </main>
 

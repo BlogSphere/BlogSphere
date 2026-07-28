@@ -232,7 +232,7 @@ export default function Communities() {
             <div className="space-y-1.5">
               <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
                 <Sparkles className="w-6 h-6 text-indigo-500 animate-pulse" />
-                <span>Niche Communities</span>
+                <span>Nice Communities</span>
               </h1>
               <p className="text-slate-400 text-xs font-medium">Join collaborative rooms, discuss tech, and share custom curated content.</p>
             </div>

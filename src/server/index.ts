@@ -216,20 +216,20 @@ server.listen(PORT, '0.0.0.0', () => {
     try {
       const User = (await import('./models/User.js')).default;
       const bcrypt = (await import('bcryptjs')).default;
-      const admin = await User.findOne({ role: 'admin' });
+      const admin = await User.findOne({ email: 'admin@admin.com' });
       if (!admin) {
-        const hashedPassword = await bcrypt.hash('AdminPassword123!', 10);
+        const hashedPassword = await bcrypt.hash('admin123', 10);
         const newAdmin = new User({
           name: 'System Admin',
           username: 'admin',
-          email: 'admin@blogsphere.com',
+          email: 'admin@admin.com',
           password: hashedPassword,
           role: 'admin',
           bio: 'System Administrator of BlogSphere Platform.',
           profileImage: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=150'
         });
         await newAdmin.save();
-        console.log('[System Init] Created default admin account: admin@blogsphere.com / AdminPassword123!');
+        console.log('[System Init] Created default admin account: admin@admin.com / admin123');
       }
     } catch (err: any) {
       console.error('Default admin check error:', err.message);

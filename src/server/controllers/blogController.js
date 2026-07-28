@@ -783,7 +783,8 @@ export const getRecommendations = async (req, res) => {
     res.status(200).json({ 
       blogs: sanitizedRecommended,
       currentPage: pageNum,
-      hasMore: hasMore
+      hasMore: hasMore,
+      totalPages: pageNum + (hasMore ? 1 : 0)
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
