@@ -20,7 +20,7 @@ import { auth, optionalAuth, requireRole } from '../middleware/auth';
 const router = express.Router();
 
 router.get('/search/authors', getPublicAuthors);
-router.get('/:id/profile', getUserProfile);
+router.get('/:id/profile', optionalAuth, getUserProfile);
 router.post('/:id/follow', auth, followUser);
 
 // Profile, Bookmark and Newsletter Routes

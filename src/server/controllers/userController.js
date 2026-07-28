@@ -31,17 +31,39 @@ export const getPublicAuthors = async (req, res) => {
 export const getUserProfile = async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select('-password');
+    const isSelf = req.user && req.user._id.toString() === id;
+
+    let selectFields = '-password';
+    if (!isSelf) {
+      selectFields += ' -email';
+    }
+
+    const user = await User.findById(id).select(selectFields);
     if (!user) {
       return res.status(404).json({ error: 'User profile not found.' });
     }
 
-    // Fetch published blogs of this user
-    const blogs = await Blog.find({ author: id, status: 'published' })
-      .populate('author', 'name profileImage')
-      .sort({ createdAt: -1 });
+    const userObj = user.toObject();
 
-    res.status(200).json({ user, blogs });
+    let blogs = [];
+    if (!userObj.isPrivate || isSelf) {
+      // Fetch published blogs of this user
+      blogs = await Blog.find({ author: id, status: 'published' })
+        .populate('author', 'name profileImage')
+        .sort({ createdAt: -1 });
+    } else {
+      // Strip private fields from user object
+      userObj.bio = '';
+      userObj.socialLinks = { twitter: '', github: '', website: '' };
+      userObj.followers = [];
+      userObj.following = [];
+      userObj.newsletterSubscribers = [];
+      userObj.savedBlogs = [];
+      userObj.subscribedCategories = [];
+      userObj.hiddenTags = [];
+    }
+
+    res.status(200).json({ user: userObj, blogs });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

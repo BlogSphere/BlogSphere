@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'dns';
 
 // Import Routes
 import authRoutes from './routes/auth';
@@ -19,6 +20,9 @@ import collectionRoutes from './routes/collection';
 import Blog from './models/Blog';
 
 dotenv.config();
+
+// Fix local ISP DNS resolution issues for MongoDB SRV records
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const app = express();
 const server = http.createServer(app);
@@ -78,7 +82,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Database Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/blog-sphere';
+const MONGODB_URI = process.env.MONGODB_URI;
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
