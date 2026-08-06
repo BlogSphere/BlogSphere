@@ -35,3 +35,11 @@ lerna-debug.log*
 /coverage
 test.txt
 system_diagrams.md
+
+./diagrams
+abstract.md
+problem_statement.md
+project_diagrams.md
+software_requirements.md
+diagrams.md
+./diagrams
