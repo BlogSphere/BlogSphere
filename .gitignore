@@ -36,10 +36,10 @@ lerna-debug.log*
 test.txt
 system_diagrams.md
 
-./diagrams
+diagrams/
 abstract.md
 problem_statement.md
 project_diagrams.md
 software_requirements.md
 diagrams.md
-./diagrams
+diagrams/
