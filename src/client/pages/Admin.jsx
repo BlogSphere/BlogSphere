@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, Sparkles, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award, ChevronLeft, ChevronRight } from 'lucide-react';
 import api from '../utils/api.js';
 
 export default function Admin() {
@@ -19,7 +19,6 @@ export default function Admin() {
   const [wordAdding, setWordAdding] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [triggeringPost, setTriggeringPost] = useState(false);
   const [earningsReport, setEarningsReport] = useState([]);
   const [earningsLoading, setEarningsLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -83,20 +82,6 @@ export default function Admin() {
       showToast(err.response?.data?.error || 'Failed to generate AI summary brief.', 'error');
     } finally {
       setGeneratingBriefDate('');
-    }
-  };
-
-  const handleTriggerAutoPost = async () => {
-    setTriggeringPost(true);
-    try {
-      const res = await api.post('/api/blogs/trigger-trending-post');
-      showToast(`Successfully published AI Trending Article: "${res.data.blog.title}"`, 'success');
-      const blogsRes = await api.get('/api/blogs?status=all');
-      setBlogsList(blogsRes.data.blogs || []);
-    } catch (err) {
-      showToast(err.response?.data?.error || 'Failed to trigger automated trending post.', 'error');
-    } finally {
-      setTriggeringPost(false);
     }
   };
 
@@ -270,15 +255,6 @@ export default function Admin() {
             <p className="text-xs text-slate-400 mt-1">Manage user accounts, roles, spam moderation, and content auditing.</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={handleTriggerAutoPost}
-          disabled={triggeringPost}
-          className="flex shrink-0 items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-full text-xs font-bold transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
-        >
-          <Sparkles className={`w-4 h-4 ${triggeringPost ? 'animate-spin' : ''}`} />
-          <span>{triggeringPost ? 'Generating AI Post...' : 'Trigger AI Auto-Post'}</span>
-        </button>
       </div>
 
       {error && (

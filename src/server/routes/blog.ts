@@ -14,7 +14,6 @@ import {
   reactToBlog,
   aiTranslateBlogBlocks,
   suggestMetadata,
-  triggerTrendingAutoPost,
   getTrendingBlogs,
   getFlaggedBlogs,
   updateBlogAnalytics,
@@ -52,7 +51,6 @@ router.get('/:slug', getBlogBySlug);
 router.post('/:id/analytics', optionalAuth, updateBlogAnalytics);
 router.post('/:id/report', auth, reportBlog);
 router.post('/suggest-metadata', auth, suggestMetadata);
-router.post('/trigger-trending-post', auth, triggerTrendingAutoPost);
 router.post('/', auth, createBlog);
 router.put('/:id', auth, updateBlog);
 router.delete('/:id', auth, deleteBlog);
