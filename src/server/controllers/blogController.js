@@ -1603,6 +1603,7 @@ export const getDailyAnalytics = async (req, res) => {
 
 // POST Generate AI daily summary brief
 export const generateDailyBrief = async (req, res) => {
+  let apiKey = null;
   try {
     const { date } = req.body;
     if (!date) {
@@ -1654,7 +1655,6 @@ You MUST return a JSON object with this exact structure:
 
 Only return the raw JSON object. Do not wrap it in markdown block quotes (such as \`\`\`json). Provide clean, parseable JSON.`;
 
-    let apiKey = null;
     const nowKey = getGeminiApiKey();
     if (!nowKey) {
       const mockSummary = `Today's blogs highlighted key insights in community writing. Contributors shared articles exploring various themes including ${blogs.map(b => b.category).filter(Boolean).slice(0, 3).join(', ') || 'personal logs'}.`;
