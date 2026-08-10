@@ -15,7 +15,6 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 - **🔒 Premium-Locked Daily AI Briefs**: Daily AI-generated newsletters and analytics are gated for authenticated users, featuring a beautiful premium lock screen for guest visitors.
 - **🔔 High-Fidelity Toast Notification System**: Custom React context-driven Toast alerts built with Framer Motion and Lucide React icons, offering success, error, warning, and informational pop-ups.
 - **🤖 Block AI Assistant**: Polish and expand text blocks (headings, paragraphs, lists, quotes) inside the editor dynamically using Gemini.
-- **🧑‍🏫 AI DocTutor**: An interactive writing coach drawer that scores your draft quality (0-100), offers formatting recommendations, and provides structured coaching feedback on demand.
 - **🏷️ Strict Tag Normalization**: Automatically sanitizes user tags to lowercase, single-word alphanumeric strings to enforce unified indexing.
 - **🛡️ Secure Admin Control**: Protected route mappings with automatic bootstrapping of a default system administrator (`admin@blogsphere.com` / `AdminPassword123!`) on startup. Dynamic signup requests for the `admin` role are blocked.
 - **🕵️ Anonymous Publishing**: Toggle anonymity for posts. Authors can choose to write anonymously to mask their details across feed directory views.
@@ -49,7 +48,7 @@ BlogSphere is a smart community blog platform designed for rich collaboration. I
 - **Database**: MongoDB (Mongoose ODM)
 - **Authentication**: JWT & bcryptjs
 - **Sockets**: Socket.io (proxied through Vite in development)
-- **AI Engine**: Google Gemini API (used for DocTutor, Bio Classification, and automated content generation)
+- **AI Engine**: Google Gemini API (used for Bio Classification, metadata suggestions, and automated content generation)
 
 ---
 
@@ -90,7 +89,7 @@ BlogSphere/
 Ensure you have the following installed on your machine:
 - [Node.js](https://nodejs.org/) (v18 or higher recommended)
 - [MongoDB](https://www.mongodb.com/) (running locally or a MongoDB Atlas URI)
-- [Gemini API Key](https://ai.google.dev/) (Optional but required for AI DocTutor features)
+- [Gemini API Key](https://ai.google.dev/) (Optional but required for AI features like suggestions and rewriting)
 
 ### 🔧 Installation & Setup
 
