@@ -253,7 +253,6 @@ export default function Home() {
               <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
                 {[
                   { id: 'blogs', label: 'Articles' },
-                  { id: 'authors', label: 'Users & Authors' },
                   { id: 'topics', label: 'Trending Topics' }
                 ].map((type) => (
                   <button

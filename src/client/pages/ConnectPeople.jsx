@@ -218,11 +218,11 @@ export default function ConnectPeople() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 focus:outline-none"
+                className="px-3.5 py-1.5 text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer shadow-sm"
               >
-                <option value="reputation">Top Reputation</option>
-                <option value="followers">Most Followed</option>
-                <option value="newest">Newest Members</option>
+                <option value="reputation" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Top Reputation</option>
+                <option value="followers" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Most Followed</option>
+                <option value="newest" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Newest Members</option>
               </select>
             </div>
           </div>

@@ -137,7 +137,9 @@ export default function Navbar() {
           {/* Brand Logo & Main Nav */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <img src={logo} alt="BlogSphere Logo" className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
+              <div className="p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 transition-transform group-hover:scale-105 shadow-sm">
+                <img src={logo} alt="BlogSphere Logo" className="w-8 h-8 object-contain" />
+              </div>
               <span className="hidden text-xl font-black tracking-tight sm:block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
                 BlogSphere
               </span>
