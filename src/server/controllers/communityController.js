@@ -9,6 +9,12 @@ export const createCommunity = async (req, res) => {
       return res.status(400).json({ error: 'Community name is required.' });
     }
 
+    // Limit check: Maximum 5 communities created per user
+    const userCommunityCount = await Community.countDocuments({ creator: req.user._id });
+    if (userCommunityCount >= 5) {
+      return res.status(400).json({ error: 'You have reached the maximum limit of 5 communities created per user.' });
+    }
+
     const cleanName = name.trim();
     // Check unique name
     const existing = await Community.findOne({ name: { $regex: `^${cleanName}$`, $options: 'i' } });
@@ -33,7 +39,23 @@ export const createCommunity = async (req, res) => {
 export const getCommunities = async (req, res) => {
   try {
     const userId = req.user ? req.user._id : null;
-    const communitiesList = await Community.find().sort({ name: 1 });
+    const { page = 1, limit = 9, search = '' } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(50, parseInt(limit, 10) || 9));
+
+    const query = {};
+    if (search && search.trim()) {
+      query.name = { $regex: search.trim(), $options: 'i' };
+    }
+
+    const totalCommunities = await Community.countDocuments(query);
+    const totalPages = Math.ceil(totalCommunities / limitNum) || 1;
+
+    const communitiesList = await Community.find(query)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum);
 
     const communities = communitiesList.map(comm => {
       const isMember = userId ? comm.members.some(mId => mId.toString() === userId.toString()) : false;
@@ -47,7 +69,13 @@ export const getCommunities = async (req, res) => {
       };
     });
 
-    res.status(200).json({ communities });
+    res.status(200).json({
+      communities,
+      total: totalCommunities,
+      page: pageNum,
+      totalPages,
+      hasMore: pageNum < totalPages
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
