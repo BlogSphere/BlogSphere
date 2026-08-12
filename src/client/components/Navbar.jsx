@@ -5,6 +5,7 @@ import { logoutUser } from '../redux/authSlice.js';
 import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
+import logo from '../assets/logo.png';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -114,9 +115,7 @@ export default function Navbar() {
           {/* Brand Logo & Main Nav */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <span className="flex items-center justify-center w-10 h-10 font-black text-white rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                B
-              </span>
+              <img src={logo} alt="BlogSphere Logo" className="w-10 h-10 object-contain group-hover:scale-105 transition-transform" />
               <span className="hidden text-xl font-black tracking-tight sm:block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400">
                 BlogSphere
               </span>

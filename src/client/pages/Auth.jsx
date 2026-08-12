@@ -5,6 +5,7 @@ import { authStart, authSuccess, authFailure } from '../redux/authSlice.js';
 import { Mail, Lock, User, BookOpen, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
+import logo from '../assets/logo.png';
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
@@ -213,9 +214,7 @@ export default function Auth() {
       <div className="w-full max-w-md p-8 rounded-3xl border border-slate-100 dark:border-slate-900 shadow-xl glass-card animate-fade-in">
         {/* Header Branding */}
         <div className="text-center mb-8">
-          <span className="inline-flex items-center justify-center w-12 h-12 font-bold text-white rounded-2xl bg-gradient-to-r from-primary-600 to-indigo-600 shadow-lg shadow-primary-500/20 mb-3">
-            B
-          </span>
+          <img src={logo} alt="BlogSphere Logo" className="w-12 h-12 mx-auto mb-3 object-contain" />
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
             {activeTab === 'login' ? 'Welcome Back' : 'Create Account'}
           </h2>
