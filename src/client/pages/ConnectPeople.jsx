@@ -34,8 +34,16 @@ export default function ConnectPeople() {
 
   // Fetch users with search and filter
   const fetchUsers = useCallback(async (searchQuery = searchTerm, role = roleFilter, sort = sortBy) => {
-    const cacheKey = `connect_users_${searchQuery}_${role}_${sort}`;
-    const cached = getCache(cacheKey, 3 * 60 * 1000); // 3 min cache
+    const trimmed = searchQuery.trim();
+    const cleanQuery = trimmed.startsWith('@') ? trimmed.slice(1).trim() : trimmed;
+
+    // Avoid querying DB for single-character partial inputs while typing to reduce server load
+    if (cleanQuery.length === 1) {
+      return;
+    }
+
+    const cacheKey = `connect_users_${trimmed.toLowerCase()}_${role}_${sort}`;
+    const cached = getCache(cacheKey, 5 * 60 * 1000); // 5 min cache
 
     if (cached) {
       setUsers(cached);
@@ -67,9 +75,10 @@ export default function ConnectPeople() {
   }, [searchTerm, roleFilter, sortBy, showToast]);
 
   useEffect(() => {
+    // 500ms Debounce: Wait until user finishes typing before querying server DB
     const timer = setTimeout(() => {
       fetchUsers(searchTerm, roleFilter, sortBy);
-    }, 250);
+    }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm, roleFilter, sortBy, fetchUsers]);
 
@@ -160,6 +169,7 @@ export default function ConnectPeople() {
             
             <input
               type="text"
+              autoComplete="off"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by @username, full name, or email..."
