@@ -5,7 +5,7 @@ import { logoutUser } from '../redux/authSlice.js';
 import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
-import logo from '/favicon.svg';
+import logo from '../assets/logo.png';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
