@@ -5,6 +5,7 @@ import { Sparkles, TrendingUp, Flame, AlertCircle, Search, X } from 'lucide-reac
 import BlogCard from '../components/BlogCard.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import api from '../utils/api.js';
+import { getCache, setCache } from '../utils/cacheManager.js';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
@@ -53,10 +54,25 @@ export default function Home() {
 
   // Fetch blogs based on active feed tab and filters
   const fetchBlogs = (pageNum, isAppend = false) => {
+    const cacheKey = `home_${activeFeedTab}_p${pageNum}`;
+    
     if (isAppend) {
       setLoadingMore(true);
     } else {
-      setLoading(true);
+      // Fast load from cache for page 1 feeds
+      if (pageNum === 1 && !selectedCategory && !selectedTag && !searchInput) {
+        const cached = getCache(cacheKey);
+        if (cached && Array.isArray(cached.blogs)) {
+          setBlogs(cached.blogs);
+          setHasMore(cached.hasMore || false);
+          setTotalPages(cached.totalPages || 1);
+          setLoading(false);
+        } else {
+          setLoading(true);
+        }
+      } else {
+        setLoading(true);
+      }
     }
 
     if (activeFeedTab === 'all' && searchType === 'authors') {
@@ -106,6 +122,10 @@ export default function Home() {
           setBlogs((prev) => [...prev, ...list]);
         } else {
           setBlogs(list);
+          // Cache first page feed
+          if (pageNum === 1 && !selectedCategory && !selectedTag && !searchInput) {
+            setCache(cacheKey, { blogs: list, hasMore: resHasMore, totalPages: resTotalPages });
+          }
         }
         setUsersList([]);
         setHasMore(resHasMore);

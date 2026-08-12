@@ -7,20 +7,33 @@ import axios from 'axios';
 
 export const getPublicAuthors = async (req, res) => {
   try {
-    const { search } = req.query;
-    const query = { role: { $in: ['author', 'admin'] } };
-    
-    // Hide private users from public search directory
-    query.isPrivate = { $ne: true };
+    const { search, role, sortBy } = req.query;
+    // Strictly exclude admin accounts from public directory listing
+    const query = { isPrivate: { $ne: true }, role: { $ne: 'admin' } };
 
-    if (search) {
-      query.name = { $regex: search, $options: 'i' };
+    if (role && role !== 'all' && role !== 'admin') {
+      query.role = role;
+    } else if (role === 'admin') {
+      return res.status(200).json({ users: [] });
     }
 
+    if (search) {
+      const cleanSearch = search.startsWith('@') ? search.slice(1).trim() : search.trim();
+      query.$or = [
+        { username: { $regex: cleanSearch, $options: 'i' } },
+        { name: { $regex: cleanSearch, $options: 'i' } },
+        { email: { $regex: cleanSearch, $options: 'i' } }
+      ];
+    }
+
+    let sort = { reputationPoints: -1 };
+    if (sortBy === 'newest') sort = { createdAt: -1 };
+    if (sortBy === 'followers') sort = { followers: -1 };
+
     const users = await User.find(query)
-      .select('name profileImage bio reputationPoints badge followers')
-      .sort({ reputationPoints: -1 })
-      .limit(20);
+      .select('name username profileImage bio role reputationPoints badge followers following isVerified createdAt')
+      .sort(sort)
+      .limit(60);
 
     res.status(200).json({ users });
   } catch (error) {
@@ -39,7 +52,7 @@ export const getUserProfile = async (req, res) => {
     }
 
     const user = await User.findById(id).select(selectFields);
-    if (!user) {
+    if (!user || (user.role === 'admin' && !isSelf)) {
       return res.status(404).json({ error: 'User profile not found.' });
     }
 

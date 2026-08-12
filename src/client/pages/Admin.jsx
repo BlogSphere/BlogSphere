@@ -2,8 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Shield, Users, BookOpen, AlertTriangle, ShieldCheck, Trash2, Edit3, ArrowLeft, X, TrendingUp, DollarSign, Eye, Heart, FileDown, RefreshCw, Award, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import api from '../utils/api.js';
+import { getCache, setCache, invalidateCache } from '../utils/cacheManager.js';
 
 export default function Admin() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -49,11 +50,20 @@ export default function Admin() {
   const [dailyReportLoading, setDailyReportLoading] = useState(false);
   const [generatingBriefDate, setGeneratingBriefDate] = useState('');
 
-  const fetchDailyReport = async () => {
+  const fetchDailyReport = async (forceRefresh = false) => {
+    if (!forceRefresh) {
+      const cached = getCache('admin_daily_report');
+      if (cached) {
+        setDailyReport(cached);
+        setDailyReportLoading(false);
+      }
+    }
     setDailyReportLoading(true);
     try {
       const res = await api.get('/api/blogs/admin/daily-analytics');
-      setDailyReport(res.data.report || []);
+      const report = res.data.report || [];
+      setDailyReport(report);
+      setCache('admin_daily_report', report);
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to fetch daily analytics report.', 'error');
     } finally {
@@ -66,18 +76,22 @@ export default function Admin() {
     try {
       const res = await api.post('/api/blogs/admin/daily-brief/generate', { date });
       showToast(`AI summary for ${date} generated successfully!`, 'success');
-      // Update local report with generated brief
-      setDailyReport(prev => prev.map(item => {
-        if (item.date === date) {
-          return {
-            ...item,
-            hasBrief: true,
-            summary: res.data.brief.summary,
-            keyThemes: res.data.brief.keyThemes
-          };
-        }
-        return item;
-      }));
+      // Update local report with generated brief & update cache
+      setDailyReport(prev => {
+        const updated = prev.map(item => {
+          if (item.date === date) {
+            return {
+              ...item,
+              hasBrief: true,
+              summary: res.data.brief.summary,
+              keyThemes: res.data.brief.keyThemes
+            };
+          }
+          return item;
+        });
+        setCache('admin_daily_report', updated);
+        return updated;
+      });
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to generate AI summary brief.', 'error');
     } finally {
@@ -86,10 +100,17 @@ export default function Admin() {
   };
 
   const fetchEarningsReport = async () => {
+    const cached = getCache('admin_earnings_report');
+    if (cached) {
+      setEarningsReport(cached);
+      setEarningsLoading(false);
+    }
     setEarningsLoading(true);
     try {
       const res = await api.get('/api/users/earnings-report');
-      setEarningsReport(res.data.report || []);
+      const report = res.data.report || [];
+      setEarningsReport(report);
+      setCache('admin_earnings_report', report);
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to fetch earnings report.', 'error');
     } finally {
@@ -151,11 +172,28 @@ export default function Admin() {
     }
   }, [blogsList.length, totalBlogsPages, blogsPage]);
 
-  // Load Admin Data
+  // Load Admin Data (using Cookies + localStorage for 0ms instant loading)
   useEffect(() => {
-    setLoading(true);
+    const cachedUsers = getCache('admin_users');
+    const cachedBlogs = getCache('admin_blogs');
+    const cachedWords = getCache('admin_words');
+    const cachedFlagged = getCache('admin_flagged');
+
+    let hasCache = false;
+    if (cachedUsers && cachedBlogs && cachedWords && cachedFlagged) {
+      setUsersList(cachedUsers);
+      setBlogsList(cachedBlogs);
+      setRestrictedWords(cachedWords);
+      setFlaggedBlogs(cachedFlagged);
+      setLoading(false);
+      hasCache = true;
+    } else {
+      setLoading(true);
+    }
+
     setError('');
 
+    // Fetch fresh data from backend in background to keep data completely synchronized
     Promise.all([
       api.get('/api/users'),
       api.get('/api/blogs?status=all'),
@@ -163,14 +201,27 @@ export default function Admin() {
       api.get('/api/blogs/flagged')
     ])
       .then(([usersRes, blogsRes, wordsRes, flaggedRes]) => {
-        setUsersList(usersRes.data.users || []);
-        setBlogsList(blogsRes.data.blogs || []);
-        setRestrictedWords(wordsRes.data.words || []);
-        setFlaggedBlogs(flaggedRes.data.blogs || []);
+        const uList = usersRes.data.users || [];
+        const bList = blogsRes.data.blogs || [];
+        const wList = wordsRes.data.words || [];
+        const fList = flaggedRes.data.blogs || [];
+
+        setUsersList(uList);
+        setBlogsList(bList);
+        setRestrictedWords(wList);
+        setFlaggedBlogs(fList);
+
+        // Update local and cookie cache
+        setCache('admin_users', uList);
+        setCache('admin_blogs', bList);
+        setCache('admin_words', wList);
+        setCache('admin_flagged', fList);
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.response?.data?.error || 'Failed to fetch administration data.');
+        if (!hasCache) {
+          setError(err.response?.data?.error || 'Failed to fetch administration data.');
+        }
         setLoading(false);
       });
   }, []);
@@ -181,7 +232,9 @@ export default function Admin() {
     setWordAdding(true);
     try {
       const res = await api.post('/api/restricted-words', { word: newRestrictedWord.trim() });
-      setRestrictedWords([...restrictedWords, res.data.word].sort((a, b) => a.word.localeCompare(b.word)));
+      const updatedWords = [...restrictedWords, res.data.word].sort((a, b) => a.word.localeCompare(b.word));
+      setRestrictedWords(updatedWords);
+      setCache('admin_words', updatedWords);
       setNewRestrictedWord('');
     } catch (err) {
       showToast(err.response?.data?.error || 'Failed to add restricted word.', 'error');
@@ -194,7 +247,9 @@ export default function Admin() {
     if (window.confirm('Are you sure you want to remove this word from restrictions?')) {
       try {
         await api.delete(`/api/restricted-words/${wordId}`);
-        setRestrictedWords(restrictedWords.filter(w => w._id !== wordId));
+        const updatedWords = restrictedWords.filter(w => w._id !== wordId);
+        setRestrictedWords(updatedWords);
+        setCache('admin_words', updatedWords);
       } catch (err) {
         showToast(err.response?.data?.error || 'Failed to delete restricted word.', 'error');
       }
@@ -204,8 +259,11 @@ export default function Admin() {
   // User Administration Updates
   const handleUpdateRole = async (targetId, newRole) => {
     try {
-      const res = await api.put(`/api/users/${targetId}`, { role: newRole });
-      setUsersList(usersList.map(u => u._id === targetId ? { ...u, role: newRole } : u));
+      await api.put(`/api/users/${targetId}`, { role: newRole });
+      const updatedUsers = usersList.map(u => u._id === targetId ? { ...u, role: newRole } : u);
+      setUsersList(updatedUsers);
+      setCache('admin_users', updatedUsers);
+      invalidateCache('admin_earnings_report');
     } catch (e) {
       console.error(e);
       showToast('Failed to update user role.', 'error');
@@ -216,7 +274,13 @@ export default function Admin() {
     if (window.confirm('WARNING: Deleting this user will purge their account and delete all of their authored blogs. Are you sure?')) {
       try {
         await api.delete(`/api/users/${targetId}`);
-        setUsersList(usersList.filter(u => u._id !== targetId));
+        const updatedUsers = usersList.filter(u => u._id !== targetId);
+        setUsersList(updatedUsers);
+        setCache('admin_users', updatedUsers);
+        invalidateCache('admin_blogs');
+        invalidateCache('admin_flagged');
+        invalidateCache('admin_earnings_report');
+        invalidateCache('home_');
       } catch (e) {
         console.error(e);
       }
@@ -228,7 +292,13 @@ export default function Admin() {
     if (window.confirm('Are you sure you want to delete this blog post? This action is permanent.')) {
       try {
         await api.delete(`/api/blogs/${blogId}`);
-        setBlogsList(blogsList.filter(b => b._id !== blogId));
+        const updatedBlogs = blogsList.filter(b => b._id !== blogId);
+        const updatedFlagged = flaggedBlogs.filter(b => b._id !== blogId);
+        setBlogsList(updatedBlogs);
+        setFlaggedBlogs(updatedFlagged);
+        setCache('admin_blogs', updatedBlogs);
+        setCache('admin_flagged', updatedFlagged);
+        invalidateCache('home_');
       } catch (e) {
         console.error(e);
       }
@@ -644,11 +714,13 @@ export default function Admin() {
                             if (window.confirm('Dismiss all flag reports for this post?')) {
                               try {
                                 await api.post(`/api/blogs/${blog._id}/dismiss-reports`);
-                                setFlaggedBlogs(flaggedBlogs.filter(b => b._id !== blog._id));
-                                  showToast('All report alerts dismissed successfully.', 'success');
-                                } catch (err) {
-                                  showToast(err.response?.data?.error || 'Failed to dismiss reports.', 'error');
-                                }
+                                const updatedFlagged = flaggedBlogs.filter(b => b._id !== blog._id);
+                                setFlaggedBlogs(updatedFlagged);
+                                setCache('admin_flagged', updatedFlagged);
+                                showToast('All report alerts dismissed successfully.', 'success');
+                              } catch (err) {
+                                showToast(err.response?.data?.error || 'Failed to dismiss reports.', 'error');
+                              }
                             }
                           }}
                           className="px-3 py-1.5 text-[10px] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-lg transition-all inline-block animate-scale-in"
@@ -660,12 +732,17 @@ export default function Admin() {
                             if (window.confirm('Are you sure you want to delete this reported post? This action is permanent.')) {
                               try {
                                 await api.delete(`/api/blogs/${blog._id}`);
-                                setFlaggedBlogs(flaggedBlogs.filter(b => b._id !== blog._id));
-                                setBlogsList(blogsList.filter(b => b._id !== blog._id));
-                                  showToast('Reported post deleted successfully.', 'success');
-                                } catch (err) {
-                                  showToast(err.response?.data?.error || 'Failed to delete post.', 'error');
-                                }
+                                const updatedFlagged = flaggedBlogs.filter(b => b._id !== blog._id);
+                                const updatedBlogs = blogsList.filter(b => b._id !== blog._id);
+                                setFlaggedBlogs(updatedFlagged);
+                                setBlogsList(updatedBlogs);
+                                setCache('admin_flagged', updatedFlagged);
+                                setCache('admin_blogs', updatedBlogs);
+                                invalidateCache('home_');
+                                showToast('Reported post deleted successfully.', 'success');
+                              } catch (err) {
+                                showToast(err.response?.data?.error || 'Failed to delete post.', 'error');
+                              }
                             }
                           }}
                           className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-955/20 rounded-lg transition-colors inline-block align-middle"

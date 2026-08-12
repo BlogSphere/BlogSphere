@@ -146,31 +146,37 @@ export default function Communities() {
           </button>
 
           {/* Community Header Banner */}
-          <div className="p-8 rounded-3xl bg-gradient-to-br from-indigo-900/10 via-slate-900/30 to-indigo-950/10 dark:from-indigo-950/40 dark:to-slate-900 border border-slate-200 dark:border-indigo-950/40 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div className="space-y-3">
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20 uppercase tracking-wider">
+          <div className="relative overflow-hidden p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl shadow-indigo-500/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-60 h-60 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="relative z-10 space-y-3">
+              <span className="inline-block px-3.5 py-1 rounded-full text-[10px] font-extrabold bg-white/20 backdrop-blur-md text-white uppercase tracking-wider">
                 Community Channel
               </span>
-              <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
                 {communityDetails.name}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 max-w-2xl text-sm leading-relaxed">
+              <p className="text-indigo-100 max-w-2xl text-sm sm:text-base font-medium leading-relaxed">
                 {communityDetails.description || 'No description available for this community channel.'}
               </p>
-              <div className="flex items-center gap-4 text-xs text-slate-400">
-                <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {communityDetails.membersCount} members</span>
-                <span>•</span>
-                <span>Created by {communityDetails.creator?.name || 'Anonymous'}</span>
+              <div className="flex items-center gap-4 text-xs font-semibold text-indigo-100">
+                <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-indigo-200" /> {communityDetails.membersCount} members</span>
+                {communityDetails.creator && communityDetails.creator.role !== 'admin' && (
+                  <>
+                    <span>•</span>
+                    <span>Created by {communityDetails.creator.name}</span>
+                  </>
+                )}
               </div>
             </div>
             
-            <div>
+            <div className="relative z-10">
               <button
                 onClick={(e) => handleJoinLeave(communityDetails._id, e)}
-                className={`w-full md:w-auto px-6 py-3 rounded-full text-xs font-bold tracking-wide transition-all shadow-md ${
+                className={`w-full md:w-auto px-6 py-3.5 rounded-2xl text-xs font-extrabold tracking-wide transition-all shadow-lg active:scale-95 ${
                   communityDetails.isMember
-                    ? 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
-                    : 'bg-primary-600 hover:bg-primary-700 text-white shadow-primary-500/10'
+                    ? 'bg-white/20 hover:bg-white/30 text-white backdrop-blur-md border border-white/20'
+                    : 'bg-white text-indigo-600 hover:bg-indigo-50 shadow-indigo-900/20'
                 }`}
               >
                 {communityDetails.isMember ? 'Leave Community' : 'Join Community'}

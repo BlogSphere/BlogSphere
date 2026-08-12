@@ -13,6 +13,7 @@ import DailyBriefs from './pages/DailyBriefs';
 import LeadershipBoard from './pages/LeadershipBoard';
 import Profile from './pages/Profile';
 import Communities from './pages/Communities';
+import ConnectPeople from './pages/ConnectPeople';
 import AdCenter from './pages/AdCenter';
 import Collections from './pages/Collections';
 import CollectionDetail from './pages/CollectionDetail';
@@ -122,6 +123,7 @@ export default function App() {
                 <Route path="/profile/:id" element={<Profile />} />
                 <Route path="/profile" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/communities" element={<Communities />} />
+                <Route path="/connect" element={<ConnectPeople />} />
                 <Route path="/collections" element={<Collections />} />
                 <Route path="/collections/:slug" element={<CollectionDetail />} />
                 <Route path="/collections/new" element={<CollectionEditor />} />

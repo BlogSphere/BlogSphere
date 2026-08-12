@@ -1,5 +1,6 @@
 import Community from '../models/Community.js';
 import Blog from '../models/Blog.js';
+import Notification from '../models/Notification.js';
 
 export const createCommunity = async (req, res) => {
   try {
@@ -68,6 +69,32 @@ export const joinCommunity = async (req, res) => {
     if (memberIndex === -1) {
       community.members.push(userId);
       isJoined = true;
+
+      // Send welcome notification to user joining
+      const joinNotif = new Notification({
+        userId,
+        message: `You joined "${community.name}". You will now receive instant notifications when articles are posted here!`,
+        type: 'community_post',
+        referenceId: community._id
+      });
+      await joinNotif.save();
+      if (global.io) {
+        global.io.to(`user_${userId}`).emit('notification_received', joinNotif);
+      }
+
+      // Notify community creator if different user
+      if (community.creator && community.creator.toString() !== userId.toString()) {
+        const creatorNotif = new Notification({
+          userId: community.creator,
+          message: `${req.user.name} joined your community "${community.name}"`,
+          type: 'community_post',
+          referenceId: community._id
+        });
+        await creatorNotif.save();
+        if (global.io) {
+          global.io.to(`user_${community.creator}`).emit('notification_received', creatorNotif);
+        }
+      }
     } else {
       community.members.splice(memberIndex, 1);
     }

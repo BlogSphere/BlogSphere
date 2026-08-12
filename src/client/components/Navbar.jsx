@@ -103,6 +103,28 @@ export default function Navbar() {
     }
   };
 
+  const handleNotificationClick = (n) => {
+    if (!n.isRead) {
+      markNotificationRead(n._id);
+    }
+    setShowNotifications(false);
+
+    if (n.referenceId) {
+      if (['community_post', 'comment', 'like', 'reaction', 'collab', 'bookmark_update'].includes(n.type)) {
+        if (n.message.includes('You joined')) {
+          navigate('/communities');
+        } else {
+          // Automatically redirect to the blog article
+          navigate(`/blog/${n.referenceId}`);
+        }
+      } else if (n.type === 'follow') {
+        navigate(`/profile/${n.referenceId}`);
+      } else if (['collection_added', 'collection_followed'].includes(n.type)) {
+        navigate('/collections');
+      }
+    }
+  };
+
   const isActive = (path) => {
     if (path === '/') return location.pathname === '/';
     return location.pathname.startsWith(path);
@@ -152,6 +174,17 @@ export default function Navbar() {
                 }`}
               >
                 Communities
+              </Link>
+              <Link 
+                to="/connect" 
+                className={`px-3 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+                  isActive('/connect') 
+                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                }`}
+              >
+                <span>Connect</span>
+                <span className="text-[10px]">🤝</span>
               </Link>
               <Link 
                 to="/leaderboard" 
@@ -245,7 +278,7 @@ export default function Navbar() {
                           notifications.map((n) => (
                             <div
                               key={n._id}
-                              onClick={() => markNotificationRead(n._id)}
+                              onClick={() => handleNotificationClick(n)}
                               className={`px-4 py-3 flex gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${
                                 !n.isRead ? 'bg-indigo-50/40 dark:bg-indigo-950/20' : ''
                               }`}
@@ -372,6 +405,13 @@ export default function Navbar() {
             className="block py-2 text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider"
           >
             Communities
+          </Link>
+          <Link
+            to="/connect"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider"
+          >
+            Connect People 🤝
           </Link>
           <Link
             to="/leaderboard"
