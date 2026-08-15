@@ -131,3 +131,47 @@ npm run dev
 - **Build Frontend**: `npm run build` (generates static assets inside the `dist/` directory)
 - **Preview Production Build**: `npm run preview`
 - **Start Production Server**: `npm run start`
+
+---
+
+## 🐳 Docker Deployment & Containerization
+
+BlogSphere is fully containerized with a production-optimized multi-stage `Dockerfile` and `docker-compose` support.
+
+### 1. Run with Docker Compose (App + MongoDB)
+
+Start the entire application stack (Express API, React Frontend, and MongoDB database):
+
+```bash
+docker compose up -d --build
+```
+
+Access the application at [http://localhost:5000](http://localhost:5000).
+
+To stop the services:
+```bash
+docker compose down
+```
+
+### 2. Build & Push to Docker Hub
+
+1. **Log in to Docker Hub**:
+   ```bash
+   docker login
+   ```
+
+2. **Build the image with your Docker Hub username**:
+   ```bash
+   docker build -t your-username/blog-sphere:latest .
+   ```
+
+3. **Push the image to Docker Hub**:
+   ```bash
+   docker push your-username/blog-sphere:latest
+   ```
+
+4. **Run the pushed image anywhere**:
+   ```bash
+   docker run -d -p 5000:5000 -e MONGODB_URI="your_mongodb_connection_string" your-username/blog-sphere:latest
+   ```
+
