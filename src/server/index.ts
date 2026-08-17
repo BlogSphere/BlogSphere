@@ -5,6 +5,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dns from 'dns';
 
@@ -65,9 +66,11 @@ app.use('/api/collections', collectionRoutes);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Serve static assets in production mode
-if (process.env.NODE_ENV === 'production') {
-  const distPath = path.join(__dirname, '../../dist');
+const distPath = path.join(__dirname, '../../dist');
+const hasBuiltDist = fs.existsSync(path.join(distPath, 'index.html'));
+
+// Serve static assets in production mode or if built frontend bundle exists
+if (process.env.NODE_ENV === 'production' || hasBuiltDist) {
   app.use(express.static(distPath));
   app.get('*', (req, res) => {
     if (!req.path.startsWith('/api')) {
@@ -75,7 +78,7 @@ if (process.env.NODE_ENV === 'production') {
     }
   });
 } else {
-  // Basic server check
+  // Basic server check during development without built dist
   app.get('/', (req, res) => {
     res.json({ message: 'BlogSphere API running smoothly in development' });
   });

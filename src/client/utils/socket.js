@@ -6,10 +6,11 @@ const isLocal = window.location.hostname === 'localhost' ||
                 window.location.hostname.startsWith('192.168.') ||
                 window.location.hostname.startsWith('10.') ||
                 window.location.hostname.startsWith('172.');
-const socketUrl = isLocal ? `http://${window.location.hostname}:5000` : window.location.origin;
+const socketUrl = import.meta.env.VITE_SOCKET_URL || (isLocal ? `http://${window.location.hostname}:5000` : window.location.origin);
 
 export const socket = io(socketUrl, {
   autoConnect: false
 });
 
 export default socket;
+
