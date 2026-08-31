@@ -2390,3 +2390,43 @@ Only answer questions that are related to the blog post, its tech stack, or its 
     res.status(500).json({ error: error.message });
   }
 };
+
+// GET 24h Activity Statistics (Real MongoDB Live Tracking)
+export const get24hStats = async (req, res) => {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    // Actual 24h published articles count
+    const articles24h = await Blog.countDocuments({
+      status: 'published',
+      createdAt: { $gte: twentyFourHoursAgo }
+    });
+
+    // Actual 24h distinct published authors count
+    const writers24hArr = await Blog.distinct('author', {
+      status: 'published',
+      createdAt: { $gte: twentyFourHoursAgo }
+    });
+
+    // Actual total published articles & distinct authors count in database
+    const totalArticles = await Blog.countDocuments({ status: 'published' });
+    const totalWritersArr = await Blog.distinct('author', { status: 'published' });
+
+    const articles = articles24h > 0 ? articles24h : totalArticles;
+    const writers = articles24h > 0 ? writers24hArr.length : totalWritersArr.length;
+
+    res.status(200).json({
+      articles,
+      writers,
+      articles24h,
+      writers24h: writers24hArr.length,
+      totalArticles,
+      totalWriters: totalWritersArr.length,
+      is24hOnly: articles24h > 0
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+

@@ -6,6 +6,7 @@ import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown,
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
 import logo from '../assets/logo.png';
+import Stats24hBadge from './Stats24hBadge.jsx';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -218,6 +219,9 @@ export default function Navbar() {
 
           {/* Controls & User Profile Dropdown */}
           <div className="flex items-center gap-3">
+            {/* 24h Activity Badge */}
+            <Stats24hBadge className="hidden lg:flex" />
+
             {/* Dark Mode Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
@@ -386,7 +390,10 @@ export default function Navbar() {
 
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:hidden px-4 pt-2 pb-6 space-y-3 animate-fade-in">
+        <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 md:hidden px-4 pt-3 pb-6 space-y-3 animate-fade-in">
+          <div className="flex justify-center pb-1">
+            <Stats24hBadge />
+          </div>
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}

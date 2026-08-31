@@ -1,177 +1,46 @@
-# 🌐 BlogSphere — Smart Community Blog Platform
+# BlogSphere — Smart Community Blog Platform
 
-> A modern, real-time collaborative blogging community platform built with the MERN stack and powered by Gemini AI writing tutors.
-
-BlogSphere is a smart community blog platform designed for rich collaboration. It features a custom modular post builder, real-time collaboration on articles, nested comments, live notifications, admin moderation, and clean UI aesthetics with full dark mode support.
+Welcome to **BlogSphere**, a modern full-stack blogging platform with real-time collaboration, AI content enrichment, curated reading lists, community hubs, gamified author leaderboards, and automated background publishing.
 
 ---
 
-## ✨ Features
+## 📖 Complete Documentation
 
-- **⚡ Real-Time Collaboration**: Co-edit blog posts in real-time with other authors using Socket.io integration.
-- **🧠 Smart AI Recommendation Engine**: Tailor article feeds to each user utilizing a custom multi-factor scoring model that accounts for category/interest overlaps, read history, user recency, and collaborative filtering. Dynamically scales up lower-view count posts to boost feed diversity and exposure.
-- **🤖 AI Bio Classification**: On registration and profile edits, user bios are analyzed by Gemini to extract high-level categories (e.g. Technology, Travel, Food, Education, Sports) and a system-level hidden tag, immediately seeding high-relevance recommendations.
-- **🏆 Public Creator Leaderboard**: Real-time public rankings for creators showcasing estimated earnings breakdown (calculated from views, posts, likes, reactions, and comments) along with their top-performing article.
-- **🔒 Premium-Locked Daily AI Briefs**: Daily AI-generated newsletters and analytics are gated for authenticated users, featuring a beautiful premium lock screen for guest visitors.
-- **🔔 High-Fidelity Toast Notification System**: Custom React context-driven Toast alerts built with Framer Motion and Lucide React icons, offering success, error, warning, and informational pop-ups.
-- **🤖 Block AI Assistant**: Polish and expand text blocks (headings, paragraphs, lists, quotes) inside the editor dynamically using Gemini.
-- **🏷️ Strict Tag Normalization**: Automatically sanitizes user tags to lowercase, single-word alphanumeric strings to enforce unified indexing.
-- **🛡️ Secure Admin Control**: Protected route mappings with automatic bootstrapping of a default system administrator (`admin@blogsphere.com` / `AdminPassword123!`) on startup. Dynamic signup requests for the `admin` role are blocked.
-- **🕵️ Anonymous Publishing**: Toggle anonymity for posts. Authors can choose to write anonymously to mask their details across feed directory views.
-- **🔒 Account Privacy Switches**: Toggle account visibility between public and private. Private accounts hide detailed profile fields.
-- **📂 Exploration Directories**: Search articles, topics, and authors through public API routes.
-- **🖼️ Local File Uploader**: Convert local avatars/images directly to base64 encoding with live preview.
-- **💰 AdSense Integration**: Integrated `AdCenter` layout dashboards mapping directly to `/adsense`.
-- **💬 Nested Comments**: Interactive, multi-level nested comment section for each blog.
-- **🔔 Live Notifications**: Real-time push updates for collaborative events, comments, and post updates.
-- **🎨 Glassmorphic UI**: Beautiful responsive design built with Tailwind CSS and smooth micro-interactions powered by Framer Motion.
-- **🌙 Seamless Dark Mode**: Fully automated class-based light/dark theme switcher.
-- **🔌 Local Network Testing Support**: Vite configured with `host: true` and Socket.io proxies to enable collaborative testing across local network devices.
+For full details on system architecture, user roles, end-to-end interaction workflows, database models, WebSockets, AI features, and troubleshooting, please read our master guide:
+
+👉 **[SYSTEM_OVERVIEW_AND_USER_GUIDE.md](file:///c:/Users/Dell/Desktop/Blog/SYSTEM_OVERVIEW_AND_USER_GUIDE.md)**
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Quick Start
 
-### Frontend
-- **Framework**: React 19 (Vite)
-- **State Management**: Redux Toolkit
-- **Notifications**: Custom React Context Toast System (Framer Motion)
-- **State Slices**: authSlice
-- **Styling**: Tailwind CSS, PostCSS
-- **Animation**: Framer Motion
-- **Icons**: Lucide React
-- **Real-Time Sockets**: Socket.io-Client
-
-### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Database**: MongoDB (Mongoose ODM)
-- **Authentication**: JWT & bcryptjs
-- **Sockets**: Socket.io (proxied through Vite in development)
-- **AI Engine**: Google Gemini API (used for Bio Classification, metadata suggestions, and automated content generation)
-
----
-
-## 📂 Project Structure
-
-Following a clean single-package monolithic structure:
-
-```
-BlogSphere/
-├── public/                 # Static assets for the frontend
-├── src/
-│   ├── client/             # Frontend source code (Vite + React)
-│   │   ├── assets/         # Styles, images, SVGs
-│   │   ├── components/     # Reusable layout and ui components
-│   │   ├── context/        # React context providers (Toast alert system)
-│   │   ├── pages/          # View routing pages (Home, Editor, Admin, Auth, AdCenter)
-│   │   ├── redux/          # Redux Toolkit store and auth slices
-│   │   └── utils/          # API hooks and axios custom configurations
-│   └── server/             # Backend source code (Express + Node)
-│       ├── controllers/    # API endpoints handlers logic
-│       ├── middleware/     # Auth and error handling guards
-│       ├── models/         # Mongoose DB schema definitions
-│       ├── routes/         # Express router endpoints mapping
-│       ├── services/       # Core business & AI logic (recommendation engine)
-│       └── index.js        # Backend entrypoint and websocket server config
-├── .env                    # Unified server and local env configuration
-├── index.html              # Vite React entry point template
-├── package.json            # Monolith dependencies and command scripts
-├── tailwind.config.js      # Tailwind style guidelines configuration
-└── vite.config.js          # Vite assets builder and proxy configs
+### 1. Environment Setup
+```bash
+cp .env.example .env
 ```
 
----
+### 2. Install Dependencies
+```bash
+npm install
+```
 
-## 🚀 Getting Started
-
-### 📋 Prerequisites
-Ensure you have the following installed on your machine:
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
-- [MongoDB](https://www.mongodb.com/) (running locally or a MongoDB Atlas URI)
-- [Gemini API Key](https://ai.google.dev/) (Optional but required for AI features like suggestions and rewriting)
-
-### 🔧 Installation & Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/YOUR-USERNAME/BlogSphere.git
-   cd BlogSphere
-   ```
-
-2. **Install all dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Configure Environment Variables:**
-   Create a `.env` file in the root directory (based on the sample options):
-   ```env
-   PORT=5000
-   MONGODB_URI=mongodb://127.0.0.1:27017/blog-sphere
-   JWT_SECRET=your_super_secret_jwt_key
-   GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
----
-
-## 🏃 Run the Application
-
-Execute the unified script in development mode to spin up the Express server and Vite frontend concurrently:
-
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
+- **Frontend App**: `http://localhost:5173`
+- **Backend REST API & WebSockets**: `http://localhost:5000`
 
-- **Frontend Development Server**: [http://localhost:5173](http://localhost:5173)
-- **Backend API Port**: [http://localhost:5000](http://localhost:5000)
-
-### Additional Scripts
-
-- **Build Frontend**: `npm run build` (generates static assets inside the `dist/` directory)
-- **Preview Production Build**: `npm run preview`
-- **Start Production Server**: `npm run start`
+### 4. Default Admin Login
+- **Email:** `admin@admin.com`
+- **Password:** `admin123`
 
 ---
 
-## 🐳 Docker Deployment & Containerization
+## 🛠️ Tech Stack Overview
 
-BlogSphere is fully containerized with a production-optimized multi-stage `Dockerfile` and `docker-compose` support.
-
-### 1. Run with Docker Compose (App + MongoDB)
-
-Start the entire application stack (Express API, React Frontend, and MongoDB database):
-
-```bash
-docker compose up -d --build
-```
-
-Access the application at [http://localhost:5000](http://localhost:5000).
-
-To stop the services:
-```bash
-docker compose down
-```
-
-### 2. Build & Push to Docker Hub
-
-1. **Log in to Docker Hub**:
-   ```bash
-   docker login
-   ```
-
-2. **Build the image with your Docker Hub username**:
-   ```bash
-   docker build -t your-username/blog-sphere:latest .
-   ```
-
-3. **Push the image to Docker Hub**:
-   ```bash
-   docker push your-username/blog-sphere:latest
-   ```
-
-4. **Run the pushed image anywhere**:
-   ```bash
-   docker run -d -p 5000:5000 -e MONGODB_URI="your_mongodb_connection_string" your-username/blog-sphere:latest
-   ```
-
+- **Frontend:** React 19, Redux Toolkit, Tailwind CSS, Vite, Lucide Icons, Framer Motion
+- **Backend:** Node.js, Express (TypeScript), Socket.io WebSockets, JWT Authentication
+- **Database:** MongoDB (Mongoose ORM)
+- **AI Subsystem:** Google Gemini 3.5 Flash API with circular key rotation
+- **Deployment:** Docker & Docker-Compose ready
