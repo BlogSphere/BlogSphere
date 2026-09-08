@@ -1730,7 +1730,8 @@ export default function BlogDetail() {
             { id: 'podcast', label: '🎙️ AI Podcast Simulator' },
             { id: 'quiz', label: '🎓 Study Mode Quiz' },
             { id: 'debate', label: '💬 AI Expert Debate' },
-            { id: 'chat', label: '🤖 Chat with Blog' }
+            // Temporarily disabled:
+            // { id: 'chat', label: '🤖 Chat with Blog' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1783,6 +1784,7 @@ export default function BlogDetail() {
             </motion.div>
           )}
 
+          {/* Temporarily disabled:
           {activeAITab === 'chat' && (
             <motion.div
               key="chat"
@@ -1794,6 +1796,7 @@ export default function BlogDetail() {
               {renderChatContent()}
             </motion.div>
           )}
+          */}
         </AnimatePresence>
       </div>
 
