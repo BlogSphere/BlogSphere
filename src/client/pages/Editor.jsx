@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import {
   Save, Send, Eye, PenTool, Users, Plus, X, Search,
   UserCheck, Edit3, Heading1, Heading2, List, Trash2,
   Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft,
   Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Globe, CheckCircle2, AlertCircle,
-  Sparkles, Clock
+  Sparkles, Clock, ArrowRight, Zap, MessageSquare, MessageSquareOff
 } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
 import confetti from 'canvas-confetti';
+import { updateCurrentUser } from '../redux/authSlice.js';
 
 const createBlockInstance = (type) => {
   const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
@@ -173,7 +174,9 @@ export default function Editor() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const [upgradingRole, setUpgradingRole] = useState(false);
 
   // Form states
   const [title, setTitle] = useState('');
@@ -188,6 +191,7 @@ export default function Editor() {
   const [community, setCommunity] = useState(communityParam);
   const [myCommunities, setMyCommunities] = useState([]);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduledTime, setScheduledTime] = useState('');
 
@@ -261,6 +265,29 @@ export default function Editor() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const handleUpgradeToAuthor = async () => {
+    setUpgradingRole(true);
+    try {
+      const res = await api.post('/api/users/become-author');
+      if (res.data?.user) {
+        dispatch(updateCurrentUser(res.data.user));
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        } catch (e) {}
+        showToast('Welcome Author! Your account has been upgraded to Writer.', 'success');
+      }
+    } catch (err) {
+      console.error(err);
+      showToast(err.response?.data?.error || 'Failed to upgrade account.', 'error');
+    } finally {
+      setUpgradingRole(false);
+    }
+  };
 
   const handleAITranslate = async (lang) => {
     if (!editId) return;
@@ -458,6 +485,7 @@ export default function Editor() {
           setCollaborators(blog.collaborators || []);
           setCommunity(blog.community || '');
           setIsAnonymous(blog.isAnonymous || false);
+          setCommentsEnabled(blog.commentsEnabled !== false);
           if (blog.status === 'scheduled') {
             setIsScheduled(true);
             if (blog.scheduledPublishTime) {
@@ -1028,6 +1056,7 @@ export default function Editor() {
       collaborators: collaborators.map(c => c._id),
       community: community || undefined,
       isAnonymous,
+      commentsEnabled,
       scheduledPublishTime: isScheduled && scheduledTime ? new Date(scheduledTime).toISOString() : null
     };
 
@@ -1058,6 +1087,77 @@ export default function Editor() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-slate-400">
         Loading editor session...
+      </div>
+    );
+  }
+
+  if (isAuthenticated && user?.role === 'reader') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
+        <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-2xl shadow-indigo-500/30 ring-8 ring-indigo-500/10">
+          <PenTool className="w-10 h-10 animate-bounce" />
+          <span className="absolute -top-1 -right-1 flex h-4 w-4">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          <span className="inline-block text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-1 rounded-full border border-amber-300/40 dark:border-amber-700/40">
+            Reader Account Active
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+            Writing Studio is Reserved for Authors
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+            You are currently registered as a <strong className="text-slate-800 dark:text-slate-200">Reader</strong>. Readers can enjoy reading, bookmarking, and joining discussions. To start drafting and publishing your own stories, upgrade your account to an <strong className="text-indigo-600 dark:text-indigo-400">Author</strong> for free!
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-3.5 text-left max-w-lg mx-auto pt-2">
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Interactive Editor & AI</h4>
+              <p className="text-[11px] text-slate-400 leading-snug">Block formatting, AI rewrite, grammar fixes, and translations.</p>
+            </div>
+          </div>
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3">
+            <Users className="w-5 h-5 text-violet-500 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Publish & Reach</h4>
+              <p className="text-[11px] text-slate-400 leading-snug">Distribute to channels, get followers, and earn reputation points.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+          <button
+            onClick={handleUpgradeToAuthor}
+            disabled={upgradingRole}
+            className="w-full sm:w-auto px-8 py-3.5 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-60"
+          >
+            {upgradingRole ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Upgrading to Author...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                <span>Upgrade to Author (Free)</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            className="w-full sm:w-auto px-6 py-3.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full border border-slate-200/80 dark:border-slate-800 transition-colors"
+          >
+            Back to Home
+          </button>
+        </div>
       </div>
     );
   }
@@ -1748,6 +1848,42 @@ export default function Editor() {
                 <label htmlFor="isAnonymous" className="text-xs font-bold text-slate-400 uppercase cursor-pointer">
                   Publish Anonymously
                 </label>
+              </div>
+
+              {/* Comments On/Off Toggle Section */}
+              <div className="mb-4 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-xl ${commentsEnabled ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-slate-200/60 text-slate-400 dark:bg-slate-800'}`}>
+                      {commentsEnabled ? <MessageSquare className="w-3.5 h-3.5" /> : <MessageSquareOff className="w-3.5 h-3.5" />}
+                    </div>
+                    <div>
+                      <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                        Allow Comments
+                      </span>
+                      <span className="block text-[10px] text-slate-400">
+                        {commentsEnabled ? 'Discussion open' : 'Comments locked'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Modern toggle switch */}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={commentsEnabled}
+                      onChange={(e) => setCommentsEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-indigo-600 peer-checked:to-violet-600"></div>
+                  </label>
+                </div>
+                
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
+                  {commentsEnabled
+                    ? 'Readers and collaborators will be able to comment and reply to this article.'
+                    : 'The discussion section will be disabled and locked for readers.'}
+                </p>
               </div>
 
               {/* Schedule Publish */}

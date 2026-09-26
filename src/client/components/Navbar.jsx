@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../redux/authSlice.js';
-import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard } from 'lucide-react';
+import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard, Sparkles } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
 import logo from '../assets/logo.png';
 import Stats24hBadge from './Stats24hBadge.jsx';
+import BecomeWriterModal from './BecomeWriterModal.jsx';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -25,6 +26,7 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isBecomeWriterOpen, setIsBecomeWriterOpen] = useState(false);
 
   const notificationRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -231,14 +233,25 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {/* Write Article Link */}
-                <Link
-                  to="/editor"
-                  className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-white transition-all rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 hidden md:flex hover:scale-105 shrink-0"
-                >
-                  <PenSquare className="w-3.5 h-3.5" />
-                  <span>Write</span>
-                </Link>
+                {/* Write Article Link or Become a Writer CTA */}
+                {user?.role === 'reader' ? (
+                  <button
+                    onClick={() => setIsBecomeWriterOpen(true)}
+                    className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 border border-indigo-200/80 dark:border-indigo-800/80 transition-all rounded-full shadow-sm hidden md:flex hover:scale-105 shrink-0"
+                    title="Unlock Writer Studio"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                    <span>Become a Writer</span>
+                  </button>
+                ) : (
+                  <Link
+                    to="/editor"
+                    className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-white transition-all rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 hidden md:flex hover:scale-105 shrink-0"
+                  >
+                    <PenSquare className="w-3.5 h-3.5" />
+                    <span>Write</span>
+                  </Link>
+                )}
 
                 {/* Daily Briefs */}
                 <Link
@@ -449,14 +462,27 @@ export default function Navbar() {
                 <Brain className="w-4 h-4 text-indigo-500" />
                 <span>AI Briefs</span>
               </Link>
-              <Link
-                to="/editor"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md"
-              >
-                <PenSquare className="w-4 h-4" />
-                <span>Write Article</span>
-              </Link>
+              {user?.role === 'reader' ? (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    setIsBecomeWriterOpen(true);
+                  }}
+                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm"
+                >
+                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <span>Become a Writer</span>
+                </button>
+              ) : (
+                <Link
+                  to="/editor"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md"
+                >
+                  <PenSquare className="w-4 h-4" />
+                  <span>Write Article</span>
+                </Link>
+              )}
             </div>
           )}
 
@@ -480,6 +506,12 @@ export default function Navbar() {
           )}
         </div>
       )}
+
+      {/* Become a Writer Upgrade Modal */}
+      <BecomeWriterModal
+        isOpen={isBecomeWriterOpen}
+        onClose={() => setIsBecomeWriterOpen(false)}
+      />
     </nav>
   );
 }

@@ -298,6 +298,39 @@ export const updateOwnProfile = async (req, res) => {
   }
 };
 
+// Upgrade Reader account to Author / Writer
+export const becomeAuthor = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (user.role === 'admin') {
+      const adminUser = user.toObject();
+      delete adminUser.password;
+      return res.status(200).json({ message: 'User is already an Admin with full author privileges.', user: adminUser });
+    }
+
+    user.role = 'author';
+    if (!user.badge || user.badge === 'Reader') {
+      user.badge = 'Author';
+    }
+
+    await user.save();
+
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+
+    res.status(200).json({ 
+      message: 'Congratulations! You are now an Author on BlogSphere.', 
+      user: updatedUser 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Toggle bookmark on blog post
 export const toggleBookmark = async (req, res) => {
   try {

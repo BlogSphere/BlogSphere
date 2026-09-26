@@ -9,6 +9,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api.js';
 import BlogCard from '../components/BlogCard.jsx';
+import BecomeWriterModal from '../components/BecomeWriterModal.jsx';
 import { updateCurrentUser } from '../redux/authSlice.js';
 import { useToast } from '../context/ToastContext.jsx';
 
@@ -35,7 +36,8 @@ export default function Profile() {
   const [bookmarks, setBookmarks] = useState([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
 
-  // Edit Modal states
+  // Upgrade & Edit Modal states
+  const [isBecomeWriterOpen, setIsBecomeWriterOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
@@ -266,13 +268,24 @@ export default function Profile() {
               )}
 
               {isSelf && (
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="px-6 py-2.5 text-xs font-extrabold rounded-full border border-slate-200 dark:border-slate-700/80 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-800 dark:text-white shadow-sm transition-all flex items-center gap-2 hover:scale-105"
-                >
-                  <Settings2 className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>Edit Profile</span>
-                </button>
+                <>
+                  {profileUser?.role === 'reader' && (
+                    <button
+                      onClick={() => setIsBecomeWriterOpen(true)}
+                      className="px-5 py-2.5 text-xs font-extrabold rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white shadow-md shadow-indigo-500/25 transition-all flex items-center gap-2 hover:scale-105"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Become a Writer</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="px-6 py-2.5 text-xs font-extrabold rounded-full border border-slate-200 dark:border-slate-700/80 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-800 dark:text-white shadow-sm transition-all flex items-center gap-2 hover:scale-105"
+                  >
+                    <Settings2 className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Edit Profile</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -661,6 +674,17 @@ export default function Profile() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Become Writer Modal */}
+      <BecomeWriterModal
+        isOpen={isBecomeWriterOpen}
+        onClose={() => setIsBecomeWriterOpen(false)}
+        onSuccess={(updated) => {
+          setProfileUser(updated);
+          setIsBecomeWriterOpen(false);
+          showToast('Congratulations! You are now an Author on BlogSphere.', 'success');
+        }}
+      />
     </div>
   );
 }

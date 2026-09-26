@@ -7,6 +7,7 @@ import {
   getUserProfile,
   getPublicAuthors,
   updateOwnProfile,
+  becomeAuthor,
   toggleBookmark,
   getBookmarks,
   toggleNewsletter,
@@ -23,9 +24,10 @@ router.get('/search/authors', getPublicAuthors);
 router.get('/:id/profile', optionalAuth, getUserProfile);
 router.post('/:id/follow', auth, followUser);
 
-// Profile, Bookmark and Newsletter Routes
+// Profile, Bookmark, Role Upgrade and Newsletter Routes
 router.get('/dashboard/stats', auth, getDashboardStats);
 router.put('/profile', auth, updateOwnProfile);
+router.post('/become-author', auth, becomeAuthor);
 router.get('/bookmarks', auth, getBookmarks);
 router.post('/bookmarks/:blogId', auth, toggleBookmark);
 router.post('/newsletter/:authorId', auth, toggleNewsletter);

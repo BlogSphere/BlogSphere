@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { useToast } from '../context/ToastContext.jsx';
-import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail, FolderPlus, BookOpen } from 'lucide-react';
+import { Eye, Heart, Clock, Volume2, Globe, Sparkles, History, Bookmark, MessageSquare, MessageSquareOff, CornerDownRight, Play, Pause, Square, Trash2, ArrowLeft, Check, UserPlus, UserMinus, X, AlertCircle, Mail, FolderPlus, BookOpen } from 'lucide-react';
 import api from '../utils/api.js';
 import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -989,6 +989,22 @@ export default function BlogDetail() {
     }
   };
 
+  // Toggle comments on/off directly from post (for author)
+  const handleToggleComments = async () => {
+    if (!isOwner || !blog) return;
+    const newStatus = !(blog.commentsEnabled !== false);
+    try {
+      await api.put(`/api/blogs/${blog._id}`, {
+        commentsEnabled: newStatus
+      });
+      setBlog(prev => ({ ...prev, commentsEnabled: newStatus }));
+      showToast(newStatus ? 'Comments enabled for this article.' : 'Comments disabled for this article.', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to update comment settings.', 'error');
+    }
+  };
+
   const renderPodcastPlayer = () => {
     if (loadingPodcast) {
       return (
@@ -1923,41 +1939,91 @@ export default function BlogDetail() {
 
       {/* Comments Section */}
       <div className="mt-12 border-t border-slate-200 dark:border-slate-800 pt-8">
-        <div className="flex items-center gap-2 mb-6">
-          <MessageSquare className="w-5 h-5 text-primary-500" />
-          <h3 className="font-heading text-xl font-bold">Discussion ({comments.length})</h3>
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-2">
+            {blog.commentsEnabled === false ? (
+              <MessageSquareOff className="w-5 h-5 text-amber-500" />
+            ) : (
+              <MessageSquare className="w-5 h-5 text-primary-500" />
+            )}
+            <h3 className="font-heading text-xl font-bold">
+              Discussion ({comments.length})
+            </h3>
+            {blog.commentsEnabled === false && (
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-900/40 px-2.5 py-0.5 rounded-full">
+                Comments Off
+              </span>
+            )}
+          </div>
+
+          {/* Quick toggle for the author */}
+          {isOwner && (
+            <button
+              onClick={handleToggleComments}
+              className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 shadow-sm ${
+                blog.commentsEnabled === false
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:border-emerald-900/40 dark:text-emerald-400 hover:bg-emerald-100 hover:scale-102'
+                  : 'border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={blog.commentsEnabled === false ? 'Enable comments for this article' : 'Turn off comments'}
+            >
+              {blog.commentsEnabled === false ? (
+                <>
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Turn Comments ON</span>
+                </>
+              ) : (
+                <>
+                  <MessageSquareOff className="w-3.5 h-3.5" />
+                  <span>Turn Comments OFF</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
-        {/* Comment form */}
-        {isAuthenticated ? (
-          <form onSubmit={handlePostComment} className="flex gap-3 items-start mb-8">
-            <img src={user?.profileImage} className="w-10 h-10 rounded-full object-cover" />
-            <div className="flex-1">
-              <textarea
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Share your thoughts on this article..."
-                className="w-full p-3 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                rows="3"
-              />
-              <button
-                type="submit"
-                className="mt-2.5 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full text-xs shadow-md"
-              >
-                Post Comment
-              </button>
+        {blog.commentsEnabled === false ? (
+          <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 text-center space-y-2 mb-8">
+            <div className="inline-flex p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 text-amber-500">
+              <MessageSquareOff className="w-6 h-6" />
             </div>
-          </form>
-        ) : (
-          <div className="text-center p-6 bg-slate-50 dark:bg-slate-900 border rounded-2xl mb-8">
-            <p className="text-sm text-slate-500">
-              Please{' '}
-              <Link to="/login" className="text-primary-500 hover:underline font-bold">
-                log in
-              </Link>{' '}
-              to participate in the conversation.
+            <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Comments are turned off</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              The author has disabled comments for this article. {comments.length > 0 ? 'Existing discussions remain visible in read-only mode.' : 'No comments can be posted.'}
             </p>
           </div>
+        ) : (
+          /* Comment form */
+          isAuthenticated ? (
+            <form onSubmit={handlePostComment} className="flex gap-3 items-start mb-8">
+              <img src={user?.profileImage} className="w-10 h-10 rounded-full object-cover" />
+              <div className="flex-1">
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Share your thoughts on this article..."
+                  className="w-full p-3 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  rows="3"
+                />
+                <button
+                  type="submit"
+                  className="mt-2.5 px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-full text-xs shadow-md"
+                >
+                  Post Comment
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="text-center p-6 bg-slate-50 dark:bg-slate-900 border rounded-2xl mb-8">
+              <p className="text-sm text-slate-500">
+                Please{' '}
+                <Link to="/login" className="text-primary-500 hover:underline font-bold">
+                  log in
+                </Link>{' '}
+                to participate in the conversation.
+              </p>
+            </div>
+          )
         )}
 
         {/* Nested Comments rendering */}
@@ -1993,7 +2059,7 @@ export default function BlogDetail() {
                 </p>
 
                 {/* Reply button */}
-                {isAuthenticated && (
+                {isAuthenticated && blog.commentsEnabled !== false && (
                   <button
                     onClick={() => setReplyTarget(rootComment._id)}
                     className="text-xs font-semibold text-primary-500 hover:underline flex items-center gap-1"

@@ -90,6 +90,10 @@ const BlogSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  commentsEnabled: {
+    type: Boolean,
+    default: true
+  },
   status: {
     type: String,
     enum: ['draft', 'published', 'scheduled'],

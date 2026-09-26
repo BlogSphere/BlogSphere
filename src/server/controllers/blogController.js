@@ -190,7 +190,7 @@ Only return the JSON object, do not include any markdown backticks or explanatio
 
 export const createBlog = async (req, res) => {
   try {
-    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime, commentsEnabled } = req.body;
 
     // Server-Side Input Validations
     if (!title || typeof title !== 'string' || title.trim().length < 3) {
@@ -273,10 +273,11 @@ export const createBlog = async (req, res) => {
     // Generate unique concise slug with unique ID
     const slug = await generateUniqueSlug(title);
 
-    // Convert reader to author if they create/draft a post
+    // Reader accounts cannot write or publish articles directly
     if (req.user.role === 'reader') {
-      await User.findByIdAndUpdate(req.user._id, { role: 'author' });
-      req.user.role = 'author';
+      return res.status(403).json({
+        error: 'Readers cannot create or publish articles. Please upgrade your account to Author first.'
+      });
     }
 
     const blog = new Blog({
@@ -291,6 +292,7 @@ export const createBlog = async (req, res) => {
       collaborators: collaborators || [],
       community: community || null,
       isAnonymous: isAnonymous || false,
+      commentsEnabled: commentsEnabled !== undefined ? Boolean(commentsEnabled) : true,
       scheduledPublishTime: finalScheduledPublishTime
     });
 
@@ -477,7 +479,7 @@ export const getBlogBySlug = async (req, res) => {
 export const updateBlog = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime } = req.body;
+    const { title, content, coverImage, category, tags, status, collaborators, community, isAnonymous, scheduledPublishTime, commentsEnabled } = req.body;
 
     const blog = await Blog.findById(id);
     if (!blog) {
@@ -600,6 +602,9 @@ export const updateBlog = async (req, res) => {
     blog.scheduledPublishTime = finalScheduledPublishTime;
     blog.community = community !== undefined ? community : blog.community;
     blog.isAnonymous = isAnonymous !== undefined ? isAnonymous : blog.isAnonymous;
+    if (commentsEnabled !== undefined) {
+      blog.commentsEnabled = Boolean(commentsEnabled);
+    }
     if (isAuthor) {
       blog.collaborators = collaborators !== undefined ? collaborators : blog.collaborators;
     }

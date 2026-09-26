@@ -20,6 +20,10 @@ export const createComment = async (req, res) => {
       return res.status(404).json({ error: 'Blog not found' });
     }
 
+    if (blog.commentsEnabled === false) {
+      return res.status(403).json({ error: 'Comments are disabled for this article.' });
+    }
+
     const comment = new Comment({
       blogId,
       userId,

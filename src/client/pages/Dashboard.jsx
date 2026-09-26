@@ -4,12 +4,14 @@ import { Link } from 'react-router-dom';
 import { BookOpen, Eye, Heart, Users, PenSquare, Trash2, TrendingUp, Sparkles, BarChart2, Folder } from 'lucide-react';
 import api from '../utils/api.js';
 import MyCollections from './MyCollections.jsx';
+import BecomeWriterModal from '../components/BecomeWriterModal.jsx';
 
 export default function Dashboard() {
   const { user } = useSelector((state) => state.auth);
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('articles');
+  const [isBecomeWriterOpen, setIsBecomeWriterOpen] = useState(false);
 
   // Search & Filter States
   const [dashSearch, setDashSearch] = useState('');
@@ -163,21 +165,40 @@ export default function Dashboard() {
         {/* Top performing articles / tip box */}
         <div className="p-6 border rounded-3xl bg-gradient-to-br from-indigo-900 to-slate-950 text-white shadow-md flex flex-col justify-between relative overflow-hidden border-indigo-900/30">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-primary-500/20 via-transparent to-transparent pointer-events-none" />
-          <div className="relative z-10 space-y-4">
-            <span className="p-2 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-xl inline-block">
-              <Sparkles className="w-6 h-6" />
-            </span>
-            <h3 className="text-xl font-bold tracking-tight">AI Writer Assistant Tips</h3>
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="p-2 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-xl inline-block">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 bg-white/10 px-2.5 py-0.5 rounded-full">
+                {user?.role === 'reader' ? 'Reader Account' : 'AI Writer Assistant'}
+              </span>
+            </div>
+            <h3 className="text-xl font-bold tracking-tight">
+              {user?.role === 'reader' ? 'Unlock Your Author Voice' : 'AI Writer Assistant Tips'}
+            </h3>
             <p className="text-sm leading-relaxed text-indigo-200">
-              Your articles focusing on <span className="font-semibold text-white">JavaScript</span> and <span className="font-semibold text-white">MERN</span> are outperforming other categories by 45%. Writing a follow-up article this week could boost your views.
+              {user?.role === 'reader'
+                ? 'You are currently enjoying BlogSphere as a Reader. Upgrade your account to an Author to start drafting, publishing interactive articles, and building your following.'
+                : 'Your articles focusing on JavaScript and MERN are outperforming other categories by 45%. Writing a follow-up article this week could boost your views.'}
             </p>
           </div>
-          <Link
-            to="/editor"
-            className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-bold text-indigo-900 bg-white hover:bg-slate-100 rounded-full transition-colors inline-block"
-          >
-            Create New Article
-          </Link>
+          {user?.role === 'reader' ? (
+            <button
+              onClick={() => setIsBecomeWriterOpen(true)}
+              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-bold text-indigo-900 bg-white hover:bg-slate-100 rounded-full transition-all flex items-center justify-center gap-2 shadow-lg"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Become a Writer (Free)</span>
+            </button>
+          ) : (
+            <Link
+              to="/editor"
+              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-bold text-indigo-900 bg-white hover:bg-slate-100 rounded-full transition-colors inline-block"
+            >
+              Create New Article
+            </Link>
+          )}
         </div>
       </div>      {/* Tabs for Articles vs Collections */}
       <div className="flex border-b border-slate-150/45 dark:border-slate-800/40 gap-4 mb-2">
@@ -253,9 +274,19 @@ export default function Dashboard() {
                   <div className="text-center py-12">
                     <p className="text-slate-400 text-sm">No articles matched your search or status query.</p>
                     {blogs.length === 0 && (
-                      <Link to="/editor" className="mt-4 inline-block bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full">
-                        Write your first article
-                      </Link>
+                      user?.role === 'reader' ? (
+                        <button
+                          onClick={() => setIsBecomeWriterOpen(true)}
+                          className="mt-4 inline-flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Upgrade to Writer to Publish</span>
+                        </button>
+                      ) : (
+                        <Link to="/editor" className="mt-4 inline-block bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full">
+                          Write your first article
+                        </Link>
+                      )
                     )}
                   </div>
                 ) : (
@@ -322,6 +353,16 @@ export default function Dashboard() {
           <MyCollections />
         </div>
       )}
+
+      {/* Become Writer Modal */}
+      <BecomeWriterModal
+        isOpen={isBecomeWriterOpen}
+        onClose={() => setIsBecomeWriterOpen(false)}
+        onSuccess={() => {
+          setIsBecomeWriterOpen(false);
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }
