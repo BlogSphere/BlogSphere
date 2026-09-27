@@ -75,8 +75,8 @@ export default function AdCenter() {
       description: 'Build fast, high-performance UI components with Google Cloud services.',
       sponsor: 'Google Cloud Platform',
       reward: 0.75,
-      bg: 'from-blue-500/10 to-indigo-500/10 border-blue-500/30',
-      tagColor: 'bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400',
+      bg: 'from-amber-500/10 to-orange-500/10 border-amber-500/30',
+      tagColor: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
       bannerUrl: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=600'
     },
     {
@@ -95,8 +95,8 @@ export default function AdCenter() {
       description: 'Master large language models and neural architectures from leading experts.',
       sponsor: 'DeepMind Education',
       reward: 1.45,
-      bg: 'from-purple-500/10 to-pink-500/10 border-purple-500/30',
-      tagColor: 'bg-purple-100 text-purple-600 dark:bg-purple-950/30 dark:text-purple-400',
+      bg: 'from-amber-500/10 to-amber-600/10 border-amber-500/30',
+      tagColor: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400',
       bannerUrl: 'https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&q=80&w=600'
     }
   ];
@@ -132,10 +132,10 @@ export default function AdCenter() {
       {/* Stats Cards Dashboard */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Balance Card */}
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-primary-500/5 to-indigo-500/5 dark:from-primary-950/10 dark:to-indigo-950/10 border border-primary-100/50 dark:border-primary-900/20 shadow-sm flex flex-col justify-between h-36">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex flex-col justify-between h-36">
           <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Total Balance</span>
-            <DollarSign className="w-5 h-5 text-primary-550" />
+            <DollarSign className="w-5 h-5 text-amber-500" />
           </div>
           <div>
             <span className="text-3xl font-black text-slate-850 dark:text-white">${balance.toFixed(2)}</span>
@@ -146,10 +146,10 @@ export default function AdCenter() {
         </div>
 
         {/* Impressions Card */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between h-36">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex flex-col justify-between h-36">
           <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Impressions</span>
-            <Eye className="w-5 h-5 text-indigo-500" />
+            <Eye className="w-5 h-5 text-amber-500" />
           </div>
           <div>
             <span className="text-3xl font-black text-slate-850 dark:text-white">{impressions.toLocaleString()}</span>
@@ -158,7 +158,7 @@ export default function AdCenter() {
         </div>
 
         {/* Clicks Card */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between h-36">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex flex-col justify-between h-36">
           <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">Ad Clicks</span>
             <MousePointer className="w-5 h-5 text-rose-500" />
@@ -170,7 +170,7 @@ export default function AdCenter() {
         </div>
 
         {/* Click Thru Rate Card */}
-        <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between h-36">
+        <div className="p-6 rounded-3xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex flex-col justify-between h-36">
           <div className="flex justify-between items-center text-slate-400 dark:text-slate-500">
             <span className="text-xs font-bold uppercase tracking-wider">CTR & RPM</span>
             <Sparkles className="w-5 h-5 text-amber-500" />
@@ -211,7 +211,7 @@ export default function AdCenter() {
                   <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${ad.tagColor}`}>
                     {ad.sponsor}
                   </span>
-                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm group-hover:text-primary-655 transition-colors line-clamp-1">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm group-hover:text-amber-500 transition-colors line-clamp-1">
                     {ad.title}
                   </h3>
                   <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-2 leading-relaxed">
@@ -245,7 +245,7 @@ export default function AdCenter() {
             </div>
 
             <div className="flex gap-3 items-start">
-              <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/30 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
+              <span className="w-6 h-6 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 flex items-center justify-center flex-shrink-0 text-xs font-bold">2</span>
               <div>
                 <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Simulate Impressions</h4>
                 <p className="text-xs text-slate-450 mt-0.5 leading-relaxed">Organic views increment organically every few seconds. You can also trigger rapid automated page views by clicking "Simulate Traffic".</p>

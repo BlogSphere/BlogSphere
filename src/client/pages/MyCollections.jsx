@@ -29,7 +29,7 @@ export default function MyCollections() {
       <div className="py-24 text-center max-w-md mx-auto px-4">
         <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Access Denied</h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Please log in to manage your collections.</p>
-        <Link to="/login" className="inline-block px-6 py-2.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all">
+        <Link to="/login" className="inline-block px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20">
           Sign In
         </Link>
       </div>
@@ -58,8 +58,8 @@ export default function MyCollections() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-            <Folder className="w-6 h-6 text-indigo-500" />
+          <h2 className="text-2xl font-bold font-serif text-slate-900 dark:text-white flex items-center gap-2">
+            <Folder className="w-6 h-6 text-amber-500" />
             <span>Curated Collections</span>
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
@@ -69,7 +69,7 @@ export default function MyCollections() {
 
         <Link
           to="/collections/new"
-          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 transition-all active:scale-95 self-start sm:self-center"
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full text-xs font-semibold shadow-sm transition-all active:scale-95 self-start sm:self-center"
         >
           <FolderPlus className="w-3.5 h-3.5" />
           <span>Create Collection</span>
@@ -77,13 +77,13 @@ export default function MyCollections() {
       </div>
 
       {/* Tabs selectors */}
-      <div className="flex border-b border-slate-150/45 dark:border-slate-800/40">
+      <div className="flex border-b border-slate-200 dark:border-[#232734]">
         <button
           onClick={() => setActiveTab('curator')}
           className={`px-5 py-3 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
             activeTab === 'curator'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-extrabold'
-              : 'border-transparent text-slate-450 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-amber-500 text-amber-500 dark:border-amber-400 dark:text-amber-400 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           My Curations ({myCollections.length})
@@ -93,8 +93,8 @@ export default function MyCollections() {
           onClick={() => setActiveTab('following')}
           className={`px-5 py-3 text-xs font-bold transition-all border-b-2 -mb-[2px] ${
             activeTab === 'following'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-extrabold'
-              : 'border-transparent text-slate-450 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'
+              ? 'border-amber-500 text-amber-500 dark:border-amber-400 dark:text-amber-400 font-extrabold'
+              : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           Lists I Follow ({followedCollections.length})

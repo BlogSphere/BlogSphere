@@ -1094,7 +1094,7 @@ export default function Editor() {
   if (isAuthenticated && user?.role === 'reader') {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-2xl shadow-indigo-500/30 ring-8 ring-indigo-500/10">
+        <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 shadow-2xl shadow-amber-500/30 ring-8 ring-amber-500/10">
           <PenTool className="w-10 h-10 animate-bounce" />
           <span className="absolute -top-1 -right-1 flex h-4 w-4">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
@@ -1110,20 +1110,20 @@ export default function Editor() {
             Writing Studio is Reserved for Authors
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
-            You are currently registered as a <strong className="text-slate-800 dark:text-slate-200">Reader</strong>. Readers can enjoy reading, bookmarking, and joining discussions. To start drafting and publishing your own stories, upgrade your account to an <strong className="text-indigo-600 dark:text-indigo-400">Author</strong> for free!
+            You are currently registered as a <strong className="text-slate-800 dark:text-slate-200">Reader</strong>. Readers can enjoy reading, bookmarking, and joining discussions. To start drafting and publishing your own stories, upgrade your account to an <strong className="text-amber-500">Author</strong> for free!
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-3.5 text-left max-w-lg mx-auto pt-2">
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex items-start gap-3">
+            <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Interactive Editor & AI</h4>
               <p className="text-[11px] text-slate-400 leading-snug">Block formatting, AI rewrite, grammar fixes, and translations.</p>
             </div>
           </div>
-          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-3">
-            <Users className="w-5 h-5 text-violet-500 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex items-start gap-3">
+            <Users className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Publish & Reach</h4>
               <p className="text-[11px] text-slate-400 leading-snug">Distribute to channels, get followers, and earn reputation points.</p>
@@ -1135,7 +1135,7 @@ export default function Editor() {
           <button
             onClick={handleUpgradeToAuthor}
             disabled={upgradingRole}
-            className="w-full sm:w-auto px-8 py-3.5 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-xl shadow-indigo-500/25 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-60"
+            className="w-full sm:w-auto px-8 py-3.5 text-xs font-extrabold text-slate-950 rounded-full bg-amber-500 hover:bg-amber-400 shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-60"
           >
             {upgradingRole ? (
               <>
@@ -1188,7 +1188,7 @@ export default function Editor() {
                 <span
                   key={c.userId}
                   title={`${c.userName} is editing`}
-                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-indigo-500 text-white font-bold text-[9px] flex items-center justify-center"
+                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center"
                 >
                   {c.userName.substring(0, 2).toUpperCase()}
                 </span>
@@ -1303,10 +1303,10 @@ export default function Editor() {
                     type="button"
                     onClick={handleAIRewrite}
                     disabled={grammarCheckLoading}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:border-indigo-900/30 dark:text-indigo-400 font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
                     title="Explain what you want to write - AI corrects errors and rewrites in proper English without adding external info"
                   >
-                    <AlertCircle className="w-3.5 h-3.5 text-indigo-500" />
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
                     <span>AI Rewrite</span>
                   </button>
                 </div>
@@ -1381,7 +1381,7 @@ export default function Editor() {
                       {[
                         { type: 'h1', label: 'Heading 1', icon: Heading1, desc: 'Large title', color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
                         { type: 'h2', label: 'Heading 2', icon: Heading2, desc: 'Subheading', color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20' },
-                        { type: 'p', label: 'Paragraph', icon: AlignLeft, desc: 'Plain text body', color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' },
+                        { type: 'p', label: 'Paragraph', icon: AlignLeft, desc: 'Plain text body', color: 'text-slate-700 bg-slate-100 dark:text-slate-300 dark:bg-[#1b1f2b]' },
                         { type: 'quote', label: 'Quote Box', icon: Quote, desc: 'Highlighted quote', color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
                         { type: 'list', label: 'Bullet List', icon: List, desc: 'Itemized list', color: 'text-violet-500 bg-violet-50 dark:bg-violet-950/20' },
                         { type: 'callout', label: 'Callout Box', icon: Lightbulb, desc: 'Key tip box', color: 'text-yellow-600 bg-yellow-50 dark:bg-yellow-950/20' },
@@ -1854,7 +1854,7 @@ export default function Editor() {
               <div className="mb-4 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-xl ${commentsEnabled ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'bg-slate-200/60 text-slate-400 dark:bg-slate-800'}`}>
+                    <div className={`p-1.5 rounded-xl ${commentsEnabled ? 'bg-amber-500/10 text-amber-500' : 'bg-slate-200/60 text-slate-400 dark:bg-[#0b0d11]'}`}>
                       {commentsEnabled ? <MessageSquare className="w-3.5 h-3.5" /> : <MessageSquareOff className="w-3.5 h-3.5" />}
                     </div>
                     <div>
@@ -1875,7 +1875,7 @@ export default function Editor() {
                       onChange={(e) => setCommentsEnabled(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-9 h-5 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-indigo-600 peer-checked:to-violet-600"></div>
+                    <div className="w-9 h-5 bg-slate-200 dark:bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
                   </label>
                 </div>
                 
@@ -1978,7 +1978,7 @@ export default function Editor() {
                                 setTags([...tags, cleaned]);
                               }
                             }}
-                            className="text-[10px] bg-indigo-50/50 text-indigo-600 px-2 py-0.5 rounded-md border border-indigo-100 hover:bg-indigo-100 dark:bg-indigo-950/20 dark:text-indigo-400 dark:border-indigo-900/40 hover:dark:bg-indigo-950/40 transition-all font-semibold"
+                            className="text-[10px] bg-amber-50 text-amber-600 px-2 py-0.5 rounded-md border border-amber-200 hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20 hover:dark:bg-amber-500/20 transition-all font-semibold"
                           >
                             +{tag}
                           </button>
@@ -1995,7 +1995,7 @@ export default function Editor() {
                   type="button"
                   onClick={handleAISuggestMetadata}
                   disabled={aiLoading}
-                  className="w-full flex items-center justify-center gap-1.5 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/15 disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{aiLoading ? 'AI Optimizing...' : 'AI Suggest Settings'}</span>
@@ -2072,7 +2072,7 @@ export default function Editor() {
             {/* Collaborators setup */}
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
-                <Users className="w-4 h-4 text-indigo-500" />
+                <Users className="w-4 h-4 text-amber-500" />
                 <span>Collaborators</span>
               </h3>
 
@@ -2214,7 +2214,7 @@ export default function Editor() {
                         </div>
                         <div className="w-full h-1.5 bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200/40 dark:border-white/5">
                           <div
-                            className="h-full bg-gradient-to-r from-primary-600 to-indigo-600 transition-all duration-305"
+                            className="h-full bg-gradient-to-r from-amber-500 to-amber-600 transition-all duration-305"
                             style={{
                               width: `${Math.min(100, ((() => {
                                 const text = blocks.map(b => b.content || '').join(' ');
@@ -2388,11 +2388,11 @@ export default function Editor() {
             )}
 
             {grammarSuggestions.length > 0 && (
-              <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-200/20 rounded-2xl space-y-2">
-                <h4 className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">AI Suggestions</h4>
+              <div className="p-4 bg-amber-500/10 dark:bg-amber-500/5 border border-amber-500/20 rounded-2xl space-y-2">
+                <h4 className="text-xs font-bold text-amber-500 uppercase tracking-wide">AI Suggestions</h4>
                 {grammarSuggestions.map((sug) => (
                   <div key={sug} className="text-xs text-slate-600 dark:text-slate-355 leading-relaxed">
-                    <span className="text-indigo-500 font-bold">→ </span>
+                    <span className="text-amber-500 font-bold">→ </span>
                     <span>{sug}</span>
                   </div>
                 ))}
@@ -2424,16 +2424,16 @@ export default function Editor() {
       {/* AI Rewrite Custom Modal */}
       {rewriteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800/80 shadow-2xl flex flex-col gap-4 animate-scale-in">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                <Sparkles className="w-5 h-5 text-indigo-500" />
+          <div className="w-full max-w-md p-6 bg-white dark:bg-[#141720] rounded-3xl border border-slate-200 dark:border-[#232734] shadow-2xl flex flex-col gap-4 animate-scale-in">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#232734]">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <Sparkles className="w-5 h-5 text-amber-500" />
                 <span>AI Rewrite Assistant</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setRewriteModalOpen(false)}
-                className="p-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+                className="p-1 hover:bg-slate-50 dark:hover:bg-[#1a1e29] rounded-lg text-slate-400"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2448,7 +2448,7 @@ export default function Editor() {
                 value={rewriteInstruction}
                 onChange={(e) => setRewriteInstruction(e.target.value)}
                 placeholder="e.g., I want to say that Bun runtime is extremely fast compared to Node.js."
-                className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none font-sans"
+                className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#0b0d11] text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none font-sans"
               />
             </div>
 
@@ -2456,7 +2456,7 @@ export default function Editor() {
               <button
                 type="button"
                 onClick={() => setRewriteModalOpen(false)}
-                className="px-5 py-2 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 transition-all"
+                className="px-5 py-2 border border-slate-200 dark:border-[#232734] rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-[#1a1e29] text-slate-600 dark:text-slate-400 transition-all"
               >
                 Cancel
               </button>
@@ -2464,7 +2464,7 @@ export default function Editor() {
                 type="button"
                 onClick={submitAIRewrite}
                 disabled={!rewriteInstruction.trim()}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 transition-all disabled:opacity-50"
+                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/20 transition-all disabled:opacity-50"
               >
                 Rewrite Text
               </button>
@@ -2478,7 +2478,7 @@ export default function Editor() {
         <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/50 dark:border-slate-800 rounded-2xl shadow-xl animate-fade-in">
           {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
           {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-500" />}
-          {toast.type === 'info' && <Sparkles className="w-4 h-4 text-indigo-500" />}
+          {toast.type === 'info' && <Sparkles className="w-4 h-4 text-amber-500" />}
           <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{toast.message}</span>
           <button
             type="button"

@@ -43,7 +43,7 @@ export default function CollectionShareBtn({ collectionTitle, collectionSlug }) 
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-white/80 border border-slate-200 text-slate-700 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700 shadow-sm active:scale-95"
+        className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-white border border-slate-200 text-slate-750 hover:bg-slate-50 dark:bg-[#141720] dark:border-[#232734] dark:text-slate-200 dark:hover:bg-[#1a1e29] shadow-sm active:scale-95"
       >
         <Share2 className="w-3.5 h-3.5" />
         <span>Share</span>
@@ -56,19 +56,19 @@ export default function CollectionShareBtn({ collectionTitle, collectionSlug }) 
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 p-2 space-y-1"
+            className="absolute right-0 mt-2 w-48 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-xl z-50 p-2 space-y-1"
           >
             <button
               onClick={copyToClipboard}
-              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1a1e29] rounded-xl transition-colors text-left"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-550" /> : <Link className="w-3.5 h-3.5" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Link className="w-3.5 h-3.5" />}
               <span>{copied ? 'Copied!' : 'Copy Link'}</span>
             </button>
             
             <button
               onClick={shareOnTwitter}
-              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1a1e29] rounded-xl transition-colors text-left"
             >
               <Twitter className="w-3.5 h-3.5 text-sky-400" />
               <span>Share on X</span>
@@ -76,9 +76,9 @@ export default function CollectionShareBtn({ collectionTitle, collectionSlug }) 
             
             <button
               onClick={shareOnLinkedin}
-              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-left"
+              className="flex items-center gap-2.5 w-full px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1a1e29] rounded-xl transition-colors text-left"
             >
-              <Linkedin className="w-3.5 h-3.5 text-indigo-500" />
+              <Linkedin className="w-3.5 h-3.5 text-blue-500" />
               <span>Share on LinkedIn</span>
             </button>
           </motion.div>

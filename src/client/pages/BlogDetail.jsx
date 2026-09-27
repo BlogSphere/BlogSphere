@@ -1018,7 +1018,7 @@ export default function BlogDetail() {
         <div className="py-4 text-center">
           <button
             onClick={handleLoadPodcast}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 hover:scale-[1.01] transition-all"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.01] transition-all"
           >
             Generate Podcast Script
           </button>
@@ -1049,7 +1049,7 @@ export default function BlogDetail() {
                 type="button"
                 onClick={handlePodcastPlay}
                 title={podcastPaused ? "Resume Podcast" : "Start Podcast"}
-                className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg transition-transform hover:scale-105"
+                className="p-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-full shadow-lg transition-transform hover:scale-105"
               >
                 <Play className="w-4 h-4 fill-current" />
               </button>
@@ -1080,8 +1080,8 @@ export default function BlogDetail() {
         </div>
 
         <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-white/5 shadow-inner min-h-[90px] flex items-center justify-start gap-4">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase text-white shadow-sm flex-shrink-0 ${
-            currentLine?.speaker === 'Alex' ? 'bg-indigo-500' : 'bg-emerald-500'
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase text-slate-950 shadow-sm flex-shrink-0 ${
+            currentLine?.speaker === 'Alex' ? 'bg-amber-500' : 'bg-emerald-500'
           }`}>
             {currentLine?.speaker?.[0]}
           </div>
@@ -1099,7 +1099,7 @@ export default function BlogDetail() {
           </div>
           <div className="w-full h-1 bg-slate-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div
-              className="h-full bg-indigo-500 transition-all duration-700"
+              className="h-full bg-amber-500 transition-all duration-700"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -1242,7 +1242,7 @@ export default function BlogDetail() {
         <div className="py-4 text-center">
           <button
             onClick={handleLoadDebate}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 hover:scale-[1.01] transition-all"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 hover:scale-[1.01] transition-all"
           >
             Launch AI Debate
           </button>
@@ -1271,7 +1271,7 @@ export default function BlogDetail() {
                       ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' 
                       : msg.persona.includes('Pragmatic')
                         ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                        : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
                   }`}>
                     {msg.persona.includes('Skeptic') ? 'Critic' : msg.persona.includes('Pragmatic') ? 'Engineer' : 'Advocate'}
                   </span>
@@ -1289,7 +1289,7 @@ export default function BlogDetail() {
     if (!isAuthenticated) {
       return (
         <div className="flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 rounded-2xl h-[250px] text-center space-y-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-full">
+          <div className="p-3 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-full">
             <BookOpen className="w-6 h-6 animate-pulse" />
           </div>
           <div className="space-y-1">
@@ -1298,7 +1298,7 @@ export default function BlogDetail() {
           </div>
           <Link
             to="/login"
-            className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10 hover:scale-[1.02]"
+            className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20 hover:scale-[1.02]"
           >
             Sign In to Unlock
           </Link>
@@ -1354,7 +1354,7 @@ export default function BlogDetail() {
                 />
                 <div className={`p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
                   isUser 
-                    ? 'bg-indigo-600 text-white rounded-tr-none' 
+                    ? 'bg-amber-500 text-slate-950 font-semibold rounded-tr-none' 
                     : 'bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-none'
                 }`}>
                   {isUser ? msg.text : parseChatMessage(msg.text)}
@@ -1383,13 +1383,13 @@ export default function BlogDetail() {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Ask a question about this article..."
-            className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs focus:outline-none focus:border-indigo-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
+            className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 rounded-xl text-xs focus:outline-none focus:border-amber-500 text-slate-800 dark:text-slate-100 placeholder-slate-400"
             disabled={sendingChat}
           />
           <button
             type="submit"
             disabled={sendingChat || !chatInput.trim()}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-500/10"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20"
           >
             Send
           </button>
@@ -1450,63 +1450,63 @@ export default function BlogDetail() {
       </div>
 
       {/* Title */}
-      <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight">
+      <h1 className="text-3xl sm:text-5xl font-serif font-bold text-slate-900 dark:text-white leading-[1.2] tracking-tight">
         {renderedTitle}
       </h1>
 
       {/* Author Card Row */}
       <div className="flex flex-wrap items-center justify-between gap-4 mt-6 pb-6 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3.5">
           {blog.author?._id ? (
             <Link to={`/profile/${blog.author._id}`}>
               <img
                 src={blog.author?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
                 alt={blog.author?.name || 'Author'}
-                className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10"
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
               />
             </Link>
           ) : (
             <img
               src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200"
               alt="Anonymous"
-              className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10"
+              className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
             />
           )}
           <div>
             <div className="flex items-center gap-2">
               {blog.author?._id ? (
-                <Link to={`/profile/${blog.author._id}`} className="font-bold text-slate-800 dark:text-slate-100 hover:underline">
+                <Link to={`/profile/${blog.author._id}`} className="font-semibold text-slate-900 dark:text-white hover:underline">
                   {blog.author?.name || 'Anonymous Creator'}
                 </Link>
               ) : (
-                <span className="font-bold text-slate-800 dark:text-slate-100">
+                <span className="font-semibold text-slate-900 dark:text-white">
                   {blog.author?.name || 'Anonymous Creator'}
                 </span>
               )}
               {blog.author?.reputationPoints !== undefined && (
-                <span className="text-[10px] bg-slate-100 text-slate-600 dark:bg-slate-800/80 dark:text-slate-400 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 shadow-sm" title="Reputation Level">
-                  <span>✨ {blog.author.badge || 'Reader'}</span>
-                  <span className="text-slate-400 font-medium">({blog.author.reputationPoints} pts)</span>
+                <span className="text-[11px] bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-0.5 rounded-full font-medium flex items-center gap-1 border border-slate-200 dark:border-slate-700" title="Reputation Level">
+                  <span>{blog.author.badge || 'Writer'}</span>
+                  <span className="text-slate-400 font-normal">· {blog.author.reputationPoints} pts</span>
                 </span>
               )}
               {blog.author?._id && (!user || blog.author._id !== user?._id) && (
                 <>
                   <button
                     onClick={handleFollow}
-                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-all ${
+                    className={`text-xs px-3.5 py-1 rounded-full font-bold transition-all ${
                       isFollowing
-                        ? 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                        : 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 hover:bg-primary-100'
+                        ? 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200'
+                        : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold'
                     }`}
                   >
                     {isFollowing ? 'Following' : 'Follow'}
                   </button>
                   <button
                     onClick={handleNewsletterToggle}
-                    className={`text-xs px-3 py-1 rounded-full font-semibold transition-all flex items-center gap-1 ${
+                    className={`text-xs px-3.5 py-1 rounded-full font-semibold transition-all flex items-center gap-1 border ${
                       isNewsletterSubscribed
-                        ? 'bg-rose-50 text-rose-600 dark:bg-rose-955/20 dark:text-rose-400'
-                        : 'bg-indigo-50 text-indigo-655 hover:bg-indigo-100 dark:bg-indigo-955/20 dark:text-indigo-400'
+                        ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-900'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                     }`}
                   >
                     <Mail className="w-3 h-3" />
@@ -1515,7 +1515,7 @@ export default function BlogDetail() {
                 </>
               )}
             </div>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               Published on {new Date(blog.createdAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
             </span>
           </div>
@@ -1587,7 +1587,7 @@ export default function BlogDetail() {
           {isAuthorOrCollaborator && (
             <button
               onClick={handleViewVersions}
-              className="p-2 text-slate-600 hover:text-indigo-500 bg-slate-100 dark:bg-slate-900 rounded-full border border-slate-200/50 dark:border-slate-800"
+              className="p-2 text-slate-600 hover:text-amber-500 bg-slate-100 dark:bg-[#141720] rounded-full border border-slate-200/50 dark:border-[#232734] transition-colors"
               title="Version History"
             >
               <History className="w-4 h-4" />
@@ -1608,7 +1608,7 @@ export default function BlogDetail() {
           {isAuthorOrCollaborator && !isOwner && (
             <Link
               to={`/editor?edit=${blog._id}`}
-              className="px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-semibold rounded-full text-xs dark:bg-indigo-950/20 dark:text-indigo-400"
+              className="px-3.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold rounded-full text-xs border border-amber-500/20 transition-all"
             >
               Edit Collab
             </Link>
@@ -1647,7 +1647,7 @@ export default function BlogDetail() {
       )}
 
       {/* Blog Content */}
-      <article className="mt-8 prose prose-slate max-w-none dark:prose-invert">
+      <article className="mt-8 prose prose-stone max-w-none dark:prose-invert dark:prose-p:text-stone-300 dark:prose-headings:text-[#ecebe6]">
         {translating ? (
           <div className="py-20 text-center text-slate-400">Translating text content, please wait...</div>
         ) : (
@@ -1718,7 +1718,7 @@ export default function BlogDetail() {
           {isAuthenticated && (
             <button
               onClick={() => dispatch(setAddToCollectionModal({ open: true, blogId: blog._id }))}
-              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-indigo-650 transition-all hover:scale-105"
+              className="flex items-center gap-1.5 text-sm font-bold text-slate-400 hover:text-amber-500 transition-all hover:scale-105"
               title="Add to Collection"
             >
               <FolderPlus className="w-5 h-5" />
@@ -1739,23 +1739,22 @@ export default function BlogDetail() {
         </div>
       </div>
 
-      {/* 🚀 BlogSphere AI Additions: Podcast, Quiz, & Debate Tabs */}
-      <div className="mt-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
-        <div className="flex border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap gap-2">
+      {/* 🚀 BlogSphere Reader Companions: Podcast, Quiz, & Debate Tabs */}
+      <div className="mt-8 bg-slate-50 dark:bg-[#141720] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+        <div className="flex border-b border-slate-200 dark:border-slate-800 pb-3 flex-wrap gap-2 items-center">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 mr-2">Deepen Reading:</span>
           {[
-            { id: 'podcast', label: '🎙️ AI Podcast Simulator' },
-            { id: 'quiz', label: '🎓 Study Mode Quiz' },
-            { id: 'debate', label: '💬 AI Expert Debate' },
-            // Temporarily disabled:
-            // { id: 'chat', label: '🤖 Chat with Blog' }
+            { id: 'podcast', label: 'Audio Overview' },
+            { id: 'quiz', label: 'Knowledge Quiz' },
+            { id: 'debate', label: 'Perspectives & Debate' },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveAITab(activeAITab === tab.id ? null : tab.id)}
-              className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 activeAITab === tab.id
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                  : 'bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  : 'bg-white dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
               }`}
             >
               {tab.label}
@@ -1917,8 +1916,8 @@ export default function BlogDetail() {
 
       {/* Part of Collections Banner */}
       {inCollections.length > 0 && (
-        <div className="mt-6 p-5 rounded-3xl border border-indigo-500/20 bg-indigo-500/5 text-left space-y-2">
-          <h4 className="text-xs font-black text-indigo-650 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+        <div className="mt-6 p-5 rounded-3xl border border-amber-500/20 bg-amber-500/5 text-left space-y-2">
+          <h4 className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
             <BookOpen className="w-4 h-4" />
             <span>Featured in Curated Collections</span>
           </h4>
@@ -1927,7 +1926,7 @@ export default function BlogDetail() {
               <Link
                 key={col._id}
                 to={`/collections/${col.slug}`}
-                className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-indigo-650 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-full shadow-sm hover:scale-102 transition-all"
+                className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-amber-500 bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] px-3 py-1.5 rounded-full shadow-sm hover:scale-102 transition-all"
               >
                 <span>{col.title}</span>
                 <span className="text-[10px] text-slate-450 font-normal">({col.itemsCount || 0} items)</span>

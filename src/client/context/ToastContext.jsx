@@ -54,8 +54,8 @@ export function ToastProvider({ children }) {
                   </div>
                 )}
                 {toast.type === 'info' && (
-                  <div className="p-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50">
-                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <div className="p-1 rounded-lg bg-amber-50 dark:bg-amber-500/10">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
                   </div>
                 )}
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate-2-lines leading-snug">

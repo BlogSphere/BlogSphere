@@ -48,43 +48,43 @@ export default function Sidebar({ currentCategory, currentTag }) {
   return (
     <aside className="w-full lg:w-80 flex flex-col gap-6">
       {/* Curated Collections Panel */}
-      <div className="p-5 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-md">
-        <h3 className="text-xs font-extrabold tracking-wider text-slate-400 uppercase mb-2 flex items-center gap-1.5">
-          <BookMarked className="w-4 h-4 text-indigo-500" />
+      <div className="p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#141720] shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+        <h3 className="text-xs font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase mb-2 flex items-center gap-1.5">
+          <BookMarked className="w-4 h-4 text-amber-500" />
           <span>Curated Reading Lists</span>
         </h3>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
-          Explore structured article series and expert learning tracks.
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3.5 font-normal">
+          Explore structured article series and expert learning tracks curated by editors.
         </p>
         <Link
           to="/collections"
-          className="w-full py-2 rounded-xl text-center text-xs font-bold bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-650 dark:text-indigo-400 block transition-all border border-indigo-500/10"
+          className="w-full py-2 rounded-xl text-center text-xs font-bold bg-slate-100 hover:bg-slate-200/80 text-slate-800 dark:bg-[#1b1f2b] dark:hover:bg-[#232838] dark:text-slate-200 block transition-all border border-slate-200 dark:border-slate-700"
         >
           Browse Collections
         </Link>
       </div>
 
       {/* Categories Panel */}
-      <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
-        <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
-          <Compass className="w-4 h-4 text-primary-500" />
-          <span>Categories</span>
+      <div className="p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#141720] shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+        <h3 className="text-xs font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase mb-3 flex items-center gap-2">
+          <Compass className="w-4 h-4 text-amber-500" />
+          <span>Topics to Explore</span>
         </h3>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1">
           {CATEGORIES.map((cat) => {
             const isActive = currentCategory === cat;
             return (
               <Link
                 key={cat}
                 to={isActive ? '/' : `/?category=${cat}`}
-                className={`px-3 py-2 text-sm font-medium rounded-xl transition-colors flex justify-between items-center ${
+                className={`px-3 py-2 text-xs font-medium rounded-xl transition-colors flex justify-between items-center ${
                   isActive
-                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400'
-                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#1b1f2b] hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
                 <span>{cat}</span>
-                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />}
+                {isActive && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-950" />}
               </Link>
             );
           })}
@@ -92,22 +92,22 @@ export default function Sidebar({ currentCategory, currentTag }) {
       </div>
 
       {/* Tags Panel */}
-      <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
-        <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
-          <Tag className="w-4 h-4 text-primary-500" />
+      <div className="p-5 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#141720] shadow-[0_1px_3px_rgba(15,23,42,0.02)]">
+        <h3 className="text-xs font-bold tracking-wider text-slate-900 dark:text-slate-100 uppercase mb-3 flex items-center gap-2">
+          <Tag className="w-4 h-4 text-amber-500" />
           <span>Popular Tags</span>
         </h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {POPULAR_TAGS.map((tag) => {
             const isActive = currentTag === tag;
             return (
               <Link
                 key={tag}
                 to={isActive ? '/' : `/?tag=${tag}`}
-                className={`px-2.5 py-1 text-xs font-semibold rounded-full transition-all border ${
+                className={`px-2.5 py-1 text-[11px] font-medium rounded-full transition-all border ${
                   isActive
-                    ? 'bg-primary-600 border-primary-600 text-white shadow-md shadow-primary-500/10'
-                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-primary-500 dark:hover:border-primary-400'
+                    ? 'bg-amber-500 border-amber-500 text-slate-950 font-bold shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-amber-400 hover:text-amber-500 dark:hover:text-amber-400'
                 }`}
               >
                 #{tag}
@@ -119,10 +119,10 @@ export default function Sidebar({ currentCategory, currentTag }) {
 
       {/* Recommended Authors Panel */}
       {recommendedAuthors.length > 0 && (
-        <div className="p-5 rounded-2xl border border-slate-100 dark:border-slate-800 glass-card">
-          <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-primary-500" />
-            <span>Popular Authors</span>
+        <div className="p-5 rounded-2xl border border-stone-200/90 dark:border-stone-800 bg-white dark:bg-stone-900 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
+          <h3 className="text-xs font-bold tracking-wider text-stone-900 dark:text-stone-100 uppercase mb-3 flex items-center gap-2">
+            <UserCheck className="w-4 h-4 text-stone-400" />
+            <span>Writers to Follow</span>
           </h3>
           <div className="flex flex-col gap-3">
             {recommendedAuthors.map((author) => (
@@ -134,10 +134,10 @@ export default function Sidebar({ currentCategory, currentTag }) {
                 <img
                   src={author.profileImage}
                   alt={author.name}
-                  className="w-9 h-9 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-800"
+                  className="w-9 h-9 rounded-full object-cover ring-1 ring-stone-200 dark:ring-stone-800"
                 />
                 <div>
-                  <h4 className="text-sm font-medium text-slate-800 dark:text-slate-200 group-hover:text-primary-600 transition-colors">
+                  <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200 group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
                     {author.name}
                   </h4>
                   <p className="text-[10px] text-slate-400 line-clamp-1">
@@ -165,7 +165,7 @@ export default function Sidebar({ currentCategory, currentTag }) {
                 className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
               >
                 <div className="flex items-center gap-2.5">
-                  <span className="flex items-center justify-center w-8 h-8 font-bold text-white rounded-lg bg-gradient-to-r from-primary-600 to-indigo-500 text-xs shadow-sm">
+                  <span className="flex items-center justify-center w-8 h-8 font-black text-slate-950 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-xs shadow-sm">
                     {comm.name[0]}
                   </span>
                   <div>

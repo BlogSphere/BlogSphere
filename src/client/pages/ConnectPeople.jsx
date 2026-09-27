@@ -152,26 +152,20 @@ export default function ConnectPeople() {
           initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 sm:p-10 text-white shadow-xl shadow-indigo-500/10"
+          className="relative overflow-hidden rounded-3xl bg-stone-900 border border-stone-800 p-8 sm:p-10 text-white shadow-sm"
         >
-          <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 right-0 -mt-12 -mr-12 w-64 h-64 bg-white/20 rounded-full blur-2xl pointer-events-none"
-          />
-          
           <div className="relative z-10 max-w-2xl space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-xs font-bold uppercase tracking-wider text-white border border-white/20">
-              <Users className="w-4 h-4" />
-              <span>Connect People Module</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-medium uppercase tracking-wider text-stone-300 border border-white/10">
+              <Users className="w-3.5 h-3.5" />
+              <span>Writer Directory</span>
             </div>
             
-            <h1 className="text-3xl sm:text-4xl font-black tracking-tight">
-              Discover & Connect by Username
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight">
+              Discover Writers & Thinkers
             </h1>
             
-            <p className="text-sm sm:text-base text-indigo-100 font-medium leading-relaxed">
-              Find creators, thought leaders, and friends by their unique <span className="font-extrabold text-white">@username</span> handle or name. Build your network on BlogSphere.
+            <p className="text-sm sm:text-base text-stone-300 font-normal leading-relaxed">
+              Find essayists, journalists, and thinkers by their <span className="font-semibold text-white">@username</span> handle or topic expertise.
             </p>
           </div>
         </motion.div>
@@ -181,19 +175,19 @@ export default function ConnectPeople() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-5"
+          className="bg-white dark:bg-stone-900 rounded-3xl p-6 border border-stone-200/90 dark:border-stone-800 shadow-sm space-y-5"
         >
           
-          {/* Main Username Search Input with Animated Glow & Spinner */}
+          {/* Main Username Search Input with Subtle Focus Ring */}
           <div
-            className={`relative rounded-2xl p-[2px] transition-all duration-300 ${
+            className={`relative rounded-2xl p-[1px] transition-all duration-300 ${
               isInputFocused || isSearching
-                ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-lg shadow-indigo-500/20'
-                : 'bg-transparent'
+                ? 'ring-2 ring-amber-500'
+                : 'ring-1 ring-slate-200 dark:ring-[#232734]'
             }`}
           >
-            <div className="relative bg-slate-50 dark:bg-slate-850 rounded-2xl flex items-center">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-indigo-500 font-black text-lg">
+            <div className="relative bg-white dark:bg-[#141720] rounded-2xl flex items-center">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-amber-500 font-bold text-lg">
                 <AnimatePresence mode="wait">
                   {isSearching ? (
                     <motion.div
@@ -204,7 +198,7 @@ export default function ConnectPeople() {
                       transition={{ duration: 0.2 }}
                       className="relative flex items-center justify-center"
                     >
-                      <Loader2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                      <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
                     </motion.div>
                   ) : (
                     <motion.div
@@ -214,7 +208,7 @@ export default function ConnectPeople() {
                       exit={{ scale: 0.5, opacity: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <AtSign className="w-5 h-5 text-indigo-500" />
+                      <AtSign className="w-5 h-5 text-amber-500" />
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -228,7 +222,7 @@ export default function ConnectPeople() {
                 onBlur={() => setIsInputFocused(false)}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search by @username, full name, or email..."
-                className="w-full pl-12 pr-28 py-3.5 text-sm sm:text-base font-semibold rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:bg-white dark:focus:bg-slate-900 transition-all shadow-inner"
+                className="w-full pl-12 pr-28 py-3.5 text-sm sm:text-base font-semibold rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none transition-all shadow-inner"
               />
 
               {/* Right Controls in Search Bar */}
@@ -239,9 +233,9 @@ export default function ConnectPeople() {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
-                      className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
+                      className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20"
                     >
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
                       Searching
                     </motion.span>
                   )}
@@ -264,7 +258,7 @@ export default function ConnectPeople() {
           </div>
 
           {/* Filters & Sorting Row */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-slate-100 dark:border-[#232734]">
             {/* Role Filter Tabs with Animated Active Pill */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 relative">
               {[
@@ -279,14 +273,14 @@ export default function ConnectPeople() {
                     onClick={() => setRoleFilter(tab.id)}
                     className={`relative px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
                       isActive
-                        ? 'text-white'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        ? 'text-slate-950 font-bold'
+                        : 'bg-slate-100 dark:bg-[#141720] text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800'
                     }`}
                   >
                     {isActive && (
                       <motion.div
                         layoutId="activeRoleFilter"
-                        className="absolute inset-0 bg-indigo-600 rounded-xl shadow-md shadow-indigo-500/20"
+                        className="absolute inset-0 bg-amber-500 rounded-xl shadow-md shadow-amber-500/20"
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                       />
                     )}
@@ -305,11 +299,11 @@ export default function ConnectPeople() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-3.5 py-1.5 text-xs font-extrabold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer shadow-sm"
               >
-                <option value="reputation" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Top Reputation</option>
-                <option value="followers" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Most Followed</option>
-                <option value="newest" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Newest Members</option>
+                <option value="reputation" className="bg-white text-slate-900 dark:bg-[#141720] dark:text-white">Top Reputation</option>
+                <option value="followers" className="bg-white text-slate-900 dark:bg-[#141720] dark:text-white">Most Followed</option>
+                <option value="newest" className="bg-white text-slate-900 dark:bg-[#141720] dark:text-white">Newest Members</option>
               </select>
             </div>
           </div>
@@ -322,7 +316,7 @@ export default function ConnectPeople() {
               initial={{ opacity: 0, y: -10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.98 }}
-              className="relative overflow-hidden bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-pink-900/10 dark:from-indigo-950/40 dark:via-purple-950/40 dark:to-pink-950/40 border border-indigo-200/60 dark:border-indigo-800/60 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-lg"
+              className="relative overflow-hidden bg-gradient-to-r from-amber-500/5 via-amber-500/10 to-amber-500/5 dark:from-[#141720] dark:via-amber-500/15 dark:to-[#141720] border border-amber-500/20 rounded-3xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 backdrop-blur-md shadow-lg"
             >
               <div className="flex items-center gap-4">
                 {/* Sonar Radar Pulse */}
@@ -330,15 +324,15 @@ export default function ConnectPeople() {
                   <motion.span
                     animate={{ scale: [1, 1.8, 2.2], opacity: [0.6, 0.3, 0] }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut" }}
-                    className="absolute w-full h-full rounded-full bg-indigo-500/30"
+                    className="absolute w-full h-full rounded-full bg-amber-500/20"
                   />
                   <motion.span
                     animate={{ scale: [1, 1.4, 1.8], opacity: [0.8, 0.4, 0] }}
                     transition={{ duration: 1.8, repeat: Infinity, ease: "easeOut", delay: 0.4 }}
-                    className="absolute w-full h-full rounded-full bg-purple-500/30"
+                    className="absolute w-full h-full rounded-full bg-amber-500/30"
                   />
-                  <div className="relative z-10 w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/30">
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                  <div className="relative z-10 w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30">
+                    <Loader2 className="w-5 h-5 animate-spin text-slate-950" />
                   </div>
                 </div>
 
@@ -348,7 +342,7 @@ export default function ConnectPeople() {
                     <h4 className="text-sm font-extrabold text-slate-900 dark:text-white">
                       {searchTerm ? `Searching for "${searchTerm}"` : 'Scanning Creator Directory...'}
                     </h4>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
                       Live Radar
                     </span>
                   </div>
@@ -359,7 +353,7 @@ export default function ConnectPeople() {
               </div>
 
               {/* Progress Badge */}
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800 text-xs font-bold text-indigo-600 dark:text-indigo-400 shrink-0">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] text-xs font-bold text-amber-500 shrink-0">
                 <Sparkles className="w-3.5 h-3.5 animate-pulse text-amber-500" />
                 <span>Searching community...</span>
               </div>
@@ -405,18 +399,18 @@ export default function ConnectPeople() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl space-y-5 shadow-sm"
+              className="p-12 text-center bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] rounded-3xl space-y-5 shadow-sm"
             >
               <div className="relative flex items-center justify-center w-20 h-20 mx-auto">
                 <motion.div
                   animate={{ scale: [1, 1.25, 1], opacity: [0.3, 0.6, 0.3] }}
                   transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                  className="absolute inset-0 bg-indigo-500/20 rounded-full blur-xl"
+                  className="absolute inset-0 bg-amber-500/20 rounded-full blur-xl"
                 />
                 <motion.div
                   animate={{ y: [-4, 4, -4] }}
                   transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
-                  className="relative z-10 p-4 bg-indigo-50 dark:bg-indigo-950/60 rounded-3xl border border-indigo-100 dark:border-indigo-900 text-indigo-600 dark:text-indigo-400"
+                  className="relative z-10 p-4 bg-amber-500/10 rounded-3xl border border-amber-500/20 text-amber-500"
                 >
                   <Search className="w-10 h-10" />
                 </motion.div>
@@ -425,14 +419,14 @@ export default function ConnectPeople() {
               <div className="space-y-2 max-w-md mx-auto">
                 <h3 className="text-xl font-extrabold text-slate-900 dark:text-white">No matching users found</h3>
                 <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  We couldn't find anyone matching <span className="font-bold text-indigo-600 dark:text-indigo-400">"{searchTerm}"</span>. Try searching by username (e.g. @john), full name, or switching filter tabs.
+                  We couldn't find anyone matching <span className="font-bold text-amber-500">"{searchTerm}"</span>. Try searching by username (e.g. @john), full name, or switching filter tabs.
                 </p>
               </div>
 
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20 active:scale-95"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-amber-500/20 active:scale-95"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>Clear Search</span>
@@ -469,10 +463,10 @@ export default function ConnectPeople() {
                       visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.3 } }
                     }}
                     whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                    className="group relative bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-6 hover:shadow-xl hover:border-indigo-500/40 transition-all duration-300 flex flex-col justify-between"
+                    className="group relative bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] rounded-3xl p-6 hover:shadow-xl hover:border-amber-500/40 transition-all duration-300 flex flex-col justify-between"
                   >
                     {/* Hover subtle glow aura */}
-                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-indigo-500/0 via-indigo-500/0 to-indigo-500/5 group-hover:to-indigo-500/10 pointer-events-none transition-colors duration-300" />
+                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-amber-500/0 via-amber-500/0 to-amber-500/5 group-hover:to-amber-500/10 pointer-events-none transition-colors duration-300" />
 
                     {/* Card Top Header */}
                     <div className="space-y-4 relative z-10">
@@ -483,10 +477,10 @@ export default function ConnectPeople() {
                             whileHover={{ scale: 1.08 }}
                             src={usr.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${usr.name}`}
                             alt={usr.name}
-                            className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-100 dark:border-slate-800 transition-all group-hover/avatar:border-indigo-500"
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-100 dark:border-[#232734] transition-all group-hover/avatar:border-amber-500"
                           />
                           {usr.isVerified && (
-                            <CheckCircle className="w-5 h-5 text-blue-500 fill-white dark:fill-slate-900 absolute -bottom-1 -right-1" />
+                            <CheckCircle className="w-5 h-5 text-amber-500 fill-white dark:fill-[#141720] absolute -bottom-1 -right-1" />
                           )}
                         </Link>
 
@@ -499,7 +493,7 @@ export default function ConnectPeople() {
                             className={`px-4 py-2 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm ${
                               isFollowing
                                 ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/20 border border-transparent hover:border-rose-200 dark:hover:border-rose-900'
-                                : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+                                : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-amber-500/10'
                             } disabled:opacity-50`}
                           >
                             {followLoading[usr._id] ? (
@@ -517,7 +511,7 @@ export default function ConnectPeople() {
                             )}
                           </motion.button>
                         ) : (
-                          <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                          <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500">
                             You
                           </span>
                         )}
@@ -527,19 +521,19 @@ export default function ConnectPeople() {
                       <div>
                         <Link
                           to={`/profile/${usr._id}`}
-                          className="text-base font-extrabold text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors flex items-center gap-1.5"
+                          className="text-base font-bold text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-amber-400 transition-colors flex items-center gap-1.5"
                         >
                           <span>{usr.name}</span>
                         </Link>
                         
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                          <span className="text-xs font-bold text-amber-500">
                             @{handleName}
                           </span>
                           
-                          <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md uppercase tracking-wider ${
+                          <span className={`px-2 py-0.5 text-[9px] font-bold rounded-md uppercase tracking-wider ${
                             usr.role === 'author'
-                              ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                              ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                               : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                           }`}>
                             {usr.role}
@@ -572,7 +566,7 @@ export default function ConnectPeople() {
 
                       <Link
                         to={`/profile/${usr._id}`}
-                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
+                        className="text-xs font-bold text-amber-500 hover:text-amber-400 hover:underline flex items-center gap-1 group-hover:translate-x-0.5 transition-transform"
                       >
                         <span>Profile</span>
                         <ArrowRight className="w-3.5 h-3.5" />

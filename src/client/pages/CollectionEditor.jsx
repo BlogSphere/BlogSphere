@@ -250,20 +250,20 @@ export default function CollectionEditor() {
   };
 
   return (
-    <div className="relative min-h-screen bg-slate-50/50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden">
+    <div className="relative min-h-screen bg-[#f8fafc] dark:bg-[#0b0d11] text-slate-800 dark:text-slate-100 overflow-hidden">
       <CollectionSEO 
         title={isEditMode ? 'Edit Curated Collection' : 'Create Curated Collection'} 
       />
 
       {/* Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-amber-600/5 dark:bg-amber-600/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 py-8 relative z-10 space-y-8">
         
         {/* Top bar actions */}
         <div className="flex items-center justify-between">
-          <Link to="/dashboard/collections" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-650 dark:text-slate-400 transition-colors">
+          <Link to="/dashboard/collections" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-500 dark:text-slate-400 transition-colors">
             <ArrowLeft className="w-4 h-4" />
             <span>Dashboard</span>
           </Link>
@@ -283,7 +283,7 @@ export default function CollectionEditor() {
               type="button"
               disabled={loading}
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/10 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 transition-all active:scale-95"
             >
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               <span>{isEditMode ? 'Save Changes' : 'Publish Collection'}</span>
@@ -302,7 +302,7 @@ export default function CollectionEditor() {
             placeholder="Collection Title (e.g. 'Mastering React state management')"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full text-lg sm:text-xl font-bold py-3 px-4 border rounded-2xl bg-white/80 border-slate-200 dark:bg-slate-900/60 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-850 dark:text-slate-100 shadow-sm"
+            className="w-full text-lg sm:text-xl font-bold py-3 px-4 border rounded-2xl bg-white border-slate-200 dark:bg-[#141720] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100 shadow-sm"
           />
         </div>
 
@@ -311,20 +311,20 @@ export default function CollectionEditor() {
           
           {/* Form Settings & Blog Search (Left Pane) - 5 columns */}
           <div className="lg:col-span-5 space-y-6 text-left">
-            <div className="p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg space-y-4">
+            <div className="p-6 rounded-3xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-2">
                 Settings
               </h3>
               
               {/* Category */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Category
                 </label>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50/50 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350"
+                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-300"
                 >
                   <option value="">Select Category...</option>
                   <option value="Technology">Technology</option>
@@ -337,13 +337,13 @@ export default function CollectionEditor() {
 
               {/* Visibility */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Visibility
                 </label>
                 <select
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50/50 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350"
+                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-300"
                 >
                   <option value="private">Private (Only you can view)</option>
                   <option value="unlisted">Unlisted (Shareable via slug/link)</option>
@@ -353,7 +353,7 @@ export default function CollectionEditor() {
 
               {/* Cover Image URL */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Cover Image URL (Optional)
                 </label>
                 <input
@@ -361,13 +361,13 @@ export default function CollectionEditor() {
                   placeholder="https://example.com/cover.jpg"
                   value={coverImage}
                   onChange={(e) => setCoverImage(e.target.value)}
-                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50/50 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350"
+                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-300"
                 />
               </div>
 
               {/* Description */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Description
                 </label>
                 <textarea
@@ -375,13 +375,13 @@ export default function CollectionEditor() {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50/50 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350 resize-none"
+                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-350 resize-none"
                 />
               </div>
 
               {/* Tags Input */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455 dark:text-slate-400">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Tags (Press Enter)
                 </label>
                 <input
@@ -390,12 +390,12 @@ export default function CollectionEditor() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
-                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50/50 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350"
+                  className="w-full px-3 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-300"
                 />
                 {tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-2">
                     {tags.map((tag, idx) => (
-                      <span key={tag} className="inline-flex items-center gap-1 bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border border-indigo-500/10 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
+                      <span key={tag} className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full">
                         <span>#{tag}</span>
                         <button type="button" onClick={() => handleRemoveTag(idx)} className="hover:text-rose-500 font-black">x</button>
                       </span>
@@ -407,7 +407,7 @@ export default function CollectionEditor() {
             </div>
 
             {/* Articles Search Picker */}
-            <div className="p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg space-y-4">
+            <div className="p-6 rounded-3xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] shadow-sm space-y-4">
               <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">
                 Select Articles
               </h3>
@@ -418,7 +418,7 @@ export default function CollectionEditor() {
                   placeholder="Search published articles to add..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full py-2 pl-9 pr-4 text-xs border rounded-xl bg-slate-50/55 border-slate-200 dark:bg-slate-950/30 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 dark:text-slate-350"
+                  className="w-full py-2 pl-9 pr-4 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 dark:text-slate-300"
                 />
                 <Search className="absolute w-3.5 h-3.5 text-slate-400 left-3" />
               </div>
@@ -427,7 +427,7 @@ export default function CollectionEditor() {
               <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                 {blogsLoading ? (
                   <div className="py-8 flex justify-center">
-                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                    <Loader2 className="w-5 h-5 text-amber-500 animate-spin" />
                   </div>
                 ) : availableBlogs.length === 0 ? (
                   <div className="py-6 text-center text-xs text-slate-500 dark:text-slate-400">
@@ -437,20 +437,20 @@ export default function CollectionEditor() {
                   availableBlogs.map(blog => (
                     <div 
                       key={blog._id} 
-                      className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/30 transition-colors border border-transparent hover:border-slate-200/40 dark:hover:border-slate-800/45 text-left"
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-[#0b0d11] transition-colors border border-transparent hover:border-slate-200/40 dark:hover:border-[#232734] text-left"
                     >
                       <div className="min-w-0 pr-2">
                         <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                           {blog.title}
                         </span>
-                        <span className="text-[9px] text-slate-450 dark:text-slate-550 block">
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 block">
                           by @{blog.author?.username || 'author'}
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={() => handleAddBlog(blog)}
-                        className="p-1.5 bg-indigo-50 hover:bg-indigo-150 text-indigo-650 dark:bg-indigo-950/30 dark:text-indigo-400 rounded-lg transition-colors text-xs font-black shrink-0"
+                        className="p-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg transition-colors text-xs font-black shrink-0"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -466,19 +466,19 @@ export default function CollectionEditor() {
           <div className="lg:col-span-7 space-y-4 text-left">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-500" />
+                <BookOpen className="w-5 h-5 text-amber-500" />
                 <span>Curated Article Order ({items.length})</span>
               </h3>
-              <span className="text-[10px] text-slate-450 dark:text-slate-500 font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-md">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider bg-slate-100 dark:bg-[#141720] border border-slate-200 dark:border-[#232734] px-2 py-0.5 rounded-md">
                 Drag rows to reorder
               </span>
             </div>
 
             {items.length === 0 ? (
-              <div className="py-24 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-6 bg-white/30 dark:bg-slate-900/20">
-                <BookOpen className="w-10 h-10 mx-auto text-slate-455 mb-3" />
+              <div className="py-24 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-[#232734] rounded-3xl p-6 bg-white dark:bg-[#141720]">
+                <BookOpen className="w-10 h-10 mx-auto text-slate-400 mb-3" />
                 <p className="text-sm font-semibold">Your collection list is empty.</p>
-                <p className="text-xs text-slate-450 dark:text-slate-500 mt-1">Select articles from the left search panel to build your collection.</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Select articles from the left search panel to build your collection.</p>
               </div>
             ) : (
               <div className="space-y-3">

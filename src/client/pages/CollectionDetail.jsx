@@ -102,7 +102,7 @@ export default function CollectionDetail() {
         <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
           {error || 'This collection might have been deleted or visibility is restricted.'}
         </p>
-        <Link to="/collections" className="inline-block px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all">
+        <Link to="/collections" className="inline-block px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold shadow-md shadow-amber-500/20 transition-all">
           Back to Discovery
         </Link>
       </div>
@@ -123,13 +123,13 @@ export default function CollectionDetail() {
       />
 
       {/* Glow Effects */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/10 dark:bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-amber-500/10 dark:bg-amber-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[20%] right-[-10%] w-[50%] h-[50%] bg-amber-600/5 dark:bg-amber-600/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="max-w-4xl mx-auto px-4 py-8 relative z-10 space-y-8">
         
         {/* Back Link */}
-        <Link to="/collections" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 transition-colors">
+        <Link to="/collections" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-amber-500 dark:text-slate-400 dark:hover:text-amber-400 transition-colors">
           <ChevronLeft className="w-4 h-4" />
           <span>All Collections</span>
         </Link>
@@ -138,10 +138,10 @@ export default function CollectionDetail() {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-xl p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start"
+          className="relative rounded-3xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] shadow-sm p-6 sm:p-8 flex flex-col md:flex-row gap-6 items-start"
         >
           {/* Cover image (scaled) */}
-          <div className="w-full md:w-56 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-850 shrink-0 border border-slate-250/20 dark:border-slate-800/40">
+          <div className="w-full md:w-56 aspect-video md:aspect-[4/3] rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 border border-slate-200 dark:border-[#232734]">
             <img 
               src={coverUrl} 
               alt={currentCollection.title}
@@ -155,14 +155,14 @@ export default function CollectionDetail() {
             <div className="flex flex-wrap items-center gap-2">
               <CollectionVisibilityBadge visibility={currentCollection.visibility} />
               {currentCollection.category && (
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/10 text-indigo-650 dark:text-indigo-400 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full">
                   {currentCollection.category}
                 </span>
               )}
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 dark:text-white leading-tight">
                 {currentCollection.title}
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xl">
@@ -173,25 +173,25 @@ export default function CollectionDetail() {
             {/* Stats row */}
             <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
               <span className="flex items-center gap-1.5">
-                <BookOpen className="w-4 h-4 text-indigo-500" />
+                <BookOpen className="w-4 h-4 text-amber-500" />
                 <span>{currentCollection.itemsCount || 0} Articles</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-indigo-500" />
+                <Users className="w-4 h-4 text-amber-500" />
                 <span>{currentCollection.followersCount || 0} Followers</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <Eye className="w-4 h-4 text-indigo-500" />
+                <Eye className="w-4 h-4 text-amber-500" />
                 <span>{currentCollection.viewsCount || 0} Views</span>
               </span>
               <span className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-indigo-500" />
+                <Calendar className="w-4 h-4 text-amber-500" />
                 <span>Updated {format(new Date(currentCollection.updatedAt), 'MMM d, yyyy')}</span>
               </span>
             </div>
 
             {/* Actions / Curator Row */}
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-150/45 dark:border-slate-800/40">
+            <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-slate-100 dark:border-[#232734]">
               <div className="flex items-center gap-2.5">
                 <img
                   src={curator.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(curator.name || 'C')}`}
@@ -202,7 +202,7 @@ export default function CollectionDetail() {
                   <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
                     Curated by {curator.name}
                   </span>
-                  <span className="text-[10px] text-slate-455 dark:text-slate-500">
+                  <span className="text-[10px] text-slate-400">
                     @{curator.username}
                   </span>
                 </div>
@@ -225,7 +225,7 @@ export default function CollectionDetail() {
                 {isCurator && (
                   <Link
                     to={`/collections/${currentCollection._id}/edit`}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10 transition-all active:scale-95"
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm transition-all active:scale-95"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit List</span>
@@ -251,16 +251,16 @@ export default function CollectionDetail() {
         {/* Collection Articles List */}
         <div className="space-y-4">
           <h2 className="text-xl font-black text-slate-900 dark:text-white flex items-center gap-2 text-left">
-            <BookOpen className="w-5 h-5 text-indigo-500" />
+            <BookOpen className="w-5 h-5 text-amber-500" />
             <span>Curated Articles ({items.length})</span>
           </h2>
 
           {items.length === 0 ? (
-            <div className="py-16 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-6">
+            <div className="py-16 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-200 dark:border-[#232734] rounded-3xl p-6">
               <BookOpen className="w-10 h-10 mx-auto text-slate-455 mb-3" />
               <p className="text-sm font-semibold">This collection does not contain any articles yet.</p>
               {isCurator && (
-                <Link to={`/collections/${currentCollection._id}/edit`} className="inline-block mt-4 px-5 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold">
+                <Link to={`/collections/${currentCollection._id}/edit`} className="inline-block mt-4 px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20">
                   Add Articles Now
                 </Link>
               )}
@@ -278,10 +278,10 @@ export default function CollectionDetail() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="flex flex-col md:flex-row items-start gap-4 p-5 bg-white/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800/50 backdrop-blur rounded-3xl hover:shadow-md hover:border-indigo-500/20 transition-all duration-300 text-left"
+                    className="flex flex-col md:flex-row items-start gap-4 p-5 bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] rounded-3xl hover:shadow-md hover:border-amber-500/30 transition-all duration-300 text-left"
                   >
                     {/* Index Badge */}
-                    <div className="w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/10 text-indigo-650 dark:text-indigo-400 flex items-center justify-center font-black text-sm shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-black text-sm shrink-0">
                       {index + 1}
                     </div>
 
@@ -289,7 +289,7 @@ export default function CollectionDetail() {
                     <img 
                       src={blogObj.coverImage || FALLBACK_COVER} 
                       alt={blogObj.title || 'Article Cover'}
-                      className="w-full md:w-28 aspect-video md:aspect-[4/3] rounded-2xl object-cover shrink-0 border border-slate-200 dark:border-slate-850"
+                      className="w-full md:w-28 aspect-video md:aspect-[4/3] rounded-2xl object-cover shrink-0 border border-slate-200 dark:border-[#232734]"
                       onError={(e) => { e.target.src = FALLBACK_COVER; }}
                     />
 
@@ -309,17 +309,17 @@ export default function CollectionDetail() {
 
                       <Link 
                         to={articleSlug ? `/blog/${articleSlug}` : '#'}
-                        className="block text-base font-black text-slate-900 dark:text-white hover:text-indigo-650 dark:hover:text-indigo-400 transition-colors line-clamp-2 leading-snug"
+                        className="block text-base font-black text-slate-900 dark:text-white hover:text-amber-500 dark:hover:text-amber-400 transition-colors line-clamp-2 leading-snug"
                       >
                         {blogObj.title || 'Untitled Article'}
                       </Link>
 
                       {/* Curator note */}
                       {item.note && (
-                        <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 dark:bg-indigo-950/20 dark:border-indigo-900/30 text-xs">
-                          <CornerDownRight className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-xs">
+                          <CornerDownRight className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                           <div className="text-slate-600 dark:text-slate-350 leading-relaxed font-semibold italic">
-                            <span className="font-bold text-indigo-650 dark:text-indigo-400 not-italic block mb-0.5 text-[10px] uppercase tracking-wide">Curator's Note:</span>
+                            <span className="font-bold text-amber-600 dark:text-amber-400 not-italic block mb-0.5 text-[10px] uppercase tracking-wide">Curator's Note:</span>
                             "{item.note}"
                           </div>
                         </div>

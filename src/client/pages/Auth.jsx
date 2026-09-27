@@ -211,7 +211,7 @@ export default function Auth() {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md p-8 rounded-3xl border border-slate-100 dark:border-slate-900 shadow-xl glass-card animate-fade-in">
+      <div className="w-full max-w-md p-8 rounded-3xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] shadow-xl animate-fade-in">
         {/* Header Branding */}
         <div className="text-center mb-8">
           <img src={logo} alt="BlogSphere Logo" className="w-12 h-12 mx-auto mb-3 object-contain" />
@@ -224,17 +224,17 @@ export default function Auth() {
         </div>
 
         {/* Tab Selector */}
-        <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full mb-6">
+        <div className="flex bg-slate-100 dark:bg-[#0b0d11] p-1.5 rounded-full mb-6 border border-slate-200/50 dark:border-[#232734]">
           <button
             onClick={() => {
               setActiveTab('login');
               setLocalError('');
               navigate('/login');
             }}
-            className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all ${
+            className={`flex-1 py-2 text-sm font-bold rounded-full transition-all ${
               activeTab === 'login'
-                ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             Sign In
@@ -245,10 +245,10 @@ export default function Auth() {
               setLocalError('');
               navigate('/register');
             }}
-            className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all ${
+            className={`flex-1 py-2 text-sm font-bold rounded-full transition-all ${
               activeTab === 'register'
-                ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
             }`}
           >
             Register
@@ -337,8 +337,8 @@ export default function Auth() {
                     onClick={() => setFormData({ ...formData, role: 'reader' })}
                     className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
                       formData.role === 'reader'
-                        ? 'bg-primary-50 dark:bg-primary-950/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-500'
+                        : 'border-slate-200 dark:border-[#232734] text-slate-500 dark:text-slate-400 hover:border-slate-300'
                     }`}
                   >
                     📖 Reader
@@ -348,8 +348,8 @@ export default function Auth() {
                     onClick={() => setFormData({ ...formData, role: 'author' })}
                     className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
                       formData.role === 'author'
-                        ? 'bg-primary-50 dark:bg-primary-950/20 border-primary-500 text-primary-600 dark:text-primary-400'
-                        : 'border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400'
+                        ? 'bg-amber-500/10 border-amber-500 text-amber-500'
+                        : 'border-slate-200 dark:border-[#232734] text-slate-500 dark:text-slate-400 hover:border-slate-300'
                     }`}
                   >
                     ✍️ Writer
@@ -364,7 +364,7 @@ export default function Auth() {
                   id="isPrivate"
                   checked={formData.isPrivate}
                   onChange={(e) => setFormData({ ...formData, isPrivate: e.target.checked })}
-                  className="rounded border-slate-350 text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                  className="rounded border-slate-350 text-amber-500 focus:ring-amber-500 w-4 h-4 cursor-pointer"
                 />
                 <label htmlFor="isPrivate" className="text-xs font-semibold text-slate-700 dark:text-slate-350 cursor-pointer">
                   Keep Profile / Account Private
@@ -382,7 +382,7 @@ export default function Auth() {
               value={formData.email}
               onChange={handleChange}
               placeholder="Email address"
-              className={`w-full py-2.5 pl-10 pr-4 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-100 ${
+              className={`w-full py-2.5 pl-10 pr-4 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 ${
                 errors.email ? 'is-invalid border-rose-500' : (validated && !errors.email ? 'is-valid border-emerald-500' : '')
               }`}
             />
@@ -403,7 +403,7 @@ export default function Auth() {
               value={formData.password}
               onChange={handleChange}
               placeholder="Password"
-              className={`w-full py-2.5 pl-10 pr-10 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-950 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 text-slate-800 dark:text-slate-100 ${
+              className={`w-full py-2.5 pl-10 pr-10 text-sm border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 dark:text-slate-100 ${
                 errors.password ? 'is-invalid border-rose-500' : (validated && !errors.password ? 'is-valid border-emerald-500' : '')
               }`}
             />
@@ -426,7 +426,7 @@ export default function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 text-sm font-semibold rounded-xl text-white bg-primary-600 hover:bg-primary-700 transition-colors shadow-lg shadow-primary-500/10 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 px-4 text-sm font-bold rounded-xl text-slate-950 bg-amber-500 hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.01] active:scale-[0.99]"
           >
             {loading ? 'Processing...' : activeTab === 'login' ? 'Sign In' : 'Create Account'}
           </button>
@@ -434,9 +434,9 @@ export default function Auth() {
           {/* Divider */}
           <div className="relative my-6 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
+              <div className="w-full border-t border-slate-200 dark:border-[#232734]"></div>
             </div>
-            <span className="relative px-3 bg-white dark:bg-slate-950 text-xs text-slate-400 font-medium">Or continue with</span>
+            <span className="relative px-3 bg-white dark:bg-[#141720] text-xs text-slate-400 font-medium">Or continue with</span>
           </div>
 
           {/* Google Sign-in Button */}

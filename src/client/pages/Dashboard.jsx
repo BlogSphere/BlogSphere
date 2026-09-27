@@ -83,27 +83,27 @@ export default function Dashboard() {
     <div className="max-w-[95%] 2xl:max-w-[1550px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Welcome Banner */}
       <div>
-        <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-snug">
+        <h1 className="text-3xl font-serif font-bold text-slate-900 dark:text-slate-50 leading-tight">
           Welcome back, {user?.name}
         </h1>
-        <p className="text-slate-400 text-xs mt-1">Here is a quick overview of your article performance metrics.</p>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Here is the reading performance and audience activity for your publication.</p>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { title: 'Total Articles', value: stats.totalBlogs, icon: BookOpen, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20' },
-          { title: 'Article Views', value: stats.totalViews, icon: Eye, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
-          { title: 'Total Likes', value: stats.totalLikes, icon: Heart, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
-          { title: 'Followers', value: stats.followersCount, icon: Users, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20' }
+          { title: 'Total Articles', value: stats.totalBlogs, icon: BookOpen, color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/10' },
+          { title: 'Article Views', value: stats.totalViews, icon: Eye, color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/10' },
+          { title: 'Total Likes', value: stats.totalLikes, icon: Heart, color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/10' },
+          { title: 'Followers', value: stats.followersCount, icon: Users, color: 'text-amber-500 bg-amber-500/10 dark:bg-amber-500/10' }
         ].map((item) => (
-          <div key={item.title} className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm flex items-center gap-4">
+          <div key={item.title} className="p-5 border rounded-2xl bg-white border-slate-200 dark:bg-[#141720] dark:border-[#232734] shadow-sm flex items-center gap-4">
             <div className={`p-3.5 rounded-xl ${item.color}`}>
-              <item.icon className="w-6 h-6" />
+              <item.icon className="w-5 h-5" />
             </div>
             <div>
-              <span className="block text-slate-400 text-xs font-semibold uppercase tracking-wider">{item.title}</span>
-              <span className="block text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">{item.value}</span>
+              <span className="block text-slate-400 text-[11px] font-semibold uppercase tracking-wider">{item.title}</span>
+              <span className="block text-2xl font-bold font-serif text-slate-900 dark:text-slate-100 mt-0.5">{item.value}</span>
             </div>
           </div>
         ))}
@@ -112,16 +112,16 @@ export default function Dashboard() {
       {/* Smart Insights Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
-          { title: 'Reputation Level', value: `✨ ${stats.badge}`, sub: `${stats.reputationPoints} pts`, color: 'border-indigo-100 dark:border-indigo-950/40 bg-indigo-50/10' },
-          { title: 'Avg Read Time', value: `${stats.averageReadTimeMinutes} m`, sub: 'Estimated time spent', color: 'border-emerald-100 dark:border-emerald-950/40 bg-emerald-50/10' },
-          { title: 'Completion Rate', value: `${stats.completionRatePercent}%`, sub: 'Scrolled to bottom', color: 'border-blue-100 dark:border-blue-950/40 bg-blue-50/10' },
-          { title: 'Bounce Rate', value: `${stats.bounceRatePercent}%`, sub: 'Read under 10s', color: 'border-rose-100 dark:border-rose-950/40 bg-rose-50/10' }
+          { title: 'Writer Standing', value: `${stats.badge}`, sub: `${stats.reputationPoints} reputation pts` },
+          { title: 'Avg Read Time', value: `${stats.averageReadTimeMinutes} min`, sub: 'Estimated time spent' },
+          { title: 'Completion Rate', value: `${stats.completionRatePercent}%`, sub: 'Scrolled through content' },
+          { title: 'Quick Exit Rate', value: `${stats.bounceRatePercent}%`, sub: 'Exited under 10 seconds' }
         ].map((item) => (
-          <div key={item.title} className={`p-5 border rounded-2xl shadow-sm flex flex-col justify-between h-28 ${item.color}`}>
-            <span className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">{item.title}</span>
+          <div key={item.title} className="p-5 border rounded-2xl shadow-sm flex flex-col justify-between h-28 bg-slate-50/70 dark:bg-[#141720]/80 border-slate-200/80 dark:border-[#232734]">
+            <span className="block text-slate-500 dark:text-slate-400 text-[10px] font-semibold uppercase tracking-wider">{item.title}</span>
             <div className="mt-2">
-              <span className="block text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{item.value}</span>
-              <span className="block text-[10px] text-slate-400 mt-1">{item.sub}</span>
+              <span className="block text-xl font-bold font-serif text-slate-900 dark:text-slate-100 leading-tight">{item.value}</span>
+              <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-1">{item.sub}</span>
             </div>
           </div>
         ))}
@@ -130,13 +130,13 @@ export default function Dashboard() {
       {/* Chart & Popular Articles container */}
       <div className="grid lg:grid-cols-3 gap-8">
         {/* SVG Analytics Chart */}
-        <div className="lg:col-span-2 p-6 border rounded-3xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-2 p-6 border rounded-3xl bg-white border-slate-200 dark:bg-[#141720] dark:border-[#232734] shadow-sm flex flex-col justify-between">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-500" />
-              <span>Weekly Reads Graph</span>
+            <h3 className="text-base font-serif font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-amber-500" />
+              <span>Weekly Readership Frequency</span>
             </h3>
-            <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-500 px-2.5 py-1 rounded-full font-bold uppercase">Views per Day</span>
+            <span className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full font-medium">Views per Day</span>
           </div>
 
           {/* SVG Bar Chart */}
@@ -146,16 +146,16 @@ export default function Dashboard() {
               return (
                 <div key={data.day} className="flex-1 flex flex-col items-center group relative">
                   {/* Tooltip */}
-                  <span className="absolute -top-6 bg-slate-800 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-bold">
+                  <span className="absolute -top-6 bg-slate-900 text-amber-300 text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none font-medium">
                     {data.views} views
                   </span>
                   
                   {/* Dynamic Bar */}
                   <div
                     style={{ height: barHeight }}
-                    className="w-8 sm:w-12 bg-gradient-to-t from-primary-600 to-indigo-500 dark:from-primary-700 dark:to-indigo-600 rounded-t-lg transition-all hover:brightness-110 shadow-sm"
+                    className="w-8 sm:w-12 bg-gradient-to-t from-amber-600 to-amber-400 rounded-t transition-all hover:from-amber-500 hover:to-amber-300 shadow-sm"
                   />
-                  <span className="text-xs text-slate-400 font-semibold mt-2">{data.day}</span>
+                  <span className="text-xs text-slate-500 font-medium mt-2">{data.day}</span>
                 </div>
               );
             })}
@@ -163,61 +163,58 @@ export default function Dashboard() {
         </div>
 
         {/* Top performing articles / tip box */}
-        <div className="p-6 border rounded-3xl bg-gradient-to-br from-indigo-900 to-slate-950 text-white shadow-md flex flex-col justify-between relative overflow-hidden border-indigo-900/30">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-stops))] from-primary-500/20 via-transparent to-transparent pointer-events-none" />
+        <div className="p-7 border rounded-3xl bg-slate-900 dark:bg-[#141720] text-white shadow-md flex flex-col justify-between relative overflow-hidden border-slate-800 dark:border-[#232734]">
           <div className="relative z-10 space-y-3">
             <div className="flex items-center gap-2">
-              <span className="p-2 bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-xl inline-block">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-              </span>
-              <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-300 bg-white/10 px-2.5 py-0.5 rounded-full">
-                {user?.role === 'reader' ? 'Reader Account' : 'AI Writer Assistant'}
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3 py-0.5 rounded-full">
+                {user?.role === 'reader' ? 'Reader Account' : 'Writer Insights'}
               </span>
             </div>
-            <h3 className="text-xl font-bold tracking-tight">
-              {user?.role === 'reader' ? 'Unlock Your Author Voice' : 'AI Writer Assistant Tips'}
+            <h3 className="text-xl font-serif font-bold tracking-tight">
+              {user?.role === 'reader' ? 'Share your perspectives with readers' : 'Reader Interest Insights'}
             </h3>
-            <p className="text-sm leading-relaxed text-indigo-200">
+            <p className="text-sm leading-relaxed text-slate-300 font-normal">
               {user?.role === 'reader'
-                ? 'You are currently enjoying BlogSphere as a Reader. Upgrade your account to an Author to start drafting, publishing interactive articles, and building your following.'
-                : 'Your articles focusing on JavaScript and MERN are outperforming other categories by 45%. Writing a follow-up article this week could boost your views.'}
+                ? 'You are currently browsing BlogSphere as a Reader. Upgrade to a Writer to publish thoughtful essays, create curated collections, and build your audience.'
+                : 'Your articles focusing on JavaScript and MERN are outperforming other topics by 45%. A follow-up piece this week could bring new subscribers.'}
             </p>
           </div>
           {user?.role === 'reader' ? (
             <button
               onClick={() => setIsBecomeWriterOpen(true)}
-              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-bold text-indigo-900 bg-white hover:bg-slate-100 rounded-full transition-all flex items-center justify-center gap-2 shadow-lg"
+              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-full transition-all flex items-center justify-center gap-2 shadow-sm"
             >
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               <span>Become a Writer (Free)</span>
             </button>
           ) : (
             <Link
               to="/editor"
-              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-bold text-indigo-900 bg-white hover:bg-slate-100 rounded-full transition-colors inline-block"
+              className="relative z-10 mt-6 w-full py-2.5 text-center text-xs font-semibold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-full transition-colors inline-block"
             >
-              Create New Article
+              Write New Story
             </Link>
           )}
         </div>
-      </div>      {/* Tabs for Articles vs Collections */}
-      <div className="flex border-b border-slate-150/45 dark:border-slate-800/40 gap-4 mb-2">
+      </div>
+
+      {/* Tabs for Articles vs Collections */}
+      <div className="flex border-b border-slate-200 dark:border-[#232734] gap-6 mb-2">
         <button
           onClick={() => setActiveTab('articles')}
-          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 -mb-[2px] ${
+          className={`pb-3 text-sm font-medium transition-all border-b-2 -mb-[2px] ${
             activeTab === 'articles'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-extrabold'
-              : 'border-transparent text-slate-450 hover:text-slate-650 dark:text-slate-400'
+              ? 'border-amber-500 text-slate-900 dark:text-white font-semibold'
+              : 'border-transparent text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
-          Manage Articles
+          Articles
         </button>
         <button
           onClick={() => setActiveTab('collections')}
-          className={`px-5 py-3 text-sm font-bold transition-all border-b-2 -mb-[2px] ${
+          className={`pb-3 text-sm font-medium transition-all border-b-2 -mb-[2px] ${
             activeTab === 'collections'
-              ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400 font-extrabold'
-              : 'border-transparent text-slate-450 hover:text-slate-650 dark:text-slate-400'
+              ? 'border-amber-500 text-slate-900 dark:text-white font-semibold'
+              : 'border-transparent text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           Curated Collections
@@ -225,7 +222,7 @@ export default function Dashboard() {
       </div>
 
       {activeTab === 'articles' ? (
-        <div className="p-6 border rounded-3xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm">
+        <div className="p-6 border rounded-3xl bg-white border-slate-200 dark:bg-[#141720] dark:border-[#232734] shadow-sm">
           {(() => {
             const filteredBlogs = blogs.filter((blog) => {
               const matchesSearch = blog.title?.toLowerCase().includes(dashSearch.toLowerCase()) || 
@@ -239,12 +236,12 @@ export default function Dashboard() {
               <>
                 <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-6">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Manage Articles</h3>
-                    <p className="text-xs text-slate-455 mt-0.5">Filter and manage your authored blog drafts or publications.</p>
+                    <h3 className="text-base font-serif font-bold text-slate-900 dark:text-slate-100">Authored Articles</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Filter and manage your stories, drafts, and scheduled posts.</p>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400">
-                      {filteredBlogs.length} / {blogs.length} Posts
+                    <span className="text-xs font-medium px-3 py-1 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {filteredBlogs.length} / {blogs.length} Stories
                     </span>
                   </div>
                 </div>
@@ -256,12 +253,12 @@ export default function Dashboard() {
                     placeholder="Search by title, category, tags..."
                     value={dashSearch}
                     onChange={(e) => setDashSearch(e.target.value)}
-                    className="flex-1 px-3.5 py-2 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-805 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-505 focus:bg-white dark:focus:bg-slate-950"
+                    className="flex-1 px-4 py-2.5 text-xs border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:bg-white dark:focus:bg-[#141720]"
                   />
                   <select
                     value={dashStatus}
                     onChange={(e) => setDashStatus(e.target.value)}
-                    className="px-3.5 py-2 text-xs font-semibold rounded-xl border bg-slate-50 border-slate-200 dark:bg-slate-850 dark:border-slate-800 text-slate-650 dark:text-slate-300 focus:outline-none"
+                    className="px-3.5 py-2.5 text-xs font-medium rounded-xl border bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-[#232734] text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500"
                   >
                     <option value="all">All Statuses</option>
                     <option value="published">Published</option>
@@ -277,13 +274,13 @@ export default function Dashboard() {
                       user?.role === 'reader' ? (
                         <button
                           onClick={() => setIsBecomeWriterOpen(true)}
-                          className="mt-4 inline-flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md"
+                          className="mt-4 inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-4 py-2 rounded-full shadow-sm"
                         >
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>Upgrade to Writer to Publish</span>
                         </button>
                       ) : (
-                        <Link to="/editor" className="mt-4 inline-block bg-primary-600 hover:bg-primary-700 text-white text-xs font-bold px-4 py-2 rounded-full">
+                        <Link to="/editor" className="mt-4 inline-block bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-semibold px-4 py-2 rounded-full shadow-sm">
                           Write your first article
                         </Link>
                       )
@@ -293,7 +290,7 @@ export default function Dashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm border-collapse">
                       <thead>
-                        <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                        <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
                           <th className="pb-3 pl-2">Title</th>
                           <th className="pb-3">Status</th>
                           <th className="pb-3 text-center">Views</th>
@@ -303,35 +300,35 @@ export default function Dashboard() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {filteredBlogs.map((blog) => (
-                          <tr key={blog._id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-colors">
-                            <td className="py-4 pl-2 font-semibold text-slate-805 dark:text-slate-105 max-w-xs truncate">
-                              <Link to={`/blog/${blog.slug}`} className="hover:underline">{blog.title}</Link>
+                          <tr key={blog._id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition-colors">
+                            <td className="py-4 pl-2 font-serif font-semibold text-slate-900 dark:text-slate-100 max-w-xs truncate text-base">
+                              <Link to={`/blog/${blog.slug}`} className="hover:text-amber-500 transition-colors">{blog.title}</Link>
                             </td>
                             <td className="py-4">
-                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize border ${
                                 blog.status === 'published'
-                                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
                                   : blog.status === 'scheduled'
-                                  ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400'
-                                  : 'bg-slate-100 text-slate-650 dark:bg-slate-800 dark:text-slate-400'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900'
+                                  : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
                               }`}>
                                 {blog.status}
                               </span>
                             </td>
-                            <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-300">{blog.views || 0}</td>
-                            <td className="py-4 text-center font-semibold text-slate-700 dark:text-slate-300">{blog.likes?.length || 0}</td>
+                            <td className="py-4 text-center font-medium text-slate-600 dark:text-slate-300">{blog.views || 0}</td>
+                            <td className="py-4 text-center font-medium text-slate-600 dark:text-slate-300">{blog.likes?.length || 0}</td>
                             <td className="py-4 text-right pr-2">
                               <div className="flex justify-end gap-2">
                                 <Link
                                   to={`/editor?edit=${blog._id}`}
-                                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-550 hover:text-primary-600 rounded-lg"
+                                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-amber-500 dark:hover:text-amber-400 rounded-lg transition-colors"
                                   title="Edit"
                                 >
                                   <PenSquare className="w-4 h-4" />
                                 </Link>
                                 <button
                                   onClick={() => handleDelete(blog._id)}
-                                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-550 hover:text-rose-600 rounded-lg"
+                                  className="p-2 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
                                   title="Delete"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -349,7 +346,7 @@ export default function Dashboard() {
           })()}
         </div>
       ) : (
-        <div className="p-6 border rounded-3xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm">
+        <div className="p-6 border rounded-3xl bg-white border-slate-200 dark:bg-[#141720] dark:border-[#232734] shadow-sm">
           <MyCollections />
         </div>
       )}

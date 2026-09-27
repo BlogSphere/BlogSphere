@@ -52,8 +52,8 @@ export default function CollectionFollowBtn({ collectionId, curatorId, initialIs
       onClick={handleFollowClick}
       className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 ${
         isFollowing
-          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700'
-          : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-500/10'
+          ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-[#141720] dark:hover:bg-[#1a1e29] dark:text-slate-200 dark:border-[#232734]'
+          : 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold shadow-amber-500/20'
       }`}
     >
       {isFollowing ? (

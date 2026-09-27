@@ -134,73 +134,70 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 transition-all border-b border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl w-full">
+    <nav className="sticky top-0 z-50 transition-all border-b border-slate-200/90 dark:border-slate-800/80 bg-white/90 dark:bg-[#0b0d11]/90 backdrop-blur-md w-full">
       <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-[1700px]">
         <div className="flex justify-between h-16">
           {/* Brand Logo & Main Nav */}
           <div className="flex items-center gap-3 lg:gap-6 shrink-0">
             <Link to="/" className="flex items-center gap-2.5 group shrink-0">
-              <div className="p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 transition-transform group-hover:scale-105 shadow-sm shrink-0">
+              <div className="p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/80 transition-transform group-hover:scale-105 shadow-xs shrink-0">
                 <img src={logo} alt="BlogSphere Logo" className="w-8 h-8 object-contain shrink-0" />
               </div>
-              <span className="hidden text-xl font-black tracking-tight sm:block bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 shrink-0">
-                BlogSphere
+              <span className="hidden text-xl font-serif font-black tracking-tight sm:block text-slate-900 dark:text-white shrink-0">
+                BlogSphere<span className="text-amber-500">.</span>
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-1 lg:gap-2 text-xs font-extrabold uppercase tracking-wider pl-3 lg:pl-6 border-l border-slate-200 dark:border-slate-800 shrink-0">
+            <div className="hidden md:flex items-center gap-1 text-xs font-bold pl-3 lg:pl-6 border-l border-slate-200 dark:border-slate-800 shrink-0">
               <Link 
                 to="/" 
-                className={`px-2.5 py-1.5 rounded-full transition-all ${
+                className={`px-3 py-1.5 rounded-full transition-all ${
                   isActive('/') 
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                Home
+                Stories
               </Link>
               <Link 
                 to="/collections" 
-                className={`px-2.5 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-full transition-all ${
                   isActive('/collections') 
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                <span>Collections</span>
-                <span className="text-[10px]">📚</span>
+                Collections
               </Link>
               <Link 
                 to="/communities" 
-                className={`px-2.5 py-1.5 rounded-full transition-all ${
+                className={`px-3 py-1.5 rounded-full transition-all ${
                   isActive('/communities') 
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
                 Communities
               </Link>
               <Link 
                 to="/connect" 
-                className={`px-2.5 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-full transition-all ${
                   isActive('/connect') 
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                <span>Connect</span>
-                <span className="text-[10px]">🤝</span>
+                Network
               </Link>
               <Link 
                 to="/leaderboard" 
-                className={`px-2.5 py-1.5 rounded-full transition-all flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-full transition-all ${
                   isActive('/leaderboard') 
-                    ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 font-black' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
+                    ? 'bg-slate-900 text-white dark:bg-amber-500 dark:text-slate-950 font-bold shadow-xs' 
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                <span>Leaderboard</span>
-                <span className="text-[10px]">🏆</span>
+                Leaderboard
               </Link>
             </div>
           </div>
@@ -212,10 +209,10 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search articles, topics, creators..."
-                className="w-full py-2 pl-10 pr-4 text-xs font-semibold transition-all border rounded-full bg-slate-100/80 border-slate-200/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:bg-slate-900/80 dark:border-slate-800 dark:focus:bg-slate-950 text-slate-800 dark:text-slate-100 shadow-inner"
+                placeholder="Search stories, essays, topics..."
+                className="w-full py-2 pl-9 pr-4 text-xs font-medium transition-all border rounded-full bg-stone-100/90 border-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:bg-white dark:bg-stone-900/90 dark:border-stone-800 dark:focus:border-stone-700 dark:focus:bg-stone-900 text-stone-800 dark:text-stone-100 dark:placeholder-stone-500"
               />
-              <Search className="absolute w-4 h-4 text-slate-400 top-2.5 left-3.5" />
+              <Search className="absolute w-3.5 h-3.5 text-stone-400 dark:text-stone-500 top-2.5 left-3" />
             </form>
           </div>
 
@@ -225,10 +222,10 @@ export default function Navbar() {
             {/* Dark Mode Toggle */}
             <button
               onClick={() => setDarkMode(!darkMode)}
-              className="p-2 transition-transform hover:scale-105 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shrink-0"
+              className="p-2 transition-transform hover:scale-105 rounded-full bg-slate-100 dark:bg-[#141720] border border-slate-200 dark:border-slate-800 shrink-0 text-slate-600 dark:text-amber-400"
               title="Toggle Light/Dark Theme"
             >
-              {darkMode ? <Sun className="w-4 h-4 text-amber-400 animate-spin-slow" /> : <Moon className="w-4 h-4 text-slate-600" />}
+              {darkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
             </button>
 
             {isAuthenticated ? (
@@ -237,16 +234,16 @@ export default function Navbar() {
                 {user?.role === 'reader' ? (
                   <button
                     onClick={() => setIsBecomeWriterOpen(true)}
-                    className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 border border-indigo-200/80 dark:border-indigo-800/80 transition-all rounded-full shadow-sm hidden md:flex hover:scale-105 shrink-0"
-                    title="Unlock Writer Studio"
+                    className="items-center gap-1.5 px-3.5 py-1.5 xl:px-4 xl:py-2 text-xs font-semibold text-amber-900 dark:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 transition-all rounded-full shadow-xs hidden md:flex hover:scale-[1.02] shrink-0"
+                    title="Start Writing on BlogSphere"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>Become a Writer</span>
                   </button>
                 ) : (
                   <Link
                     to="/editor"
-                    className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-white transition-all rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 hidden md:flex hover:scale-105 shrink-0"
+                    className="items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 rounded-full transition-all shadow-sm hidden md:flex hover:scale-[1.02] shrink-0"
                   >
                     <PenSquare className="w-3.5 h-3.5" />
                     <span>Write</span>
@@ -256,21 +253,21 @@ export default function Navbar() {
                 {/* Daily Briefs */}
                 <Link
                   to="/daily-briefs"
-                  className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-extrabold text-slate-700 dark:text-slate-300 transition-all rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800 hidden xl:flex shrink-0"
+                  className="items-center gap-1.5 px-3 py-1.5 xl:px-3.5 xl:py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-all rounded-full bg-slate-100 dark:bg-[#141720] border border-slate-200 dark:border-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-800 hidden xl:flex shrink-0"
                 >
-                  <Brain className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>AI Briefs</span>
+                  <Brain className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span>Briefs</span>
                 </Link>
 
                 {/* Notifications Dropdown */}
                 <div className="relative" ref={notificationRef}>
                   <button
                     onClick={() => setShowNotifications(!showNotifications)}
-                    className="relative p-2 transition-colors rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 text-slate-600 dark:text-slate-300"
+                    className="relative p-2 transition-colors rounded-full bg-slate-100 dark:bg-[#141720] border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-300"
                   >
                     <Bell className="w-4 h-4" />
                     {unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 text-[10px] font-black text-white rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-950">
+                      <span className="absolute top-0 right-0 flex items-center justify-center w-4 h-4 text-[10px] font-black text-slate-950 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#0b0d11]">
                         {unreadCount}
                       </span>
                     )}
@@ -296,8 +293,8 @@ export default function Navbar() {
                             <div
                               key={n._id}
                               onClick={() => handleNotificationClick(n)}
-                              className={`px-4 py-3 flex gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors ${
-                                !n.isRead ? 'bg-indigo-50/40 dark:bg-indigo-950/20' : ''
+                              className={`px-4 py-3 flex gap-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-[#1b1f2b]/60 transition-colors ${
+                                !n.isRead ? 'bg-amber-500/10 dark:bg-amber-500/10' : ''
                               }`}
                             >
                               <div className="flex-1">
@@ -307,7 +304,7 @@ export default function Navbar() {
                                 </span>
                               </div>
                               {!n.isRead && (
-                                <div className="w-2 h-2 rounded-full bg-indigo-500 self-center shrink-0" />
+                                <div className="w-2 h-2 rounded-full bg-amber-500 self-center shrink-0" />
                               )}
                             </div>
                           ))
@@ -321,44 +318,44 @@ export default function Navbar() {
                 <div className="relative shrink-0" ref={userMenuRef}>
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                    className="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[#1b1f2b] transition-colors"
                   >
                     <img
                       src={user?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
                       alt={user?.name}
-                      className="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-500/30"
+                      className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500/30"
                     />
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
                   </button>
 
                   {showUserMenu && (
-                    <div className="absolute right-0 w-60 mt-2 origin-top-right rounded-3xl shadow-2xl ring-1 ring-black/5 focus:outline-none overflow-hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 animate-fade-in">
-                      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                    <div className="absolute right-0 w-60 mt-2 origin-top-right rounded-3xl shadow-2xl ring-1 ring-black/5 focus:outline-none overflow-hidden bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] animate-fade-in">
+                      <div className="px-5 py-4 border-b border-slate-100 dark:border-[#232734] bg-slate-50 dark:bg-[#0b0d11]">
                         <p className="text-sm font-black text-slate-900 dark:text-white truncate">{user?.name}</p>
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-bold capitalize mt-0.5">@{user?.username || 'user'}</p>
+                        <p className="text-xs text-amber-500 font-bold capitalize mt-0.5">@{user?.username || 'user'}</p>
                       </div>
                       
                       <div className="p-2 space-y-1">
                         <Link
                           to={`/profile/${user?._id}`}
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1a1e29] rounded-xl transition-colors"
                         >
-                          <User className="w-4 h-4 text-indigo-500" />
+                          <User className="w-4 h-4 text-amber-500" />
                           <span>My Profile</span>
                         </Link>
 
                         <Link
                           to="/dashboard"
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#1a1e29] rounded-xl transition-colors"
                         >
-                          <LayoutDashboard className="w-4 h-4 text-purple-500" />
+                          <LayoutDashboard className="w-4 h-4 text-amber-500" />
                           <span>Author Dashboard</span>
                         </Link>
                       </div>
 
-                      <div className="p-2 border-t border-slate-100 dark:border-slate-800">
+                      <div className="p-2 border-t border-slate-100 dark:border-[#232734]">
                         <button
                           onClick={handleLogout}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-xl transition-colors"
@@ -375,15 +372,15 @@ export default function Navbar() {
               <div className="hidden md:flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-4 py-2 text-xs font-extrabold text-slate-700 dark:text-slate-300 hover:text-indigo-600 transition-colors"
+                  className="px-3.5 py-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:text-stone-900 dark:hover:text-white transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/login?tab=register"
-                  className="px-5 py-2 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-md shadow-indigo-500/20 transition-all hover:scale-105"
+                  className="px-4 py-1.5 text-xs font-bold text-white bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white rounded-full transition-all shadow-xs"
                 >
-                  Sign Up
+                  Get Started
                 </Link>
               </div>
             )}
@@ -459,7 +456,7 @@ export default function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-slate-700 dark:text-slate-300 rounded-full bg-slate-100 dark:bg-slate-800"
               >
-                <Brain className="w-4 h-4 text-indigo-500" />
+                <Brain className="w-4 h-4 text-amber-500" />
                 <span>AI Briefs</span>
               </Link>
               {user?.role === 'reader' ? (
@@ -468,16 +465,16 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                     setIsBecomeWriterOpen(true);
                   }}
-                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 rounded-full bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/80 shadow-sm"
+                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-amber-600 dark:text-amber-400 rounded-full bg-amber-500/10 border border-amber-500/20 shadow-sm"
                 >
-                  <Sparkles className="w-4 h-4 text-indigo-500" />
+                  <Sparkles className="w-4 h-4 text-amber-500" />
                   <span>Become a Writer</span>
                 </button>
               ) : (
                 <Link
                   to="/editor"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-white rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 shadow-md"
+                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-slate-950 rounded-full bg-amber-500 hover:bg-amber-400 shadow-md shadow-amber-500/20"
                 >
                   <PenSquare className="w-4 h-4" />
                   <span>Write Article</span>
@@ -498,7 +495,7 @@ export default function Navbar() {
               <Link
                 to="/login?tab=register"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 text-xs font-extrabold text-white bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl shadow-md"
+                className="w-full text-center py-2.5 text-xs font-extrabold text-slate-950 bg-amber-500 hover:bg-amber-400 rounded-2xl shadow-md shadow-amber-500/20"
               >
                 Sign Up
               </Link>

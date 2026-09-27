@@ -319,7 +319,7 @@ export default function Admin() {
       {/* Title */}
       <div className="flex flex-wrap justify-between items-start sm:items-center gap-4 w-full max-w-full">
         <div className="flex items-center gap-3 min-w-0">
-          <Shield className="w-8 h-8 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <Shield className="w-8 h-8 text-amber-500 shrink-0" />
           <div className="min-w-0">
             <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white">Admin Control Panel</h1>
             <p className="text-xs text-slate-400 mt-1">Manage user accounts, roles, spam moderation, and content auditing.</p>
@@ -334,13 +334,13 @@ export default function Admin() {
       )}
 
       {/* Tabs */}
-      <div className="flex bg-slate-100 dark:bg-slate-900 p-1.5 rounded-full mb-6 overflow-x-auto w-full md:w-fit max-w-full">
+      <div className="flex bg-slate-100 dark:bg-[#0b0d11] p-1.5 rounded-full mb-6 overflow-x-auto w-full md:w-fit max-w-full border border-slate-200/50 dark:border-[#232734]">
         <button
           onClick={() => setActiveTab('users')}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'users'
-              ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -350,8 +350,8 @@ export default function Admin() {
           onClick={() => setActiveTab('blogs')}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'blogs'
-              ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <BookOpen className="w-4 h-4" />
@@ -361,8 +361,8 @@ export default function Admin() {
           onClick={() => setActiveTab('restricted')}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'restricted'
-              ? 'bg-white dark:bg-slate-800 text-primary-600 dark:text-primary-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <Shield className="w-4 h-4" />
@@ -372,8 +372,8 @@ export default function Admin() {
           onClick={() => { setActiveTab('flagged'); }}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'flagged'
-              ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-rose-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <AlertTriangle className="w-4 h-4 text-rose-500" />
@@ -383,8 +383,8 @@ export default function Admin() {
           onClick={() => { setActiveTab('earnings'); if (earningsReport.length === 0) fetchEarningsReport(); }}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'earnings'
-              ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-emerald-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
           <DollarSign className="w-4 h-4 text-emerald-500" />
@@ -394,23 +394,23 @@ export default function Admin() {
           onClick={() => { setActiveTab('dailyBrief'); fetchDailyReport(); }}
           className={`px-6 py-2 text-sm font-semibold rounded-full transition-all flex items-center gap-2 flex-shrink-0 ${
             activeTab === 'dailyBrief'
-              ? 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+              ? 'bg-white dark:bg-[#1b1f2b] text-amber-500 shadow-sm font-bold'
+              : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
           }`}
         >
-          <Sparkles className="w-4 h-4 text-indigo-500" />
+          <Sparkles className="w-4 h-4 text-amber-500" />
           <span>Daily AI Brief</span>
         </button>
       </div>
 
       {/* Content Container */}
-      <div className="p-6 border rounded-3xl bg-white border-slate-100 dark:bg-slate-900 shadow-sm">
+      <div className="p-6 border rounded-3xl bg-white dark:bg-[#141720] border-slate-200 dark:border-[#232734] shadow-sm">
         {activeTab === 'users' ? (
           /* Users Management Table */
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm border-collapse">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                <tr className="border-b border-slate-100 dark:border-[#232734] text-slate-400 font-bold uppercase text-[10px] tracking-wider">
                   <th className="pb-3 pl-2">User details</th>
                   <th className="pb-3">Email Address</th>
                   <th className="pb-3">Current Role</th>
@@ -418,9 +418,9 @@ export default function Admin() {
                   <th className="pb-3 text-right pr-2">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100 dark:divide-[#232734]">
                 {displayedUsers.map((usr) => (
-                  <tr key={usr._id} className="hover:bg-slate-50/40 dark:hover:bg-slate-800/20 transition-colors">
+                  <tr key={usr._id} className="hover:bg-slate-50/40 dark:hover:bg-[#1b1f2b]/40 transition-colors">
                     <td className="py-4 pl-2 flex items-center gap-3">
                       <img src={usr.profileImage} className="w-9 h-9 rounded-full object-cover" />
                       <div>
@@ -432,7 +432,7 @@ export default function Admin() {
                     <td className="py-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${
                         usr.role === 'admin'
-                          ? 'bg-indigo-50 text-indigo-655 dark:bg-indigo-950/20 dark:text-indigo-400'
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-500/20'
                           : usr.role === 'author'
                           ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
                           : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
@@ -794,10 +794,10 @@ export default function Admin() {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
                 { label: 'Per View',      value: '$0.005', color: 'bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400',         icon: '👁️' },
-                { label: 'Per Post',      value: '$0.25',  color: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400', icon: '📝' },
+                { label: 'Per Post',      value: '$0.25',  color: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400',   icon: '📝' },
                 { label: 'Per Like',      value: '$0.10',  color: 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-400',       icon: '❤️' },
                 { label: 'Per Reaction',  value: '$0.05',  color: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400',   icon: '🎉' },
-                { label: 'Per Comment',   value: '$0.02',  color: 'bg-violet-50 text-violet-700 dark:bg-violet-950/30 dark:text-violet-400', icon: '💬' },
+                { label: 'Per Comment',   value: '$0.02',  color: 'bg-teal-50 text-teal-700 dark:bg-teal-950/30 dark:text-teal-400',       icon: '💬' },
               ].map(item => (
                 <div key={item.label} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl ${item.color} border border-current/10`}>
                   <span className="text-lg">{item.icon}</span>
@@ -856,7 +856,7 @@ export default function Admin() {
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{row.totalPosts}</span>
+                          <span className="text-xs font-bold text-amber-500">{row.totalPosts}</span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-xs font-bold text-sky-600 dark:text-sky-400">{row.totalViews.toLocaleString()}</span>
@@ -898,7 +898,7 @@ export default function Admin() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-500" />
+                <Sparkles className="w-5 h-5 text-amber-500" />
                 Community Daily AI Summaries
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">View daily publishing analytics and generate Gemini AI executive briefs summarizing community output.</p>
@@ -906,23 +906,23 @@ export default function Admin() {
 
             {dailyReportLoading ? (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-500 rounded-full animate-spin" />
                 <p className="text-sm text-slate-400 font-medium">Aggregating daily publishing telemetry...</p>
               </div>
             ) : dailyReport.length === 0 ? (
               <div className="text-center py-16 text-slate-400">
-                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20 text-indigo-500" />
+                <Sparkles className="w-12 h-12 mx-auto mb-3 opacity-20 text-amber-500" />
                 <p className="font-semibold">No published blogs found on the platform yet.</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {dailyReport.map((day) => (
-                  <div key={day.date} className="p-5 border rounded-2xl bg-slate-50 border-slate-150 dark:bg-slate-800/40 dark:border-slate-800 space-y-4">
+                  <div key={day.date} className="p-5 border rounded-2xl bg-slate-50 border-slate-200/60 dark:bg-[#141720] dark:border-[#232734] space-y-4">
                     {/* Header Row */}
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <span className="text-sm font-extrabold text-slate-800 dark:text-white">{new Date(day.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                        <span className="ml-3 px-2.5 py-0.5 text-[10px] font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-950/20 dark:text-indigo-400 rounded-full border border-indigo-100/30">
+                        <span className="ml-3 px-2.5 py-0.5 text-[10px] font-bold bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 rounded-full border border-amber-500/20">
                           {day.blogsCount} {day.blogsCount === 1 ? 'article' : 'articles'} published
                         </span>
                       </div>
@@ -930,7 +930,7 @@ export default function Admin() {
                       <button
                         onClick={() => handleGenerateDailyBrief(day.date)}
                         disabled={generatingBriefDate === day.date}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white rounded-xl transition-all shadow-md shadow-primary-500/10 disabled:opacity-50 cursor-pointer"
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl transition-all shadow-md shadow-amber-500/20 disabled:opacity-50 cursor-pointer"
                       >
                         <Sparkles className={`w-3.5 h-3.5 ${generatingBriefDate === day.date ? 'animate-spin' : ''}`} />
                         <span>{generatingBriefDate === day.date ? 'Generating AI Brief...' : day.hasBrief ? 'Regenerate Daily AI Brief' : 'Generate Daily AI Brief'}</span>
@@ -939,18 +939,18 @@ export default function Admin() {
 
                     {/* Brief Summary Content if exists */}
                     {day.hasBrief ? (
-                      <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 space-y-4">
+                      <div className="p-4 rounded-xl bg-white dark:bg-[#0b0d11] border border-slate-200 dark:border-[#232734] space-y-4">
                         <div className="space-y-1.5">
                           <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">AI Executive Briefing</h4>
                           <p className="text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-medium whitespace-pre-wrap">{day.summary}</p>
                         </div>
                         {day.keyThemes && day.keyThemes.length > 0 && (
-                          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                          <div className="pt-3 border-t border-slate-100 dark:border-[#232734] space-y-2">
                             <h4 className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Key Themes & Highlights</h4>
                             <ul className="grid sm:grid-cols-2 gap-2">
                               {day.keyThemes.map((theme) => (
-                                <li key={theme} className="text-xs text-slate-650 dark:text-slate-400 flex gap-2 items-start bg-slate-50 dark:bg-slate-955/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-900">
-                                  <span className="text-indigo-500 font-extrabold text-sm leading-3">•</span>
+                                <li key={theme} className="text-xs text-slate-650 dark:text-slate-400 flex gap-2 items-start bg-slate-50 dark:bg-[#141720] p-2.5 rounded-xl border border-slate-200/50 dark:border-[#232734]">
+                                  <span className="text-amber-500 font-extrabold text-sm leading-3">•</span>
                                   <span>{theme}</span>
                                 </li>
                               ))}
@@ -979,7 +979,7 @@ export default function Admin() {
                             {b.tags && b.tags.length > 0 && (
                               <div className="hidden sm:flex gap-1">
                                 {b.tags.slice(0, 2).map((tg, tIdx) => (
-                                  <span key={tIdx} className="text-[9px] font-semibold text-purple-650 bg-purple-50 dark:bg-purple-950/20 dark:text-purple-400 px-2 py-0.5 rounded-full border border-purple-100/30">
+                                  <span key={tIdx} className="text-[9px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">
                                     #{tg}
                                   </span>
                                 ))}
@@ -1001,7 +1001,7 @@ export default function Admin() {
       {/* Earnings Breakdown Modal */}
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedUser(null)}>
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="w-full max-w-md bg-white dark:bg-[#141720] rounded-3xl border border-slate-200 dark:border-[#232734] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             {/* Modal Header */}
             <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-5 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1030,7 +1030,7 @@ export default function Admin() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Earnings Breakdown</p>
                 {[
                   { label: `${selectedUser.totalViews.toLocaleString()} Views`, value: selectedUser.breakdown.fromViews, color: 'bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400', icon: '👁️' },
-                  { label: `${selectedUser.totalPosts} Posts`, value: selectedUser.breakdown.fromPosts, color: 'bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-400', icon: '📝' },
+                  { label: `${selectedUser.totalPosts} Posts`, value: selectedUser.breakdown.fromPosts, color: 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400', icon: '📝' },
                   { label: `${selectedUser.totalLikes} Likes`, value: selectedUser.breakdown.fromLikes, color: 'bg-rose-100 dark:bg-rose-950/30 text-rose-700 dark:text-rose-400', icon: '❤️' },
                   { label: `${selectedUser.totalReactions} Reactions`, value: selectedUser.breakdown.fromReactions, color: 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400', icon: '🎉' },
                   { label: `${selectedUser.totalComments} Comments`, value: selectedUser.breakdown.fromComments, color: 'bg-violet-100 dark:bg-violet-950/30 text-violet-700 dark:text-violet-400', icon: '💬' },

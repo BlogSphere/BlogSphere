@@ -16,40 +16,40 @@ export default function CollectionList({ collections, onEdit, onDelete, showActi
   }
 
   return (
-    <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white/40 dark:bg-slate-900/40 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 overflow-hidden shadow-md">
+    <div className="divide-y divide-slate-100 dark:divide-[#232734] bg-white dark:bg-[#141720] rounded-3xl border border-slate-200 dark:border-[#232734] overflow-hidden shadow-sm">
       {collections.map((collection) => {
         const coverUrl = collection.coverImage || FALLBACK_COVER;
         return (
           <div 
             key={collection._id} 
-            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors duration-250"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 hover:bg-slate-50 dark:hover:bg-[#1a1e29]/50 transition-colors duration-200"
           >
             {/* Left Content (Image + Text) */}
             <div className="flex items-center gap-4 min-w-0 flex-1">
               <img 
                 src={coverUrl} 
                 alt={collection.title}
-                className="w-16 h-16 rounded-xl object-cover border border-slate-200/60 dark:border-slate-800 bg-slate-100 shrink-0"
+                className="w-16 h-16 rounded-xl object-cover border border-slate-200 dark:border-[#232734] bg-slate-100 dark:bg-[#0b0d11] shrink-0"
                 onError={(e) => { e.target.src = FALLBACK_COVER; }}
               />
               <div className="min-w-0 text-left">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <Link 
                     to={`/collections/${collection.slug}`}
-                    className="text-base font-bold text-slate-800 dark:text-slate-150 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors truncate"
+                    className="text-base font-bold text-slate-900 dark:text-slate-100 hover:text-amber-500 dark:hover:text-amber-400 transition-colors truncate"
                   >
                     {collection.title}
                   </Link>
                   <CollectionVisibilityBadge visibility={collection.visibility} />
                 </div>
-                <p className="text-xs text-slate-455 dark:text-slate-400 line-clamp-1 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed">
                   {collection.description || 'No description provided.'}
                 </p>
                 
                 {/* Stats row */}
                 <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                   <span className="flex items-center gap-1">
-                    <BookOpen className="w-3.5 h-3.5" />
+                    <BookOpen className="w-3.5 h-3.5 text-amber-500" />
                     {collection.itemsCount || 0} Articles
                   </span>
                   <span className="flex items-center gap-1">
@@ -70,7 +70,7 @@ export default function CollectionList({ collections, onEdit, onDelete, showActi
                 {onEdit && (
                   <button
                     onClick={() => onEdit(collection)}
-                    className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-500/10 dark:hover:bg-indigo-950/20 rounded-xl transition-all"
+                    className="p-2 text-slate-500 hover:text-amber-500 hover:bg-amber-500/10 dark:hover:bg-amber-500/10 rounded-xl transition-all"
                     title="Edit Collection"
                   >
                     <Edit3 className="w-4 h-4" />

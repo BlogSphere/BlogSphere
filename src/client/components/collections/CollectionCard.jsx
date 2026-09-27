@@ -17,7 +17,7 @@ export default function CollectionCard({ collection }) {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200/50 dark:border-slate-800/50 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl shadow-lg hover:shadow-2xl hover:border-indigo-500/20 transition-all duration-300 min-h-[380px]"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#141720] shadow-sm hover:shadow-xl hover:border-amber-500/40 transition-all duration-300 min-h-[380px]"
     >
       <div>
         {/* Cover Image & Badges */}
@@ -31,7 +31,7 @@ export default function CollectionCard({ collection }) {
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             <CollectionVisibilityBadge visibility={collection.visibility} />
             {collection.category && (
-              <span className="self-start text-[10px] font-bold tracking-wide bg-indigo-600 text-white px-2 py-0.5 rounded-full shadow-sm">
+              <span className="self-start text-[10px] font-bold tracking-wide bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full shadow-sm">
                 {collection.category}
               </span>
             )}
@@ -44,7 +44,7 @@ export default function CollectionCard({ collection }) {
           {collection.tags && collection.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {collection.tags.slice(0, 3).map(tag => (
-                <span key={tag} className="text-[10px] text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 border border-indigo-500/10 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                <span key={tag} className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                   #{tag}
                 </span>
               ))}
@@ -53,7 +53,7 @@ export default function CollectionCard({ collection }) {
 
           {/* Title */}
           <Link to={`/collections/${collection.slug}`} className="block">
-            <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-500 dark:group-hover:text-amber-400 transition-colors line-clamp-2 leading-snug">
               {collection.title}
             </h3>
           </Link>
@@ -68,7 +68,7 @@ export default function CollectionCard({ collection }) {
       </div>
 
       {/* Footer Details */}
-      <div className="p-6 pt-0 mt-auto border-t border-slate-150/40 dark:border-slate-800/40">
+      <div className="p-6 pt-0 mt-auto border-t border-slate-100 dark:border-[#232734]">
         <div className="flex items-center justify-between pt-4">
           {/* Curator Profile */}
           <div className="flex items-center gap-2 min-w-0">
