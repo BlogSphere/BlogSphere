@@ -5,7 +5,7 @@ import {
   Save, Send, Eye, PenTool, Users, Plus, X, Search,
   UserCheck, Edit3, Heading1, Heading2, List, Trash2,
   Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft,
-  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, Globe, CheckCircle2, AlertCircle,
+  Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, CheckCircle2, AlertCircle,
   Sparkles, Clock, ArrowRight, Zap, MessageSquare, MessageSquareOff
 } from 'lucide-react';
 import api from '../utils/api.js';
@@ -243,12 +243,9 @@ export default function Editor() {
   const [grammarModalOpen, setGrammarModalOpen] = useState(false);
   const [grammarSuggestions, setGrammarSuggestions] = useState([]);
 
-  // AI Translation States
-  const [translatingAI, setTranslatingAI] = useState(false);
+  // AI Suggestion States
   const [aiLoading, setAiLoading] = useState(false);
   const [suggestedTitle, setSuggestedTitle] = useState('');
-  const [rewriteModalOpen, setRewriteModalOpen] = useState(false);
-  const [rewriteInstruction, setRewriteInstruction] = useState('');
 
   // Toast notifications state
   const [toast, setToast] = useState(null);
@@ -289,40 +286,6 @@ export default function Editor() {
     }
   };
 
-  const handleAITranslate = async (lang) => {
-    if (!editId) return;
-    setTranslatingAI(true);
-    setError('');
-    try {
-      const res = await api.post(`/api/blogs/${editId}/ai-translate`, { lang });
-      setTitle(res.data.title);
-      setContent(res.data.content);
-
-      const parsed = JSON.parse(res.data.content);
-      if (Array.isArray(parsed)) {
-        setBlocks(parsed);
-      }
-
-      confetti({
-        particleCount: 80,
-        spread: 50,
-        origin: { y: 0.6 }
-      });
-
-      if (socket && editId) {
-        socket.emit('edit_content', {
-          blogId: editId,
-          content: res.data.content,
-          title: res.data.title
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.error || 'Failed to auto-translate blog using Gemini.');
-    } finally {
-      setTranslatingAI(false);
-    }
-  };
 
   const handleAISuggestMetadata = async () => {
     // Extract block content text
@@ -402,65 +365,6 @@ export default function Editor() {
     }
   };
 
-  // AI Rewrite Assistant - user explains what they want, AI rewrites in proper English using only their words
-  const handleAIRewrite = () => {
-    const textToRewrite = blocks.map(b => b.content || '').join(' ');
-    if (!textToRewrite.trim()) {
-      showToast('Please write some content first for the AI to help rewrite.', 'error');
-      return;
-    }
-    setRewriteInstruction('');
-    setRewriteModalOpen(true);
-  };
-
-  const submitAIRewrite = async () => {
-    if (!rewriteInstruction.trim()) return;
-    const textToRewrite = blocks.map(b => b.content || '').join(' ');
-    
-    setRewriteModalOpen(false);
-    setGrammarCheckLoading(true);
-    try {
-      const res = await api.post('/api/blogs/ai-rewrite', { 
-        content: textToRewrite,
-        instruction: rewriteInstruction.trim()
-      });
-      
-      if (res.data.rewrittenContent) {
-        // Apply the rewritten content to blocks proportionally
-        // For simplicity, replace the first paragraph block or create new content
-        const newBlocks = blocks.map((block, index) => {
-          if (index === 0 && block.type === 'p') {
-            return { ...block, content: res.data.rewrittenContent };
-          }
-          return block;
-        });
-        
-        // If no paragraph block, add the rewritten content as a new paragraph
-        if (!newBlocks.some(b => b.type === 'p')) {
-          newBlocks.unshift({ 
-            id: Date.now().toString(), 
-            type: 'p', 
-            content: res.data.rewrittenContent 
-          });
-        }
-        
-        handleBlocksChange(newBlocks);
-        
-        confetti({
-          particleCount: 80,
-          spread: 50,
-          origin: { y: 0.6 }
-        });
-        
-        showToast('Content rewritten in proper English!', 'success');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast(err.response?.data?.error || 'Failed to rewrite content.', 'error');
-    } finally {
-      setGrammarCheckLoading(false);
-    }
-  };
 
   // Redirect if not logged in
   useEffect(() => {
@@ -1298,17 +1202,6 @@ export default function Editor() {
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
                     <span>Grammar Check</span>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={handleAIRewrite}
-                    disabled={grammarCheckLoading}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl border border-amber-500/20 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-bold text-xs transition-colors shadow-sm disabled:opacity-50"
-                    title="Explain what you want to write - AI corrects errors and rewrites in proper English without adding external info"
-                  >
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
-                    <span>AI Rewrite</span>
-                  </button>
                 </div>
 
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950/40 px-3.5 py-1.5 rounded-2xl border border-slate-100 dark:border-slate-800">
@@ -1850,7 +1743,7 @@ export default function Editor() {
                 </label>
               </div>
 
-              {/* Comments On/Off Toggle Section */}
+              {/* Comments On/Off Toggle Section (Commented Out)
               <div className="mb-4 p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -1867,7 +1760,6 @@ export default function Editor() {
                     </div>
                   </div>
 
-                  {/* Modern toggle switch */}
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -1885,6 +1777,7 @@ export default function Editor() {
                     : 'The discussion section will be disabled and locked for readers.'}
                 </p>
               </div>
+              */}
 
               {/* Schedule Publish */}
               <div className="mb-4 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30">
@@ -2020,63 +1913,16 @@ export default function Editor() {
               </div>
             </div>
 
-            {/* AI Auto-Translate Panel */}
-            <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-white dark:bg-slate-900/60 shadow-sm">
-              <div className="flex items-center gap-2.5 px-5 py-3.5 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border-b border-emerald-100/60 dark:border-emerald-900/30">
-                <span className="flex items-center justify-center w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-950/50">
-                  <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                </span>
-                <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">AI Translate</span>
-              </div>
-              <div className="p-4">
-                {editId ? (
-                  <>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-                      Translate this article into Hindi or Gujarati using Gemini AI.
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        disabled={translatingAI}
-                        onClick={() => handleAITranslate('hi')}
-                        className="py-2.5 text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-xl transition-all disabled:opacity-50 border border-emerald-100 dark:border-emerald-900/30"
-                      >
-                        🇮🇳 Hindi
-                      </button>
-                      <button
-                        type="button"
-                        disabled={translatingAI}
-                        onClick={() => handleAITranslate('gu')}
-                        className="py-2.5 text-xs font-bold bg-teal-50 hover:bg-teal-100 dark:bg-teal-950/20 dark:hover:bg-teal-950/40 text-teal-700 dark:text-teal-400 rounded-xl transition-all disabled:opacity-50 border border-teal-100 dark:border-teal-900/30"
-                      >
-                        🇮🇳 Gujarati
-                      </button>
-                    </div>
-                    {translatingAI && (
-                      <p className="text-[10px] text-emerald-600 animate-pulse mt-2.5 text-center font-semibold">
-                        ✨ Translating content blocks...
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <div className="flex items-start gap-2 p-3 bg-amber-50/50 dark:bg-amber-950/10 rounded-xl border border-amber-100/60 dark:border-amber-900/20">
-                    <span className="text-amber-500 text-sm mt-0.5">💡</span>
-                    <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
-                      Save your draft first to unlock AI translation.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Collaborators setup */}
+
+            {/* Collaborators setup (Commented Out)
             <div className="p-5 border rounded-2xl bg-white border-slate-100 dark:bg-slate-900/60 glass-card">
               <h3 className="text-sm font-semibold tracking-wider text-slate-400 uppercase mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4 text-amber-500" />
                 <span>Collaborators</span>
               </h3>
 
-              {/* Existing Collaborators list */}
+              // Existing Collaborators list
               <div className="flex flex-col gap-2.5 mb-4">
                 {collaborators.length === 0 ? (
                   <p className="text-xs text-slate-400 italic">No editors added yet. Add peers to write together.</p>
@@ -2098,7 +1944,7 @@ export default function Editor() {
                 )}
               </div>
 
-              {/* Add Collaborator via email search simulated list */}
+              // Add Collaborator via email search simulated list
               <div className="relative">
                 <input
                   type="text"
@@ -2128,6 +1974,7 @@ export default function Editor() {
                 )}
               </div>
             </div>
+            */}
 
             {/* Writing Sprint Controls */}
             {editId && (
@@ -2421,57 +2268,7 @@ export default function Editor() {
         </div>
       )}
 
-      {/* AI Rewrite Custom Modal */}
-      {rewriteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-          <div className="w-full max-w-md p-6 bg-white dark:bg-[#141720] rounded-3xl border border-slate-200 dark:border-[#232734] shadow-2xl flex flex-col gap-4 animate-scale-in">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#232734]">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <Sparkles className="w-5 h-5 text-amber-500" />
-                <span>AI Rewrite Assistant</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setRewriteModalOpen(false)}
-                className="p-1 hover:bg-slate-50 dark:hover:bg-[#1a1e29] rounded-lg text-slate-400"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Explain what you want to express in your post. The AI will correct spelling/syntax errors and rewrite it in proper English without adding any external information or new concepts.
-            </p>
 
-            <div className="space-y-2">
-              <textarea
-                value={rewriteInstruction}
-                onChange={(e) => setRewriteInstruction(e.target.value)}
-                placeholder="e.g., I want to say that Bun runtime is extremely fast compared to Node.js."
-                className="w-full h-28 px-4 py-3 rounded-2xl border border-slate-200 dark:border-[#232734] bg-white dark:bg-[#0b0d11] text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none font-sans"
-              />
-            </div>
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setRewriteModalOpen(false)}
-                className="px-5 py-2 border border-slate-200 dark:border-[#232734] rounded-xl text-xs font-bold hover:bg-slate-50 dark:hover:bg-[#1a1e29] text-slate-600 dark:text-slate-400 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={submitAIRewrite}
-                disabled={!rewriteInstruction.trim()}
-                className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs shadow-md shadow-amber-500/20 transition-all disabled:opacity-50"
-              >
-                Rewrite Text
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Toast Notification */}
       {toast && (
