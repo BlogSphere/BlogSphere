@@ -8,7 +8,7 @@ import confetti from 'canvas-confetti';
 import { motion, AnimatePresence } from 'framer-motion';
 import { updateCurrentUser } from '../redux/authSlice.js';
 import { setAddToCollectionModal } from '../redux/collectionSlice';
-import { getCoverImageForBlog } from '../utils/imageUtils';
+import { getCoverImageForBlog, getUserAvatar, handleAvatarError } from '../utils/imageUtils';
 
 const parseInlineMarkdown = (text) => {
   if (!text) return '';
@@ -1460,9 +1460,11 @@ export default function BlogDetail() {
           {blog.author?._id ? (
             <Link to={`/profile/${blog.author._id}`}>
               <img
-                src={blog.author?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
+                src={getUserAvatar(blog.author?.profileImage, blog.author?.name)}
                 alt={blog.author?.name || 'Author'}
-                className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700"
+                referrerPolicy="no-referrer"
+                onError={(e) => handleAvatarError(e, blog.author?.name)}
+                className="w-12 h-12 rounded-full object-cover ring-2 ring-slate-200 dark:ring-slate-700 bg-amber-500/10"
               />
             </Link>
           ) : (
@@ -1995,7 +1997,13 @@ export default function BlogDetail() {
           /* Comment form */
           isAuthenticated ? (
             <form onSubmit={handlePostComment} className="flex gap-3 items-start mb-8">
-              <img src={user?.profileImage} className="w-10 h-10 rounded-full object-cover" />
+              <img
+                src={getUserAvatar(user?.profileImage, user?.name)}
+                alt={user?.name || 'User'}
+                referrerPolicy="no-referrer"
+                onError={(e) => handleAvatarError(e, user?.name)}
+                className="w-10 h-10 rounded-full object-cover bg-amber-500/10"
+              />
               <div className="flex-1">
                 <textarea
                   value={commentText}
@@ -2033,7 +2041,13 @@ export default function BlogDetail() {
               <div key={rootComment._id} className="p-4 rounded-2xl border border-slate-100 dark:border-slate-900 bg-white dark:bg-slate-900/60 shadow-sm space-y-4">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2.5">
-                    <img src={rootComment.userId?.profileImage} className="w-8 h-8 rounded-full object-cover" />
+                    <img
+                      src={getUserAvatar(rootComment.userId?.profileImage, rootComment.userId?.name)}
+                      alt={rootComment.userId?.name || 'User'}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => handleAvatarError(e, rootComment.userId?.name)}
+                      className="w-8 h-8 rounded-full object-cover bg-amber-500/10"
+                    />
                     <div>
                       <span className="block text-sm font-semibold">{rootComment.userId?.name}</span>
                       <span className="block text-[10px] text-slate-400">{new Date(rootComment.createdAt).toLocaleDateString()}</span>
@@ -2097,7 +2111,13 @@ export default function BlogDetail() {
                       <div className="flex-1 space-y-2">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-2">
-                            <img src={childComment.userId?.profileImage} className="w-6 h-6 rounded-full object-cover" />
+                            <img
+                              src={getUserAvatar(childComment.userId?.profileImage, childComment.userId?.name)}
+                              alt={childComment.userId?.name || 'User'}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => handleAvatarError(e, childComment.userId?.name)}
+                              className="w-6 h-6 rounded-full object-cover bg-amber-500/10"
+                            />
                             <div>
                               <span className="block text-xs font-semibold">{childComment.userId?.name}</span>
                               <span className="block text-[8px] text-slate-400">{new Date(childComment.createdAt).toLocaleDateString()}</span>

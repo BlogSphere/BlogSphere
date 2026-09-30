@@ -33,3 +33,22 @@ export const getCoverImageForBlog = (blog) => {
   const index = Math.abs(hash) % COVER_IMAGE_POOL.length;
   return COVER_IMAGE_POOL[index];
 };
+
+export const getInitialsAvatar = (name = 'User') => {
+  const cleanName = (name || 'User').trim();
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(cleanName)}&background=f59e0b&color=0f172a&bold=true`;
+};
+
+export const getUserAvatar = (profileImage, name = 'User') => {
+  if (profileImage && typeof profileImage === 'string' && profileImage.trim().length > 0) {
+    return profileImage.trim();
+  }
+  return getInitialsAvatar(name);
+};
+
+export const handleAvatarError = (e, name = 'User') => {
+  if (!e || !e.currentTarget) return;
+  e.currentTarget.onerror = null;
+  e.currentTarget.src = getInitialsAvatar(name);
+};
+

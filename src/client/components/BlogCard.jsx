@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { setAddToCollectionModal } from '../redux/collectionSlice';
 
-import { getCoverImageForBlog } from '../utils/imageUtils';
+import { getCoverImageForBlog, getUserAvatar, handleAvatarError } from '../utils/imageUtils';
 
 // Clean text helper that handles both HTML and JSON block array structure
 const getCleanText = (content) => {
@@ -104,9 +104,11 @@ export default function BlogCard({ blog }) {
           {blog.author?._id ? (
             <Link to={`/profile/${blog.author._id}`} className="flex items-center gap-2.5 group">
               <img
-                src={blog.author.profileImage || FALLBACK_AVATAR}
+                src={getUserAvatar(blog.author.profileImage, blog.author.name)}
                 alt={blog.author.name || 'Author'}
-                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
+                referrerPolicy="no-referrer"
+                onError={(e) => handleAvatarError(e, blog.author.name)}
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700 bg-amber-500/10"
               />
               <div>
                 <span className="block text-xs font-bold text-slate-900 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">

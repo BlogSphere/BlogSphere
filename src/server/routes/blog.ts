@@ -29,14 +29,17 @@ import {
   submitBlogQuiz,
   getBlogPodcast,
   chatWithBlog,
-  get24hStats
+  get24hStats,
+  addCollaborator,
+  removeCollaborator,
+  joinCollabAsAuthor
 } from '../controllers/blogController';
 import { auth, optionalAuth } from '../middleware/auth';
 import { requireRole } from '../middleware/auth';
 
 const router = express.Router();
 
-router.get('/', getBlogs);
+router.get('/', optionalAuth, getBlogs);
 router.get('/24h-stats', get24hStats);
 router.get('/admin/daily-analytics', auth, requireRole(['admin']), getDailyAnalytics);
 router.post('/admin/daily-brief/generate', auth, requireRole(['admin']), generateDailyBrief);
@@ -49,6 +52,9 @@ router.post('/:id/dismiss-reports', auth, requireRole(['admin']), dismissReports
 router.post('/check-spam', auth, checkSpam);
 router.post('/grammar-check', auth, grammarCheck);
 router.post('/ai-rewrite', auth, aiRewrite);
+router.post('/:id/collaborators', auth, addCollaborator);
+router.delete('/:id/collaborators/:userId', auth, removeCollaborator);
+router.post('/:id/join-collab', auth, joinCollabAsAuthor);
 router.get('/:slug', getBlogBySlug);
 router.post('/:id/analytics', optionalAuth, updateBlogAnalytics);
 router.post('/:id/report', auth, reportBlog);

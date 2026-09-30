@@ -4,6 +4,7 @@ import Blog from '../models/Blog.js';
 import Notification from '../models/Notification.js';
 import Comment from '../models/Comment.js';
 import axios from 'axios';
+import { getEnrichedGamification, recordGamificationAction } from '../services/gamificationService.js';
 
 export const getPublicAuthors = async (req, res) => {
   try {
@@ -638,6 +639,10 @@ export const getEarningsReport = async (req, res) => {
         username:         user.username || '—',
         role:             user.role,
         profileImage:     user.profileImage,
+        xp:               user.gamification?.xp || 0,
+        level:            user.gamification?.level || 1,
+        streak:           user.gamification?.streak?.current || 1,
+        badgesCount:      (user.gamification?.badges || []).length,
         joinedAt:         user.createdAt,
         totalPosts,
         totalViews,
@@ -673,7 +678,7 @@ export const getLeaderboard = async (req, res) => {
   try {
     // Get all non-admin users (emails omitted for public access)
     const users = await User.find({ role: { $ne: 'admin' } })
-      .select('name username profileImage role createdAt');
+      .select('name username profileImage role gamification createdAt');
 
     const report = await Promise.all(users.map(async (user) => {
       const blogs = await Blog.find({ author: user._id, status: 'published' });
@@ -736,6 +741,36 @@ export const getLeaderboard = async (req, res) => {
     report.sort((a, b) => b.estimatedEarnings - a.estimatedEarnings);
 
     res.status(200).json({ report });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getMyGamification = async (req, res) => {
+  try {
+    const data = await getEnrichedGamification(req.user._id);
+    if (!data) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getUserGamification = async (req, res) => {
+  try {
+    const data = await getEnrichedGamification(req.params.id);
+    if (!data) return res.status(404).json({ error: 'User not found' });
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const recordUserAction = async (req, res) => {
+  try {
+    const { actionType, meta } = req.body;
+    const result = await recordGamificationAction(req.user._id, actionType, meta);
+    res.status(200).json(result || { message: 'Action processed' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,15 +1,15 @@
 import { io } from 'socket.io-client';
 
-// Standard fallback: during dev socket server is on 5000, in prod it's on current origin
-const isLocal = window.location.hostname === 'localhost' || 
-                window.location.hostname === '127.0.0.1' || 
-                window.location.hostname.startsWith('192.168.') ||
-                window.location.hostname.startsWith('10.') ||
-                window.location.hostname.startsWith('172.');
-const socketUrl = import.meta.env.VITE_SOCKET_URL || (isLocal ? `http://${window.location.hostname}:5000` : window.location.origin);
+// Use window.location.origin so requests route seamlessly through Vite's proxy (port 5173)
+// or standard production origin, eliminating any firewall blocks on port 5000 across the local network.
+const socketUrl = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
 export const socket = io(socketUrl, {
-  autoConnect: false
+  autoConnect: false,
+  reconnection: true,
+  reconnectionAttempts: 15,
+  reconnectionDelay: 1000,
+  transports: ['websocket', 'polling']
 });
 
 export default socket;

@@ -19,7 +19,7 @@ export default function Auth() {
     email: '',
     password: '',
     bio: '',
-    role: 'reader',
+    role: 'author',
     isPrivate: false
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -326,35 +326,6 @@ export default function Auth() {
                     {errors.bio}
                   </div>
                 )}
-              </div>
-
-              {/* Account Type Selection */}
-              <div className="space-y-1 text-start">
-                <label className="text-xs font-bold text-slate-400 uppercase">Account Type</label>
-                <div className="grid grid-cols-2 gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'reader' })}
-                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
-                      formData.role === 'reader'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-500'
-                        : 'border-slate-200 dark:border-[#232734] text-slate-500 dark:text-slate-400 hover:border-slate-300'
-                    }`}
-                  >
-                    📖 Reader
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, role: 'author' })}
-                    className={`py-2 px-4 rounded-xl border text-xs font-bold transition-all ${
-                      formData.role === 'author'
-                        ? 'bg-amber-500/10 border-amber-500 text-amber-500'
-                        : 'border-slate-200 dark:border-[#232734] text-slate-500 dark:text-slate-400 hover:border-slate-300'
-                    }`}
-                  >
-                    ✍️ Writer
-                  </button>
-                </div>
               </div>
 
               {/* Profile Privacy Choice */}

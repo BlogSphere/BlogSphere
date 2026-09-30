@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api.js';
 import { useToast } from '../context/ToastContext.jsx';
 import { getCache, setCache } from '../utils/cacheManager.js';
+import { getUserAvatar, handleAvatarError } from '../utils/imageUtils.js';
 
 export default function ConnectPeople() {
   const { user: currentUser, isAuthenticated } = useSelector((state) => state.auth);
@@ -475,9 +476,11 @@ export default function ConnectPeople() {
                         <Link to={`/profile/${usr._id}`} className="relative shrink-0 group/avatar">
                           <motion.img
                             whileHover={{ scale: 1.08 }}
-                            src={usr.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${usr.name}`}
+                            src={getUserAvatar(usr.profileImage, usr.name)}
                             alt={usr.name}
-                            className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-100 dark:border-[#232734] transition-all group-hover/avatar:border-amber-500"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => handleAvatarError(e, usr.name)}
+                            className="w-16 h-16 rounded-2xl object-cover border-2 border-slate-100 dark:border-[#232734] transition-all group-hover/avatar:border-amber-500 bg-amber-500/10"
                           />
                           {usr.isVerified && (
                             <CheckCircle className="w-5 h-5 text-amber-500 fill-white dark:fill-[#141720] absolute -bottom-1 -right-1" />
@@ -543,7 +546,7 @@ export default function ConnectPeople() {
 
                       {/* Bio */}
                       <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed font-medium min-h-[2.25rem]">
-                        {usr.bio || 'Community member on BlogSphere. Sharing ideas and stories.'}
+                        {usr.bio || 'Community member on BlogSphere. Sharing ideas and blogs.'}
                       </p>
                     </div>
 

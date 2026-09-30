@@ -14,7 +14,10 @@ import {
   toggleCategorySubscription,
   getDashboardStats,
   getEarningsReport,
-  getLeaderboard
+  getLeaderboard,
+  getMyGamification,
+  getUserGamification,
+  recordUserAction
 } from '../controllers/userController';
 import { auth, optionalAuth, requireRole } from '../middleware/auth';
 
@@ -26,6 +29,9 @@ router.post('/:id/follow', auth, followUser);
 
 // Profile, Bookmark, Role Upgrade and Newsletter Routes
 router.get('/dashboard/stats', auth, getDashboardStats);
+router.get('/gamification', auth, getMyGamification);
+router.get('/:id/gamification', optionalAuth, getUserGamification);
+router.post('/gamification/action', auth, recordUserAction);
 router.put('/profile', auth, updateOwnProfile);
 router.post('/become-author', auth, becomeAuthor);
 router.get('/bookmarks', auth, getBookmarks);

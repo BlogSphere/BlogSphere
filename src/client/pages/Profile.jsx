@@ -4,14 +4,15 @@ import { useSelector, useDispatch } from 'react-redux';
 import { 
   AlertCircle, User, Users, BookOpen, Settings2, Github, Twitter, Globe, 
   Bookmark, Mail, Check, X, Sparkles, Eye, Award, TrendingUp, ShieldCheck, Heart,
-  Lock
+  Lock, Flame, Zap, Trophy
 } from 'lucide-react';
+import GamificationModal from '../components/GamificationModal.jsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api.js';
 import BlogCard from '../components/BlogCard.jsx';
-import BecomeWriterModal from '../components/BecomeWriterModal.jsx';
 import { updateCurrentUser } from '../redux/authSlice.js';
 import { useToast } from '../context/ToastContext.jsx';
+import { getUserAvatar, handleAvatarError } from '../utils/imageUtils.js';
 
 export default function Profile() {
   const { id } = useParams();
@@ -35,9 +36,10 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('authored'); // 'authored', 'bookmarks', 'analytics'
   const [bookmarks, setBookmarks] = useState([]);
   const [loadingBookmarks, setLoadingBookmarks] = useState(false);
+  const [userGamification, setUserGamification] = useState(null);
+  const [isGamificationOpen, setIsGamificationOpen] = useState(false);
 
   // Upgrade & Edit Modal states
-  const [isBecomeWriterOpen, setIsBecomeWriterOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
@@ -67,6 +69,7 @@ export default function Profile() {
           }
         }
         setBlogs(res.data.blogs || []);
+        api.get(`/api/users/${id}/gamification`).then(gres => setUserGamification(gres.data)).catch(() => {});
         setFollowersCount(u.followers?.length || 0);
         setIsFollowing(isAuthenticated && u.followers?.includes(currentUser?._id));
         
@@ -231,17 +234,15 @@ export default function Profile() {
               {/* Avatar pulls up over the banner */}
               <div className="relative -mt-16 sm:-mt-20 shrink-0 group">
                 <img
-                  src={profileUser.profileImage || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(profileUser.username || profileUser.name || 'User')}`}
+                  src={getUserAvatar(profileUser.profileImage, profileUser.name)}
                   alt={profileUser.name}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => handleAvatarError(e, profileUser.name)}
                   className="w-28 h-28 sm:w-36 sm:h-36 rounded-full object-cover ring-4 ring-white dark:ring-[#141720] shadow-xl bg-slate-100 dark:bg-[#0b0d11]"
                 />
-                {profileUser.role !== 'reader' ? (
-                  <span className="absolute bottom-1 right-1 w-6 h-6 bg-amber-500 border-2 border-white dark:border-[#141720] rounded-full flex items-center justify-center text-slate-950 text-[10px] font-black shadow-sm" title="Active Writer">
-                    ✓
-                  </span>
-                ) : (
-                  <span className="absolute bottom-1 right-1 w-5 h-5 bg-slate-400 border-2 border-white dark:border-[#141720] rounded-full" title="Community Reader" />
-                )}
+                <span className="absolute bottom-1 right-1 w-6 h-6 bg-amber-500 border-2 border-white dark:border-[#141720] rounded-full flex items-center justify-center text-slate-950 text-[10px] font-black shadow-sm" title="Active Author">
+                  ✓
+                </span>
                 {isSelf && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
@@ -307,15 +308,6 @@ export default function Profile() {
 
               {isSelf && (
                 <>
-                  {profileUser?.role === 'reader' && (
-                    <button
-                      onClick={() => setIsBecomeWriterOpen(true)}
-                      className="px-5 py-2.5 text-xs font-bold rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20 transition-all flex items-center gap-2"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Become a Writer</span>
-                    </button>
-                  )}
                   <button
                     onClick={() => setIsEditModalOpen(true)}
                     className="px-5 py-2.5 text-xs font-bold rounded-full border border-slate-200 dark:border-[#232734] bg-white hover:bg-slate-50 dark:bg-[#141720] dark:hover:bg-[#1a1e29] text-slate-800 dark:text-slate-200 shadow-sm transition-all flex items-center gap-2"
@@ -443,6 +435,18 @@ export default function Profile() {
                 <span>Saved Bookmarks</span>
               </button>
             )}
+
+                        <button
+              onClick={() => setActiveTab('badges')}
+              className={`py-3.5 px-6 text-xs font-bold tracking-wide flex items-center gap-2 border-b-2 transition-all ${
+                activeTab === 'badges'
+                  ? 'border-amber-500 text-amber-500 dark:text-amber-400 dark:border-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+              }`}
+            >
+              <Award className="w-4 h-4" />
+              <span>Badges & Milestones ({userGamification?.unlockedBadgesCount || profileUser.gamification?.badges?.length || 0})</span>
+            </button>
 
             <button
               onClick={() => setActiveTab('analytics')}
@@ -741,16 +745,6 @@ export default function Profile() {
         )}
       </AnimatePresence>
 
-      {/* Become Writer Modal */}
-      <BecomeWriterModal
-        isOpen={isBecomeWriterOpen}
-        onClose={() => setIsBecomeWriterOpen(false)}
-        onSuccess={(updated) => {
-          setProfileUser(updated);
-          setIsBecomeWriterOpen(false);
-          showToast('Congratulations! You are now an Author on BlogSphere.', 'success');
-        }}
-      />
     </div>
   );
 }

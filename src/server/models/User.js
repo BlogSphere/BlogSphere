@@ -40,7 +40,7 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['reader', 'author', 'admin'],
-    default: 'reader'
+    default: 'author'
   },
   isPrivate: {
     type: Boolean,
@@ -53,6 +53,30 @@ const UserSchema = new mongoose.Schema({
   badge: {
     type: String,
     default: 'Reader'
+  },
+  gamification: {
+    xp: { type: Number, default: 0 },
+    level: { type: Number, default: 1 },
+    streak: {
+      current: { type: Number, default: 1 },
+      longest: { type: Number, default: 1 },
+      lastActiveDate: { type: Date, default: Date.now }
+    },
+    badges: [{
+      id: { type: String, required: true },
+      name: { type: String, required: true },
+      icon: { type: String, default: '🏆' },
+      description: { type: String, default: '' },
+      category: { type: String, default: 'general' },
+      unlockedAt: { type: Date, default: Date.now }
+    }],
+    stats: {
+      articlesPublished: { type: Number, default: 0 },
+      articlesRead: { type: Number, default: 0 },
+      commentsWritten: { type: Number, default: 0 },
+      reactionsGiven: { type: Number, default: 0 },
+      voiceTypingUsed: { type: Number, default: 0 }
+    }
   },
   followers: [{
     type: mongoose.Schema.Types.ObjectId,

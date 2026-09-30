@@ -273,13 +273,6 @@ export const createBlog = async (req, res) => {
     // Generate unique concise slug with unique ID
     const slug = await generateUniqueSlug(title);
 
-    // Reader accounts cannot write or publish articles directly
-    if (req.user.role === 'reader') {
-      return res.status(403).json({
-        error: 'Readers cannot create or publish articles. Please upgrade your account to Author first.'
-      });
-    }
-
     const blog = new Blog({
       title,
       slug,
@@ -355,11 +348,18 @@ export const getBlogs = async (req, res) => {
     if (tag) query.tags = tag;
     
     if (author) {
-      query.author = mongoose.Types.ObjectId.isValid(author)
+      const authorId = mongoose.Types.ObjectId.isValid(author)
         ? new mongoose.Types.ObjectId(author)
         : author;
-      // If someone else is querying this author's profile page, hide their anonymous posts!
-      if (!req.user || req.user._id.toString() !== author.toString()) {
+      
+      const isSelf = req.user && req.user._id.toString() === author.toString();
+      if (isSelf || req.query.includeCollaborations === 'true') {
+        query.$or = [
+          { author: authorId },
+          { collaborators: authorId }
+        ];
+      } else {
+        query.author = authorId;
         query.isAnonymous = { $ne: true };
       }
     }
@@ -2434,4 +2434,161 @@ export const get24hStats = async (req, res) => {
   }
 };
 
+export const addCollaborator = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { userId, username, email } = req.body;
 
+    const blog = await Blog.findById(id);
+    if (!blog) return res.status(404).json({ error: 'Blog not found' });
+
+    const isAuthor = blog.author.toString() === req.user._id.toString();
+    const isExistingCollaborator = blog.collaborators.some(c => c.toString() === req.user._id.toString());
+    if (!isAuthor && !isExistingCollaborator && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Only authors or collaborators can invite other writers.' });
+    }
+
+    let targetUser = null;
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      targetUser = await User.findById(userId);
+    } else if (username) {
+      const cleanUsername = username.replace(/^@/, '').trim().toLowerCase();
+      targetUser = await User.findOne({ username: cleanUsername });
+    } else if (email) {
+      targetUser = await User.findOne({ email: email.trim().toLowerCase() });
+    }
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User to collaborate not found.' });
+    }
+
+    if (targetUser._id.toString() === blog.author.toString()) {
+      return res.status(400).json({ error: 'Author is already the owner of this blog.' });
+    }
+
+    const alreadyIn = blog.collaborators.some(c => c.toString() === targetUser._id.toString());
+    if (!alreadyIn) {
+      blog.collaborators.push(targetUser._id);
+      await blog.save();
+
+      // Create in-app notification
+      try {
+        const notif = new Notification({
+          userId: targetUser._id,
+          message: `${req.user.name} added you as a co-author on "${blog.title || 'Untitled Draft'}"`,
+          type: 'collab',
+          referenceId: blog._id
+        });
+        await notif.save();
+
+        if (global.io) {
+          global.io.to(`user_${targetUser._id}`).emit('notification_received', notif);
+          global.io.to(`blog_collab_${blog._id}`).emit('collaborator_added', {
+            user: {
+              _id: targetUser._id,
+              name: targetUser.name,
+              username: targetUser.username,
+              profileImage: targetUser.profileImage,
+              email: targetUser.email
+            }
+          });
+        }
+      } catch (nErr) {
+        console.error('Error creating collaboration notification:', nErr);
+      }
+    }
+
+    const updatedBlog = await Blog.findById(id).populate('collaborators', 'name username profileImage email');
+    res.status(200).json({ message: 'Collaborator added successfully', collaborators: updatedBlog.collaborators });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const removeCollaborator = async (req, res) => {
+  try {
+    const { id, userId } = req.params;
+    const blog = await Blog.findById(id);
+    if (!blog) return res.status(404).json({ error: 'Blog not found' });
+
+    const isAuthor = blog.author.toString() === req.user._id.toString();
+    const isSelf = req.user._id.toString() === userId.toString();
+    if (!isAuthor && !isSelf && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Permission denied.' });
+    }
+
+    blog.collaborators = blog.collaborators.filter(c => c.toString() !== userId.toString());
+    if (!blog.removedCollaborators) blog.removedCollaborators = [];
+    if (!blog.removedCollaborators.some(rc => rc.toString() === userId.toString())) {
+      blog.removedCollaborators.push(userId);
+    }
+    await blog.save();
+
+    if (global.io) {
+      global.io.to(`blog_collab_${blog._id}`).emit('collaborator_removed', { userId });
+      global.io.to(`blog_collab_${blog._id}`).emit('cursor_removed', { userId });
+      global.io.to(`blog_collab_${blog._id}`).emit('collab_kicked', { 
+        userId, 
+        message: 'You have been removed from this co-authoring session by the author.' 
+      });
+    }
+
+    const updatedBlog = await Blog.findById(id).populate('collaborators', 'name username profileImage email');
+    res.status(200).json({ message: 'Collaborator removed successfully', collaborators: updatedBlog.collaborators });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const joinCollabAsAuthor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const blog = await Blog.findById(id);
+    if (!blog) return res.status(404).json({ error: 'Blog not found' });
+
+    const isAuthor = blog.author.toString() === req.user._id.toString();
+    const isAlreadyCollaborator = blog.collaborators.some(c => c.toString() === req.user._id.toString());
+    const isRemoved = blog.removedCollaborators && blog.removedCollaborators.some(rc => rc.toString() === req.user._id.toString());
+
+    if (isRemoved && !isAuthor) {
+      return res.status(403).json({ error: 'You have been removed from this co-authoring session by the author.' });
+    }
+
+    if (!isAuthor && !isAlreadyCollaborator) {
+      blog.collaborators.push(req.user._id);
+      await blog.save();
+
+      try {
+        const notif = new Notification({
+          userId: blog.author,
+          message: `${req.user.name} joined as co-author on "${blog.title || 'Untitled Draft'}"`,
+          type: 'collab',
+          referenceId: blog._id
+        });
+        await notif.save();
+
+        if (global.io) {
+          global.io.to(`user_${blog.author}`).emit('notification_received', notif);
+          global.io.to(`blog_collab_${blog._id}`).emit('collaborator_added', {
+            user: {
+              _id: req.user._id,
+              name: req.user.name,
+              username: req.user.username,
+              profileImage: req.user.profileImage,
+              email: req.user.email
+            }
+          });
+        }
+      } catch (nErr) {
+        console.error('Error creating join collab notification:', nErr);
+      }
+    }
+
+    const updatedBlog = await Blog.findById(id)
+      .populate('author', 'name username profileImage bio')
+      .populate('collaborators', 'name username profileImage email');
+    res.status(200).json({ message: 'Joined collaborative session', blog: sanitizeBlogObject(updatedBlog) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

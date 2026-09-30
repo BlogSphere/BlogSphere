@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
@@ -6,32 +6,109 @@ import {
   UserCheck, Edit3, Heading1, Heading2, List, Trash2,
   Copy, ArrowUp, ArrowDown, GripVertical, AlignLeft,
   Quote, Code, Image, Lightbulb, LayoutGrid, Settings2, CheckCircle2, AlertCircle,
-  Sparkles, Clock, ArrowRight, Zap, MessageSquare, MessageSquareOff
+  Sparkles, Clock, ArrowRight, Zap, MessageSquare, MessageSquareOff,
+  CloudUpload, Check, Share2, Globe, Wifi, UserPlus, ShieldCheck, CheckCircle,
+  Mic, MicOff, Volume2, Radio
 } from 'lucide-react';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
 import confetti from 'canvas-confetti';
 import { updateCurrentUser } from '../redux/authSlice.js';
 
+// Multi-User Distinct Cursor Themes
+const COLLAB_THEMES = [
+  {
+    name: 'Emerald',
+    color: '#10b981',
+    border: 'border-emerald-500',
+    bg: 'bg-emerald-500',
+    text: 'text-emerald-500',
+    ring: 'ring-emerald-500/30',
+    lightBg: 'bg-emerald-50 dark:bg-emerald-950/30',
+    caretColor: '#10b981',
+  },
+  {
+    name: 'Violet',
+    color: '#8b5cf6',
+    border: 'border-violet-500',
+    bg: 'bg-violet-500',
+    text: 'text-violet-500',
+    ring: 'ring-violet-500/30',
+    lightBg: 'bg-violet-50 dark:bg-violet-950/30',
+    caretColor: '#8b5cf6',
+  },
+  {
+    name: 'Sky',
+    color: '#0ea5e9',
+    border: 'border-sky-500',
+    bg: 'bg-sky-500',
+    text: 'text-sky-500',
+    ring: 'ring-sky-500/30',
+    lightBg: 'bg-sky-50 dark:bg-sky-950/30',
+    caretColor: '#0ea5e9',
+  },
+  {
+    name: 'Amber',
+    color: '#f59e0b',
+    border: 'border-amber-500',
+    bg: 'bg-amber-500',
+    text: 'text-amber-500',
+    ring: 'ring-amber-500/30',
+    lightBg: 'bg-amber-50 dark:bg-amber-950/30',
+    caretColor: '#f59e0b',
+  },
+  {
+    name: 'Rose',
+    color: '#f43f5e',
+    border: 'border-rose-500',
+    bg: 'bg-rose-500',
+    text: 'text-rose-500',
+    ring: 'ring-rose-500/30',
+    lightBg: 'bg-rose-50 dark:bg-rose-950/30',
+    caretColor: '#f43f5e',
+  },
+  {
+    name: 'Indigo',
+    color: '#6366f1',
+    border: 'border-indigo-500',
+    bg: 'bg-indigo-500',
+    text: 'text-indigo-500',
+    ring: 'ring-indigo-500/30',
+    lightBg: 'bg-indigo-50 dark:bg-indigo-950/30',
+    caretColor: '#6366f1',
+  }
+];
+
+const getCollabTheme = (userId) => {
+  if (!userId) return COLLAB_THEMES[0];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash << 5) - hash + userId.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % COLLAB_THEMES.length;
+  return COLLAB_THEMES[idx];
+};
+
 const createBlockInstance = (type) => {
   const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
   switch (type) {
     case 'h1':
-      return { id, type, content: 'Heading 1' };
+      return { id, type, content: '' };
     case 'h2':
-      return { id, type, content: 'Heading 2' };
+      return { id, type, content: '' };
     case 'p':
-      return { id, type, content: 'Write a paragraph...' };
+      return { id, type, content: '' };
     case 'quote':
-      return { id, type, content: 'A beautiful quote block...' };
+      return { id, type, content: '' };
     case 'code':
-      return { id, type, content: '// write your code here', language: 'javascript' };
+      return { id, type, content: '', language: 'javascript' };
     case 'callout':
-      return { id, type, content: 'An important information tip...', icon: '💡' };
+      return { id, type, content: '', icon: '💡' };
     case 'image':
       return { id, type, url: '', caption: 'Blog Image' };
     case 'list':
-      return { id, type, content: 'First item\nSecond item' };
+      return { id, type, content: '' };
     default:
       return { id, type: 'p', content: '' };
   }
@@ -79,7 +156,7 @@ const parseHTMLToBlocks = (html) => {
         caption: figcaption ? figcaption.textContent : 'Blog Image'
       });
     } else if (tagName === 'ul' || tagName === 'ol') {
-      const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent).join('\n');
+      const items = Array.from(el.querySelectorAll('li')).map(li => li.textContent).join('\r\n');
       blocks.push({ id, type: 'list', content: items });
     } else if (el.classList.contains('bg-primary-50') || el.innerHTML.includes('💡') || el.classList.contains('callout')) {
       blocks.push({ id, type: 'callout', content: el.textContent.replace(/💡|⚠️|ℹ️|✅/, '').trim(), icon: '💡' });
@@ -153,7 +230,7 @@ const renderBlogPreview = (contentString) => {
               case 'list':
                 return (
                   <ul key={block.id} className="list-disc pl-6 space-y-1.5 my-4">
-                    {block.content.split('\n').filter(Boolean).map((item) => (
+                    {block.content.split('\r\n').filter(Boolean).map((item) => (
                       <li key={item} className={`text-slate-700 dark:text-slate-300 text-base leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}>{parseInlineMarkdown(item)}</li>
                     ))}
                   </ul>
@@ -208,11 +285,30 @@ export default function Editor() {
   ]);
   const [selectedTemplate, setSelectedTemplate] = useState('');
 
-  // Collaborators
+  // Collaborators & Real-Time Presence
+  const [currentBlog, setCurrentBlog] = useState(null);
   const [collaborators, setCollaborators] = useState([]);
   const [searchUserQuery, setSearchUserQuery] = useState('');
   const [userSearchResults, setUserSearchResults] = useState([]);
   const [activeCollaborators, setActiveCollaborators] = useState([]);
+  const [isCollabModalOpen, setIsCollabModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [searchingUsers, setSearchingUsers] = useState(false);
+  const [joiningCollab, setJoiningCollab] = useState(false);
+  const [startingCollab, setStartingCollab] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'saving' | 'saved'
+  const [blockFocusMap, setBlockFocusMap] = useState({}); // userId -> { blockId, userName, userId }
+  const [remoteTypingUser, setRemoteTypingUser] = useState(null);
+  const [remoteCursors, setRemoteCursors] = useState({}); // userId -> { x, y, userName, blockId, updatedAt }
+  const canvasRef = useRef(null);
+  const lastCursorEmitRef = useRef(0);
+  const typingTimeoutRef = useRef(null);
+  const isInitialLoadRef = useRef(true);
+
+  // Author and Collaborator permissions
+  const isAuthor = currentBlog ? (currentBlog.author?._id === user?._id || currentBlog.author === user?._id) : true;
+  const isCollaborator = collaborators.some(c => (c._id || c) === user?._id);
+  const isCoAuthorOrOwner = isAuthor || isCollaborator;
 
   // Editor modes: 'edit' or 'preview'
   const [editorMode, setEditorMode] = useState('edit');
@@ -262,6 +358,278 @@ export default function Editor() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  // Voice Dictation (Speech-to-Text) States & Logic
+  const [isListening, setIsListening] = useState(false);
+  const [voiceTarget, setVoiceTarget] = useState('block'); // 'title' | 'block'
+  const [speechLang, setSpeechLang] = useState('en-US');
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [voiceError, setVoiceError] = useState(null);
+  const [speechSupported, setSpeechSupported] = useState(true);
+  const shouldBeListeningRef = useRef(false);
+  const recognitionRef = useRef(null);
+  const targetBlockIndexRef = useRef(null);
+  const voiceTargetRef = useRef('block');
+
+  const SUPPORTED_VOICE_LANGS = [
+    { code: 'en-US', label: 'English (US)' },
+    { code: 'en-IN', label: 'English (India)' },
+    { code: 'en-GB', label: 'English (UK)' },
+    { code: 'hi-IN', label: 'Hindi (हिन्दी)' },
+    { code: 'es-ES', label: 'Spanish (Español)' },
+    { code: 'fr-FR', label: 'French (Français)' },
+    { code: 'de-DE', label: 'German (Deutsch)' },
+    { code: 'ar-SA', label: 'Arabic (العربية)' },
+    { code: 'zh-CN', label: 'Chinese (中文)' },
+    { code: 'ja-JP', label: 'Japanese (日本語)' }
+  ];
+
+  useEffect(() => {
+    voiceTargetRef.current = voiceTarget;
+  }, [voiceTarget]);
+
+  useEffect(() => {
+    targetBlockIndexRef.current = activeBlockIndex;
+  }, [activeBlockIndex]);
+
+  // Speech Recognition setup
+  useEffect(() => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      setSpeechSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognitionAPI();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = speechLang;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceError(null);
+    };
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      let finalChunk = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalChunk += event.results[i][0].transcript;
+        } else {
+          interim += event.results[i][0].transcript;
+        }
+      }
+
+      setInterimTranscript(interim);
+
+      if (finalChunk) {
+        handleFinalVoiceText(finalChunk);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech') return;
+      if (event.error === 'audio-capture') {
+        setVoiceError('No microphone detected. Please connect or enable your microphone.');
+        shouldBeListeningRef.current = false;
+        setIsListening(false);
+      } else if (event.error === 'not-allowed') {
+        setVoiceError('Microphone permission was denied. Please allow microphone access in your browser.');
+        shouldBeListeningRef.current = false;
+        setIsListening(false);
+      } else {
+        console.warn('Speech recognition warning:', event.error);
+      }
+    };
+
+    recognition.onend = () => {
+      if (shouldBeListeningRef.current) {
+        try {
+          recognition.start();
+        } catch (err) {
+          // Handled if already starting
+        }
+      } else {
+        setIsListening(false);
+        setInterimTranscript('');
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    if (shouldBeListeningRef.current) {
+      try {
+        recognition.start();
+      } catch (err) {}
+    }
+
+    return () => {
+      try {
+        recognition.stop();
+      } catch (e) {}
+    };
+  }, [speechLang]);
+
+  // Process voice text & commands
+  const handleFinalVoiceText = (rawTranscript) => {
+    const target = voiceTargetRef.current;
+    const currentBlockIdx = targetBlockIndexRef.current;
+
+    const lower = rawTranscript.trim().toLowerCase();
+
+    // Voice command: "new paragraph"
+    if (lower === 'new paragraph' || lower === 'next paragraph') {
+      const idx = currentBlockIdx !== null ? currentBlockIdx : (blocks.length > 0 ? blocks.length - 1 : 0);
+      insertBlockBelow(idx, 'p');
+      setInterimTranscript('');
+      showToast('Created new paragraph from voice command', 'info');
+      return;
+    }
+
+    // Voice command: punctuation replacement
+    let processed = rawTranscript
+      .replace(/\bperiod\b|\bfull stop\b/gi, '.')
+      .replace(/\bcomma\b/gi, ',')
+      .replace(/\bquestion mark\b/gi, '?')
+      .replace(/\bexclamation mark\b|\bexclamation point\b/gi, '!')
+      .replace(/\bcolon\b/gi, ':')
+      .replace(/\bsemi colon\b|\bsemicolon\b/gi, ';')
+      .replace(/\bnew line\b/gi, '\r\n');
+
+    if (target === 'title') {
+      setTitle((prev) => {
+        const prevTrimmed = (prev || '').trim();
+        const next = prevTrimmed ? `${prevTrimmed} ${processed.trim()}` : processed.trim();
+        handleTitleChange(next);
+        return next;
+      });
+    } else {
+      setBlocks((prevBlocks) => {
+        let idx = currentBlockIdx;
+        if (idx === null || idx === undefined || idx < 0 || idx >= prevBlocks.length) {
+          idx = prevBlocks.length > 0 ? prevBlocks.length - 1 : 0;
+        }
+
+        if (prevBlocks.length === 0) {
+          const newBlock = createBlockInstance('p');
+          newBlock.content = processed.trim();
+          const serialized = JSON.stringify([newBlock]);
+          setContent(serialized);
+          return [newBlock];
+        }
+
+        const updated = prevBlocks.map((b, i) => {
+          if (i === idx) {
+            const cur = b.content || '';
+            const space = cur && !cur.endsWith(' ') && !cur.endsWith('\r\n') ? ' ' : '';
+            const nextVal = cur + space + processed.trim();
+
+            setTimeout(() => {
+              const el = document.getElementById(`block-input-${b.id}`);
+              if (el) {
+                el.style.height = 'auto';
+                el.style.height = el.scrollHeight + 'px';
+              }
+            }, 10);
+
+            if (editId) {
+              socket.emit('edit_block', {
+                blogId: editId,
+                blockId: b.id,
+                field: 'content',
+                val: nextVal,
+                userId: user?._id
+              });
+            }
+            return { ...b, content: nextVal };
+          }
+          return b;
+        });
+
+        setContent(JSON.stringify(updated));
+        return updated;
+      });
+    }
+
+    setInterimTranscript('');
+  };
+
+  const startVoiceListening = (target = 'block', blockIndex = null) => {
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      showToast('Voice typing is not supported in this browser. Please use Chrome, Edge, or Safari.', 'error');
+      return;
+    }
+
+    const targetIdx = blockIndex !== null
+      ? blockIndex
+      : (activeBlockIndex !== null ? activeBlockIndex : (blocks.length > 0 ? blocks.length - 1 : 0));
+
+    setVoiceTarget(target);
+    voiceTargetRef.current = target;
+
+    if (target === 'block') {
+      setActiveBlockIndex(targetIdx);
+      targetBlockIndexRef.current = targetIdx;
+    }
+
+    shouldBeListeningRef.current = true;
+    setVoiceError(null);
+
+    try {
+      recognitionRef.current?.start();
+      setIsListening(true);
+      showToast(target === 'title' ? '🎙️ Listening: Speak your Article Title...' : `🎙️ Listening: Speak into Block #${targetIdx + 1}...`, 'info');
+    } catch (e) {
+      // Handled if already active
+    }
+  };
+
+  const stopVoiceListening = () => {
+    shouldBeListeningRef.current = false;
+    setIsListening(false);
+    setInterimTranscript('');
+    try {
+      recognitionRef.current?.stop();
+    } catch (e) {}
+    showToast('Voice dictation paused', 'info');
+  };
+
+  const toggleVoiceForTarget = (target = 'block', blockIndex = null) => {
+    if (isListening) {
+      if (voiceTarget === target && (target === 'title' || activeBlockIndex === blockIndex)) {
+        stopVoiceListening();
+      } else {
+        setVoiceTarget(target);
+        voiceTargetRef.current = target;
+        if (target === 'block' && blockIndex !== null) {
+          setActiveBlockIndex(blockIndex);
+          targetBlockIndexRef.current = blockIndex;
+        }
+        showToast(target === 'title' ? '🎙️ Dictating into: Title' : `🎙️ Dictating into: Block #${(blockIndex ?? 0) + 1}`, 'info');
+      }
+    } else {
+      startVoiceListening(target, blockIndex);
+    }
+  };
+
+  // Keyboard shortcut Alt+V to toggle speech-to-text
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.altKey && (e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        if (isListening) {
+          stopVoiceListening();
+        } else {
+          startVoiceListening('block', activeBlockIndex);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isListening, activeBlockIndex, blocks.length]);
 
   const handleUpgradeToAuthor = async () => {
     setUpgradingRole(true);
@@ -330,7 +698,7 @@ export default function Editor() {
   // Grammar/Spell Check - sends user text to AI for corrections only (no new words)
   const handleGrammarCheck = async () => {
     // Extract all text content from blocks
-    const textToCheck = blocks.map(b => b.content || '').join('\n');
+    const textToCheck = blocks.map(b => b.content || '').join('\r\n');
     if (!textToCheck.trim()) {
       showToast('Please write some content first to check for grammar/spelling errors.', 'error');
       return;
@@ -380,6 +748,7 @@ export default function Editor() {
       api.get(`/api/blogs/${editId}`)
         .then((res) => {
           const blog = res.data.blog;
+          setCurrentBlog(blog);
           setTitle(blog.title);
           setContent(blog.content);
           setCoverImage(blog.coverImage || '');
@@ -404,6 +773,16 @@ export default function Editor() {
           const loadedBlocks = parseHTMLToBlocks(blog.content);
           setBlocks(loadedBlocks);
           setLoading(false);
+
+          // Auto-join co-authoring session if logged in
+          if (user && user._id !== blog.author?._id) {
+            api.post(`/api/blogs/${editId}/join-collab`).catch((err) => {
+              if (err.response?.status === 403) {
+                showToast(err.response?.data?.error || 'You were removed from this co-authoring session.', 'warning');
+                navigate('/dashboard');
+              }
+            });
+          }
         })
         .catch((err) => {
           console.error(err);
@@ -411,7 +790,7 @@ export default function Editor() {
           setLoading(false);
         });
     }
-  }, [editId]);
+  }, [editId, user]);
 
   // Load communities list
   useEffect(() => {
@@ -428,13 +807,16 @@ export default function Editor() {
   useEffect(() => {
     if (editId && user) {
       // Connect to Socket
-      socket.connect();
+      if (!socket.connected) {
+        socket.connect();
+      }
 
-      // Join Room
+      // Join Room with metadata
       socket.emit('join_collab', {
         blogId: editId,
         userId: user._id,
-        userName: user.name
+        userName: user.name,
+        userAvatar: user.profileImage || ''
       });
 
       // Listen for presence
@@ -442,8 +824,118 @@ export default function Editor() {
         setActiveCollaborators(usersList.filter(u => u.userId !== user._id));
       });
 
-      // Listen for remote keystroke edits
-      socket.on('content_updated', ({ content: remoteContent, title: remoteTitle }) => {
+      // Listen for collaborator focus/cursor on specific block
+      socket.on('block_focused', ({ userId, userName, blockId }) => {
+        setBlockFocusMap(prev => {
+          const next = { ...prev };
+          if (!blockId) {
+            delete next[userId];
+          } else {
+            next[userId] = { blockId, userName, userId, updatedAt: Date.now() };
+          }
+          return next;
+        });
+      });
+
+      // Listen for collaborator real-time cursor coordinates
+      socket.on('cursor_moved', ({ userId, userName, x, y, blockId }) => {
+        if (String(userId) === String(user._id)) return;
+        setRemoteCursors(prev => ({
+          ...prev,
+          [userId]: { x, y, userName, blockId, updatedAt: Date.now() }
+        }));
+      });
+
+      // Listen for collaborator cursor remove/leave
+      socket.on('cursor_removed', ({ userId }) => {
+        setRemoteCursors(prev => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+        setBlockFocusMap(prev => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
+      });
+
+      // Listen for granular block edits (asynchronous, non-blocking)
+      socket.on('block_updated', ({ blockId, field, val, userId }) => {
+        if (String(userId) === String(user._id)) return;
+        setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, [field]: val } : b));
+      });
+
+      // Listen for structural block edits (reorder, add, remove)
+      socket.on('blocks_structure_updated', ({ blocks: remoteBlocks, userId }) => {
+        if (String(userId) === String(user._id)) return;
+        setBlocks(remoteBlocks);
+        setContent(JSON.stringify(remoteBlocks));
+      });
+
+      // Listen for metadata updates (title, tags, category, cover)
+      socket.on('meta_updated', ({ field, val, userId }) => {
+        if (userId === user._id) return;
+        if (field === 'title') setTitle(val);
+        else if (field === 'coverImage') setCoverImage(val);
+        else if (field === 'category') setCategory(val);
+        else if (field === 'tags') setTags(val);
+      });
+
+      // Listen for collaborator typing indicator
+      socket.on('collab_user_typing', ({ userId, userName, isTyping }) => {
+        if (userId === user._id) return;
+        if (isTyping) {
+          setRemoteTypingUser(userName);
+          if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          typingTimeoutRef.current = setTimeout(() => {
+            setRemoteTypingUser(null);
+          }, 2500);
+        } else {
+          setRemoteTypingUser(null);
+        }
+      });
+
+      // Listen for collaborator additions/removals
+      socket.on('collaborator_added', ({ user: addedUser }) => {
+        setCollaborators(prev => {
+          if (prev.some(c => (c._id || c) === addedUser._id)) return prev;
+          return [...prev, addedUser];
+        });
+      });
+
+      socket.on('collaborator_removed', ({ userId }) => {
+        if (userId === user?._id) {
+          showToast('You have been removed from this co-authoring session by the author.', 'warning');
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1000);
+        } else {
+          setCollaborators(prev => prev.filter(c => String(c._id || c) !== String(userId)));
+          setActiveCollaborators(prev => prev.filter(c => String(c.userId) !== String(userId)));
+          setRemoteCursors(prev => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+          setBlockFocusMap(prev => {
+            const next = { ...prev };
+            delete next[userId];
+            return next;
+          });
+        }
+      });
+
+      socket.on('collab_kicked', ({ message }) => {
+        showToast(message || 'You have been removed from this co-authoring session by the author.', 'warning');
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1000);
+      });
+
+      // Listen for remote full keystroke edits (fallback)
+      socket.on('content_updated', ({ content: remoteContent, title: remoteTitle, userId }) => {
+        if (String(userId) === String(user._id)) return;
         if (remoteTitle !== undefined) setTitle(remoteTitle);
         if (remoteContent !== undefined) {
           setContent(remoteContent);
@@ -485,16 +977,259 @@ export default function Editor() {
 
     return () => {
       if (editId) {
-        socket.emit('leave_collab', { blogId: editId });
+        socket.emit('leave_collab', { blogId: editId, userId: user?._id });
         socket.off('collab_users');
+        socket.off('block_focused');
+        socket.off('cursor_moved');
+        socket.off('cursor_removed');
+        socket.off('block_updated');
+        socket.off('blocks_structure_updated');
+        socket.off('meta_updated');
+        socket.off('collab_user_typing');
+        socket.off('collaborator_added');
+        socket.off('collaborator_removed');
+        socket.off('collab_kicked');
         socket.off('content_updated');
         socket.off('sprint_started');
         socket.off('sprint_progress');
         socket.off('sprint_cancelled');
-        socket.disconnect();
       }
     };
   }, [editId, user]);
+
+  // Clean up stale cursors and inactive block focus locks
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      setRemoteCursors(prev => {
+        let changed = false;
+        const next = { ...prev };
+        Object.entries(next).forEach(([uid, cur]) => {
+          if (now - cur.updatedAt > 5000) {
+            delete next[uid];
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+
+      setBlockFocusMap(prev => {
+        let changed = false;
+        const next = { ...prev };
+        Object.entries(next).forEach(([uid, f]) => {
+          if (now - (f?.updatedAt || 0) > 8000) {
+            delete next[uid];
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Real-time canvas mouse movement tracking
+  const handleCanvasMouseMove = (e) => {
+    if (!editId || !user || !canvasRef.current) return;
+    const now = Date.now();
+    if (now - lastCursorEmitRef.current < 40) return; // ~25fps smooth
+    lastCursorEmitRef.current = now;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = Math.round(e.clientX - rect.left);
+    const y = Math.round(e.clientY - rect.top);
+
+    socket.emit('collab_cursor', {
+      blogId: editId,
+      userId: user._id,
+      userName: user.name,
+      x,
+      y
+    });
+  };
+
+  const handleCanvasMouseLeave = () => {
+    if (!editId || !user) return;
+    socket.emit('collab_cursor_leave', {
+      blogId: editId,
+      userId: user._id
+    });
+  };
+
+  // Async Debounced Auto-Save Draft
+  useEffect(() => {
+    if (isInitialLoadRef.current) {
+      if (editId && blocks.length > 0) {
+        isInitialLoadRef.current = false;
+      }
+      return;
+    }
+
+    if (!editId || !isCoAuthorOrOwner || status === 'published') return;
+
+    setAutoSaveStatus('saving');
+    const timer = setTimeout(async () => {
+      try {
+        await api.put(`/api/blogs/${editId}`, {
+          title: title.trim() || 'Untitled Blog',
+          content: JSON.stringify(blocks),
+          coverImage: coverImage.trim() || undefined,
+          category: category || 'General',
+          tags,
+          status: 'draft'
+        });
+        setAutoSaveStatus('saved');
+      } catch (err) {
+        console.error('Auto-save error:', err);
+        setAutoSaveStatus('idle');
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [blocks, title, coverImage, category, tags, editId, isCoAuthorOrOwner, status]);
+
+  // Collaboration Action Handlers
+  const handleBlockFocus = (blockId) => {
+    if (editId && user) {
+      socket.emit('collab_focus', {
+        blogId: editId,
+        userId: user._id,
+        userName: user.name,
+        blockId
+      });
+    }
+  };
+
+  const handleBlockBlur = () => {
+    if (editId && user) {
+      socket.emit('collab_focus', {
+        blogId: editId,
+        userId: user._id,
+        userName: user.name,
+        blockId: null
+      });
+    }
+  };
+
+  const handleStartLiveCollab = async () => {
+    setStartingCollab(true);
+    try {
+      const payload = {
+        title: title.trim() || 'Untitled Blog',
+        content: JSON.stringify(blocks),
+        category: category || 'General',
+        tags,
+        status: 'draft',
+        collaborators: []
+      };
+      const res = await api.post('/api/blogs', payload);
+      const newBlog = res.data.blog;
+      setCurrentBlog(newBlog);
+      setCollaborators(newBlog.collaborators || []);
+      navigate(`/editor?edit=${newBlog._id}`, { replace: true });
+      setIsCollabModalOpen(true);
+      showToast('Co-authoring session ready! Share the link or invite peers.', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to start co-authoring session', 'error');
+    } finally {
+      setStartingCollab(false);
+    }
+  };
+
+  const handleJoinCollab = async () => {
+    if (!editId) return;
+    setJoiningCollab(true);
+    try {
+      const res = await api.post(`/api/blogs/${editId}/join-collab`);
+      setCurrentBlog(res.data.blog);
+      setCollaborators(res.data.blog.collaborators || []);
+      showToast('Successfully joined co-authoring session!', 'success');
+      if (user) {
+        socket.emit('join_collab', {
+          blogId: editId,
+          userId: user._id,
+          userName: user.name,
+          userAvatar: user.profileImage || ''
+        });
+      }
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to join session', 'error');
+    } finally {
+      setJoiningCollab(false);
+    }
+  };
+
+  const handleCopyInviteLink = () => {
+    const inviteUrl = `${window.location.origin}/editor?edit=${editId}&collab=true`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedLink(true);
+    showToast('Co-author invite link copied to clipboard!', 'success');
+    setTimeout(() => setCopiedLink(false), 3000);
+  };
+
+  const handleSearchUsers = async (q) => {
+    setSearchUserQuery(q);
+    if (!q || q.trim().length < 2) {
+      setUserSearchResults([]);
+      return;
+    }
+    setSearchingUsers(true);
+    try {
+      const res = await api.get(`/api/users/search/authors?search=${encodeURIComponent(q.trim())}`);
+      const existingIds = [user?._id, ...(collaborators.map(c => c._id || c))];
+      const filtered = (res.data.users || []).filter(u => !existingIds.includes(u._id));
+      setUserSearchResults(filtered);
+    } catch (err) {
+      console.error('Failed to search users:', err);
+    } finally {
+      setSearchingUsers(false);
+    }
+  };
+
+  const handleAddCollaborator = async (targetUser) => {
+    if (!editId) return;
+    try {
+      const res = await api.post(`/api/blogs/${editId}/collaborators`, { userId: targetUser._id });
+      setCollaborators(res.data.collaborators || []);
+      setUserSearchResults(prev => prev.filter(u => u._id !== targetUser._id));
+      showToast(`${targetUser.name} added as co-author!`, 'success');
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to add collaborator', 'error');
+    }
+  };
+
+  const handleRemoveCollaborator = async (collaboratorId) => {
+    if (!editId) return;
+    try {
+      // 1. Kick immediately via WebSocket so their session closes instantly
+      socket.emit('kick_collaborator', { blogId: editId, userId: collaboratorId });
+
+      // 2. Remove in MongoDB backend
+      const res = await api.delete(`/api/blogs/${editId}/collaborators/${collaboratorId}`).catch(() => null);
+      if (res && res.data?.collaborators) {
+        setCollaborators(res.data.collaborators);
+      } else {
+        setCollaborators(prev => prev.filter(c => String(c._id || c) !== String(collaboratorId)));
+      }
+
+      // 3. Immediately clean up local state
+      setActiveCollaborators(prev => prev.filter(c => String(c.userId) !== String(collaboratorId)));
+      setRemoteCursors(prev => {
+        const next = { ...prev };
+        delete next[collaboratorId];
+        return next;
+      });
+      setBlockFocusMap(prev => {
+        const next = { ...prev };
+        delete next[collaboratorId];
+        return next;
+      });
+
+      showToast('Collaborator removed from draft', 'success');
+    } catch (err) {
+      showToast(err.response?.data?.error || 'Failed to remove collaborator', 'error');
+    }
+  };
 
   // Sync block state changes and broadcast to collaborators
   const handleBlocksChange = (newBlocks) => {
@@ -503,10 +1238,16 @@ export default function Editor() {
     setContent(serialized);
 
     if (editId) {
+      socket.emit('edit_blocks_structure', {
+        blogId: editId,
+        blocks: newBlocks,
+        userId: user?._id
+      });
       socket.emit('edit_content', {
         blogId: editId,
         content: serialized,
-        title
+        title,
+        userId: user?._id
       });
 
       if (sprintActive) {
@@ -706,10 +1447,17 @@ export default function Editor() {
   const handleTitleChange = (val) => {
     setTitle(val);
     if (editId) {
+      socket.emit('edit_meta', {
+        blogId: editId,
+        field: 'title',
+        val,
+        userId: user?._id
+      });
       socket.emit('edit_content', {
         blogId: editId,
         content,
-        title: val
+        title: val,
+        userId: user?._id
       });
     }
   };
@@ -780,6 +1528,51 @@ export default function Editor() {
     handleBlocksChange(updated);
   };
 
+  const insertBlockBelow = (targetIndex, type = 'p') => {
+    const newBlock = createBlockInstance(type);
+    const updated = [...blocks];
+    const insertAt = targetIndex + 1;
+    updated.splice(insertAt, 0, newBlock);
+    handleBlocksChange(updated);
+    setActiveBlockIndex(insertAt);
+    setTimeout(() => {
+      const el = document.getElementById(`block-input-${newBlock.id}`);
+      if (el) {
+        el.focus();
+        if (el.setSelectionRange) {
+          el.setSelectionRange(0, 0);
+        }
+      }
+      handleBlockFocus(newBlock.id);
+    }, 70);
+  };
+
+  const handleBlockKeyDown = (e, index, blockType, blockContent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      if (['h1', 'h2', 'quote', 'callout', 'p'].includes(blockType)) {
+        e.preventDefault();
+        insertBlockBelow(index, 'p');
+      }
+    } else if (e.key === 'Backspace' && (!blockContent || blockContent.trim() === '') && blocks.length > 1) {
+      e.preventDefault();
+      const prevIndex = Math.max(0, index - 1);
+      const prevBlock = blocks[prevIndex];
+      deleteBlock(index);
+      setTimeout(() => {
+        if (prevBlock) {
+          const prevEl = document.getElementById(`block-input-${prevBlock.id}`);
+          if (prevEl) {
+            prevEl.focus();
+            if (prevEl.setSelectionRange) {
+              const len = prevEl.value.length;
+              prevEl.setSelectionRange(len, len);
+            }
+          }
+        }
+      }, 50);
+    }
+  };
+
   const calculateDraftScore = () => {
     let score = 0;
     if (title && title.trim()) {
@@ -833,10 +1626,46 @@ export default function Editor() {
     handleBlocksChange(updated);
   };
 
-  const updateBlockProperty = (index, key, val) => {
-    const updated = [...blocks];
-    updated[index] = { ...updated[index], [key]: val };
-    handleBlocksChange(updated);
+  const updateBlockProperty = (identifier, key, val) => {
+    let targetBlockId = null;
+    setBlocks(prevBlocks => {
+      const updated = prevBlocks.map((b, i) => {
+        if (b.id === identifier || i === identifier) {
+          targetBlockId = b.id;
+          return { ...b, [key]: val };
+        }
+        return b;
+      });
+      setContent(JSON.stringify(updated));
+      return updated;
+    });
+
+    const blockId = targetBlockId || (typeof identifier === 'string' ? identifier : blocks[identifier]?.id);
+
+    if (editId && blockId) {
+      socket.emit('edit_block', {
+        blogId: editId,
+        blockId,
+        field: key,
+        val,
+        userId: user?._id
+      });
+
+      // Keep focus state active and fresh while typing
+      socket.emit('collab_focus', {
+        blogId: editId,
+        userId: user?._id,
+        userName: user?.name,
+        blockId
+      });
+
+      socket.emit('collab_typing', {
+        blogId: editId,
+        userId: user?._id,
+        userName: user?.name,
+        isTyping: true
+      });
+    }
   };
 
   // Add Tag
@@ -845,14 +1674,22 @@ export default function Editor() {
       e.preventDefault();
       const cleaned = tagInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
       if (cleaned && !tags.includes(cleaned)) {
-        setTags([...tags, cleaned]);
+        const nextTags = [...tags, cleaned];
+        setTags(nextTags);
+        if (editId) {
+          socket.emit('edit_meta', { blogId: editId, field: 'tags', val: nextTags, userId: user?._id });
+        }
       }
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (indexToRemove) => {
-    setTags(tags.filter((_, idx) => idx !== indexToRemove));
+    const nextTags = tags.filter((_, idx) => idx !== indexToRemove);
+    setTags(nextTags);
+    if (editId) {
+      socket.emit('edit_meta', { blogId: editId, field: 'tags', val: nextTags, userId: user?._id });
+    }
   };
 
   // Search User to add as Collaborator
@@ -995,116 +1832,154 @@ export default function Editor() {
     );
   }
 
-  if (isAuthenticated && user?.role === 'reader') {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center space-y-6">
-        <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 to-amber-600 text-slate-950 shadow-2xl shadow-amber-500/30 ring-8 ring-amber-500/10">
-          <PenTool className="w-10 h-10 animate-bounce" />
-          <span className="absolute -top-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500"></span>
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          <span className="inline-block text-[11px] font-black uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-3.5 py-1 rounded-full border border-amber-300/40 dark:border-amber-700/40">
-            Reader Account Active
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-            Writing Studio is Reserved for Authors
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
-            You are currently registered as a <strong className="text-slate-800 dark:text-slate-200">Reader</strong>. Readers can enjoy reading, bookmarking, and joining discussions. To start drafting and publishing your own stories, upgrade your account to an <strong className="text-amber-500">Author</strong> for free!
+  return (
+    <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 py-8">
+      {/* Editor Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+            <PenTool className="w-8 h-8 text-primary-500" />
+            <span>{editId ? 'Collaborative Studio' : 'Create New Article'}</span>
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            {editId ? 'Real-time collaborative editing active across your network' : 'Drafting new blog'}
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-3.5 text-left max-w-lg mx-auto pt-2">
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Interactive Editor & AI</h4>
-              <p className="text-[11px] text-slate-400 leading-snug">Block formatting, AI rewrite, grammar fixes, and translations.</p>
+        {/* Center Indicators: Auto-save, Typing, Active Presence */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Auto-Save Indicator */}
+          {editId && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 shadow-xs">
+              {autoSaveStatus === 'saving' ? (
+                <>
+                  <CloudUpload className="w-3.5 h-3.5 animate-spin text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400">Syncing draft...</span>
+                </>
+              ) : autoSaveStatus === 'saved' ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  <span className="text-emerald-600 dark:text-emerald-400">All changes saved</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Draft saved</span>
+                </>
+              )}
             </div>
-          </div>
-          <div className="p-4 rounded-2xl bg-white dark:bg-[#141720] border border-slate-200 dark:border-[#232734] shadow-sm flex items-start gap-3">
-            <Users className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">Publish & Reach</h4>
-              <p className="text-[11px] text-slate-400 leading-snug">Distribute to channels, get followers, and earn reputation points.</p>
+          )}
+
+          {/* Typing Indicator */}
+          {remoteTypingUser && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-xs font-bold text-amber-700 dark:text-amber-300 animate-pulse">
+              <span className="flex h-2 w-2 relative">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span>{remoteTypingUser} is typing...</span>
             </div>
-          </div>
+          )}
+
+          {/* Multi-User Distinct Cursor Status Bar */}
+          {editId && (
+            <div className="flex items-center gap-2.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 rounded-full shadow-xs">
+              {/* You (Cursor 1) */}
+              <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm ring-2 ring-amber-400/40" />
+                <span className="text-[11px]">You (Cursor 1)</span>
+              </div>
+
+              {/* Remote Collaborators (Cursor 2, 3...) */}
+              {activeCollaborators.length > 0 ? (
+                <>
+                  <div className="w-[1px] h-3.5 bg-slate-300 dark:bg-slate-700" />
+                  <div className="flex items-center gap-2">
+                    {activeCollaborators.map((c, idx) => {
+                      const theme = getCollabTheme(c.userId);
+                      return (
+                        <div key={c.userId} className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shadow-sm ring-2"
+                            style={{ backgroundColor: theme.color, ringColor: `${theme.color}66` }}
+                          />
+                          <span className="text-[11px]" style={{ color: theme.color }}>
+                            {c.userName} (Cursor {idx + 2})
+                          </span>
+                        </div>
+                      );
+                    })}
+                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      ⚡ {activeCollaborators.length + 1} Cursors Synced
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="w-[1px] h-3.5 bg-slate-300 dark:bg-slate-700" />
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    Solo Cursor · Share link for 2nd cursor
+                  </span>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Live Co-Authors Button */}
+          {editId ? (
+            <button
+              type="button"
+              onClick={() => setIsCollabModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:brightness-105 shadow-sm transition-all"
+            >
+              <Users className="w-4 h-4" />
+              <span>Co-Authors ({collaborators.length + 1})</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleStartLiveCollab}
+              disabled={startingCollab}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-sm transition-all disabled:opacity-60"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{startingCollab ? 'Starting...' : 'Start Live Collab'}</span>
+            </button>
+          )}
+
+          {/* Speak to Write / Voice Dictation Button */}
           <button
-            onClick={handleUpgradeToAuthor}
-            disabled={upgradingRole}
-            className="w-full sm:w-auto px-8 py-3.5 text-xs font-extrabold text-slate-950 rounded-full bg-amber-500 hover:bg-amber-400 shadow-xl shadow-amber-500/25 flex items-center justify-center gap-2 hover:scale-105 active:scale-95 transition-all disabled:opacity-60"
+            type="button"
+            onClick={() => toggleVoiceForTarget('block', activeBlockIndex)}
+            className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-full transition-all shadow-sm ${
+              isListening
+                ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 animate-pulse ring-2 ring-rose-400'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+            }`}
+            title="Click to speak and auto-write into your blog (Shortcut: Alt+V)"
           >
-            {upgradingRole ? (
+            {isListening ? (
               <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Upgrading to Author...</span>
+                <Mic className="w-4 h-4 text-white animate-bounce" />
+                <span>Listening...</span>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                </span>
               </>
             ) : (
               <>
-                <Zap className="w-4 h-4" />
-                <span>Upgrade to Author (Free)</span>
-                <ArrowRight className="w-4 h-4" />
+                <Mic className="w-4 h-4 text-amber-500" />
+                <span>Speak to Write</span>
               </>
             )}
           </button>
 
           <button
-            onClick={() => navigate('/')}
-            className="w-full sm:w-auto px-6 py-3.5 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full border border-slate-200/80 dark:border-slate-800 transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-w-[95%] xl:max-w-[1550px] mx-auto px-4 py-8">
-      {/* Editor Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-            <PenTool className="w-8 h-8 text-primary-500" />
-            <span>{editId ? 'Collaborative Editor' : 'Create New Article'}</span>
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            {editId ? 'Collaborators can sync typing updates instantly' : 'Drafting new story'}
-          </p>
-        </div>
-
-        {/* Presence Indicator */}
-        {editId && activeCollaborators.length > 0 && (
-          <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 border px-3 py-1.5 rounded-full">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <div className="flex -space-x-1.5 overflow-hidden">
-              {activeCollaborators.map((c) => (
-                <span
-                  key={c.userId}
-                  title={`${c.userName} is editing`}
-                  className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-950 bg-amber-500 text-slate-950 font-black text-[9px] flex items-center justify-center"
-                >
-                  {c.userName.substring(0, 2).toUpperCase()}
-                </span>
-              ))}
-            </div>
-            <span className="text-[10px] text-slate-400 font-semibold uppercase">Live editing</span>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex gap-2">
-          <button
+            type="button"
             onClick={() => setEditorMode(editorMode === 'edit' ? 'preview' : 'edit')}
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
           >
@@ -1113,15 +1988,17 @@ export default function Editor() {
           </button>
 
           <button
+            type="button"
             onClick={() => handleSave('draft')}
             disabled={saving}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-200 border border-slate-200 dark:border-slate-800"
           >
             <Save className="w-4 h-4" />
             <span>Save Draft</span>
           </button>
 
           <button
+            type="button"
             onClick={() => handleSave(isScheduled ? 'scheduled' : 'published')}
             disabled={saving}
             className="flex items-center gap-1.5 px-5 py-2 text-xs font-semibold rounded-full text-white bg-primary-600 hover:bg-primary-700 shadow-md shadow-primary-500/10"
@@ -1131,6 +2008,34 @@ export default function Editor() {
           </button>
         </div>
       </div>
+
+      {/* Invite Join Banner: Shown if user opens a shared draft link without having joined yet */}
+      {editId && currentBlog && !isCoAuthorOrOwner && (
+        <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent border border-amber-400 dark:border-amber-600/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold shadow-xs">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Co-Author Invitation for "{currentBlog.title || 'Untitled Draft'}"
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                You were invited by <strong className="text-slate-800 dark:text-slate-200">{currentBlog.author?.name || 'the author'}</strong> to write and edit this blog together in real-time.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleJoinCollab}
+            disabled={joiningCollab}
+            className="px-5 py-2 text-xs font-extrabold rounded-full bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-md transition-all flex items-center gap-2 shrink-0"
+          >
+            {joiningCollab ? 'Joining Session...' : 'Join Writing Session'}
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 text-xs rounded-xl dark:bg-rose-950/20 dark:border-rose-900/30 dark:text-rose-400">
@@ -1255,14 +2160,34 @@ export default function Editor() {
                 className="w-full px-4 py-2.5 text-sm border rounded-2xl bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none"
               />
 
-              {/* Title input */}
-              <input
-                type="text"
-                placeholder="Article Title..."
-                value={title}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                className="w-full px-4 py-3 text-2xl sm:text-3xl font-extrabold border-b border-slate-100 dark:border-slate-800 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-700 focus:outline-none focus:border-primary-500"
-              />
+              {/* Title input with Voice Dictation */}
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="Article Title..."
+                  value={title}
+                  onChange={(e) => handleTitleChange(e.target.value)}
+                  onFocus={() => {
+                    if (isListening && voiceTarget !== 'title') {
+                      setVoiceTarget('title');
+                      voiceTargetRef.current = 'title';
+                    }
+                  }}
+                  className="w-full pr-12 px-4 py-3 text-2xl sm:text-3xl font-extrabold border-b border-slate-100 dark:border-slate-800 bg-transparent text-slate-800 dark:text-slate-100 placeholder-slate-300 dark:placeholder-slate-700 focus:outline-none focus:border-primary-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => toggleVoiceForTarget('title')}
+                  className={`absolute right-2 p-2 rounded-full transition-all ${
+                    isListening && voiceTarget === 'title'
+                      ? 'bg-rose-500 text-white shadow-md animate-pulse ring-2 ring-rose-400'
+                      : 'text-slate-400 hover:text-amber-500 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                  title={isListening && voiceTarget === 'title' ? 'Stop Dictating Title' : 'Speak to Dictate Title'}
+                >
+                  <Mic className="w-5 h-5" />
+                </button>
+              </div>
 
               {/* Drag and Drop Canvas Layout */}
               <div className="flex flex-col md:flex-row gap-6 items-start mt-4">
@@ -1311,319 +2236,553 @@ export default function Editor() {
                 {/* Editor Canvas Drop Zone */}
                 <div className="flex-1 w-full space-y-4">
                   <div
+                    ref={canvasRef}
+                    onMouseMove={handleCanvasMouseMove}
+                    onMouseLeave={handleCanvasMouseLeave}
                     onDragOver={handleDragOver}
                     onDrop={handleDropAtEnd}
-                    className="min-h-[520px] border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900/40 relative space-y-4"
+                    className="min-h-[520px] border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-5 bg-white dark:bg-slate-900/40 relative space-y-4 overflow-hidden"
                   >
+                    {/* Real-time Floating Collaborator Cursors (Figma / Notion style) */}
+                    {Object.entries(remoteCursors).map(([uid, cursor]) => {
+                      const theme = getCollabTheme(uid);
+                      return (
+                        <div
+                          key={uid}
+                          className="absolute pointer-events-none z-30 transition-all duration-75 ease-out select-none"
+                          style={{
+                            left: `${cursor.x}px`,
+                            top: `${cursor.y}px`,
+                            transform: 'translate(-2px, -2px)'
+                          }}
+                        >
+                          <svg
+                            className="w-5 h-5 drop-shadow-md"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
+                              fill={theme.color}
+                              stroke="white"
+                              strokeWidth="1.5"
+                            />
+                          </svg>
+                          <div
+                            className="absolute left-3 top-3 px-2 py-0.5 rounded-full text-[10px] font-extrabold text-white shadow-md whitespace-nowrap flex items-center gap-1"
+                            style={{ backgroundColor: theme.color }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            <span>{cursor.userName}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
                     {blocks.length === 0 && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 text-slate-400">
                         <PenTool className="w-10 h-10 text-slate-300 dark:text-slate-700 mb-2 animate-pulse" />
-                        <h3 className="text-xs font-bold text-slate-600 dark:text-slate-400">Your Story Canvas</h3>
+                        <h3 className="text-xs font-bold text-slate-600 dark:text-slate-400">Your Blog Canvas</h3>
                         <p className="text-[10px] text-slate-400 mt-1 max-w-[200px]">
                           Drag and drop blocks here from the left palette or click on items to build your blog post.
                         </p>
                       </div>
                     )}
 
-                    {blocks.map((block, index) => (
-                      <div
-                        key={block.id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
-                        onDragOver={handleDragOver}
-                        onDrop={(e) => handleDropOnBlock(e, index)}
-                        className="group relative flex gap-3 p-4 border border-slate-100 dark:border-slate-800/60 rounded-2xl bg-white dark:bg-slate-900 hover:shadow-sm hover:border-slate-200 dark:hover:border-slate-800 transition-all duration-200"
-                      >
-                        {/* Drag Handle & Reordering controls */}
-                        <div className="flex flex-col items-center justify-between text-slate-300 dark:text-slate-700 select-none py-1 flex-shrink-0">
-                          <div className="cursor-grab active:cursor-grabbing hover:text-slate-500">
-                            <GripVertical className="w-4 h-4" />
-                          </div>
-
-                          <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-0.5 mt-2 transition-opacity duration-200">
-                            <button
-                              type="button"
-                              onClick={() => moveBlock(index, 'up')}
-                              disabled={index === 0}
-                              className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 hover:text-slate-600 dark:hover:text-slate-300"
-                              title="Move up"
-                            >
-                              <ArrowUp className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveBlock(index, 'down')}
-                              disabled={index === blocks.length - 1}
-                              className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 hover:text-slate-600 dark:hover:text-slate-300"
-                              title="Move down"
-                            >
-                              <ArrowDown className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Block Content Inputs */}
-                        <div className="flex-1 min-w-0">
-                          {block.type === 'h1' && (
-                            <textarea
-                              value={block.content}
-                              onChange={(e) => {
-                                updateBlockProperty(index, 'content', e.target.value);
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                              }}
-                              onFocus={(e) => {
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                                setActiveBlockIndex(index);
-                              }}
-                              rows={1}
-                              placeholder="Heading 1..."
-                              className={`w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none overflow-hidden text-slate-900 dark:text-white ${block.bold === false ? 'font-normal' : 'font-extrabold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
-                              style={{ fontSize: `${(24 * editorZoom) / 100}px` }}
-                            />
-                          )}
-
-                          {block.type === 'h2' && (
-                            <textarea
-                              value={block.content}
-                              onChange={(e) => {
-                                updateBlockProperty(index, 'content', e.target.value);
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                              }}
-                              onFocus={(e) => {
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                                setActiveBlockIndex(index);
-                              }}
-                              rows={1}
-                              placeholder="Heading 2..."
-                              className={`w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none overflow-hidden text-slate-800 dark:text-slate-100 ${block.bold === false ? 'font-normal' : 'font-bold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
-                              style={{ fontSize: `${(20 * editorZoom) / 100}px` }}
-                            />
-                          )}
-
-                          {block.type === 'p' && (
-                            <textarea
-                              value={block.content}
-                              onChange={(e) => {
-                                updateBlockProperty(index, 'content', e.target.value);
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                              }}
-                              onFocus={(e) => {
-                                e.target.style.height = 'auto';
-                                e.target.style.height = e.target.scrollHeight + 'px';
-                                setActiveBlockIndex(index);
-                              }}
-                              rows={2}
-                              placeholder="Start typing paragraph text..."
-                              className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none leading-relaxed font-medium ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
-                              style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
-                            />
-                          )}
-
-                          {block.type === 'quote' && (
-                            <div className="border-l-4 border-primary-500 pl-3.5 bg-slate-50/50 dark:bg-slate-950/20 p-2 rounded-r-xl">
-                              <textarea
-                                value={block.content}
-                                onChange={(e) => {
-                                  updateBlockProperty(index, 'content', e.target.value);
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                  setActiveBlockIndex(index);
-                                }}
-                                rows={2}
-                                placeholder="Paste a striking quote here..."
-                                className={`w-full text-slate-600 dark:text-slate-400 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-400 dark:placeholder-slate-700 resize-none font-medium leading-relaxed ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic === false ? 'not-italic' : 'italic'} ${block.underline ? 'underline' : ''}`}
-                                style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
-                              />
-                            </div>
-                          )}
-
-                          {block.type === 'list' && (
-                            <div className="flex gap-2 items-start">
-                              <List className="w-4 h-4 text-violet-500 mt-1 select-none flex-shrink-0" />
-                              <textarea
-                                value={block.content}
-                                onChange={(e) => {
-                                  updateBlockProperty(index, 'content', e.target.value);
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                  setActiveBlockIndex(index);
-                                }}
-                                rows={3}
-                                placeholder="Enter items (one item per line)..."
-                                className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none leading-relaxed font-medium ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
-                                style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
-                              />
-                            </div>
-                          )}
-
-                          {block.type === 'callout' && (
-                            <div className="bg-primary-50/50 border border-primary-100 dark:bg-primary-950/20 dark:border-primary-900/30 p-3 rounded-xl flex gap-2.5 items-center">
-                              <select
-                                value={block.icon || '💡'}
-                                onChange={(e) => updateBlockProperty(index, 'icon', e.target.value)}
-                                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1 text-sm focus:outline-none cursor-pointer"
+                    {blocks.map((block, index) => {
+                      const remoteFocusedBy = Object.values(blockFocusMap).find(
+                        f => f?.blockId === block.id && String(f?.userId) !== String(user?._id)
+                      );
+                      const isOccupiedByOther = Boolean(remoteFocusedBy);
+                      const collabTheme = remoteFocusedBy ? getCollabTheme(remoteFocusedBy.userId) : null;
+                      return (
+                        <React.Fragment key={block.id}>
+                          <div
+                            draggable={!isOccupiedByOther}
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDropOnBlock(e, index)}
+                            style={isOccupiedByOther && collabTheme ? {
+                              borderColor: collabTheme.color,
+                              boxShadow: `0 0 0 2px ${collabTheme.color}33, 0 4px 16px ${collabTheme.color}15`
+                            } : undefined}
+                            className={`group relative flex gap-3 p-4 border rounded-2xl bg-white dark:bg-slate-900 transition-all duration-200 ${
+                              isOccupiedByOther
+                                ? ''
+                                : 'border-slate-100 dark:border-slate-800/60 hover:shadow-sm hover:border-slate-200 dark:hover:border-slate-800'
+                            }`}
+                          >
+                            {/* Live Collaborator Presence on this Block */}
+                            {isOccupiedByOther && collabTheme && (
+                              <div
+                                className="absolute -top-3.5 right-4 z-20 flex items-center gap-1.5 px-3 py-0.5 rounded-full text-white font-extrabold text-[10px] shadow-md animate-fade-in pointer-events-none"
+                                style={{ backgroundColor: collabTheme.color }}
                               >
-                                <option value="💡">💡</option>
-                                <option value="⚠️">⚠️</option>
-                                <option value="ℹ️">ℹ️</option>
-                                <option value="✅">✅</option>
-                              </select>
-                              <input
-                                type="text"
-                                value={block.content}
-                                onChange={(e) => updateBlockProperty(index, 'content', e.target.value)}
-                                onFocus={() => setActiveBlockIndex(index)}
-                                placeholder="Important warning / key tip highlight..."
-                                className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-semibold ${block.bold === false ? 'font-normal' : 'font-bold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
-                                style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
-                              />
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                <span>{remoteFocusedBy.userName} is editing here</span>
+                              </div>
+                            )}
+
+                            {/* Drag Handle & Reordering controls */}
+                            <div className="flex flex-col items-center justify-between text-slate-300 dark:text-slate-700 select-none py-1 flex-shrink-0">
+                              <div className="cursor-grab active:cursor-grabbing hover:text-slate-500">
+                                <GripVertical className="w-4 h-4" />
+                              </div>
+
+                              <div className="opacity-0 group-hover:opacity-100 flex flex-col gap-0.5 mt-2 transition-opacity duration-200">
+                                <button
+                                  type="button"
+                                  onClick={() => moveBlock(index, 'up')}
+                                  disabled={index === 0}
+                                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 hover:text-slate-600 dark:hover:text-slate-300"
+                                  title="Move up"
+                                >
+                                  <ArrowUp className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveBlock(index, 'down')}
+                                  disabled={index === blocks.length - 1}
+                                  className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded disabled:opacity-30 hover:text-slate-600 dark:hover:text-slate-300"
+                                  title="Move down"
+                                >
+                                  <ArrowDown className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          )}
 
-                          {block.type === 'image' && (
-                            <div className="space-y-2">
-                              <input
-                                type="text"
-                                value={block.url}
-                                onChange={(e) => updateBlockProperty(index, 'url', e.target.value)}
-                                placeholder="Paste Image URL link..."
-                                className="w-full text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-primary-500"
-                              />
-
-                              {block.url ? (
-                                <div className="rounded-xl overflow-hidden shadow-sm max-w-xs border dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-                                  <img
-                                    src={block.url}
-                                    alt={block.caption || 'Preview'}
-                                    className="max-h-36 w-full object-cover"
-                                    onError={(e) => {
-                                      e.target.src = 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?auto=format&fit=crop&q=80&w=400';
+                            {/* Block Content Inputs */}
+                            <div 
+                              className="flex-1 min-w-0 relative"
+                              onClick={(e) => {
+                                if (isOccupiedByOther) {
+                                  e.stopPropagation();
+                                  insertBlockBelow(index, 'p');
+                                  showToast(`${remoteFocusedBy.userName} is editing that block. Added a new block below so you can write independently!`, 'info');
+                                }
+                              }}
+                            >
+                              {/* Collaborator Occupied Banner with Instant Independent Block Fork */}
+                              {isOccupiedByOther && collabTheme && (
+                                <div
+                                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 mb-2.5 rounded-xl text-xs font-semibold shadow-xs animate-fade-in"
+                                  style={{
+                                    backgroundColor: `${collabTheme.color}15`,
+                                    border: `1.5px solid ${collabTheme.color}40`,
+                                    color: collabTheme.color
+                                  }}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <span className="w-2 h-2 rounded-full animate-ping flex-shrink-0" style={{ backgroundColor: collabTheme.color }} />
+                                    <span className="truncate">{remoteFocusedBy.userName} is writing in this block</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      insertBlockBelow(index, 'p');
+                                      showToast(`Added a new block below for you to work independently!`, 'success');
                                     }}
-                                  />
+                                    className="px-2.5 py-1 rounded-lg text-white font-bold text-[11px] shadow-sm hover:opacity-90 flex items-center gap-1 transition-all cursor-pointer flex-shrink-0"
+                                    style={{ backgroundColor: collabTheme.color }}
+                                    title="Start your own block below without disturbing their work"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Work in New Block Below</span>
+                                  </button>
                                 </div>
-                              ) : (
-                                <div className="text-[10px] text-slate-400 italic">No image link pasted yet.</div>
                               )}
 
-                              <input
-                                type="text"
-                                value={block.caption}
-                                onChange={(e) => updateBlockProperty(index, 'caption', e.target.value)}
-                                placeholder="Image Caption..."
-                                className="w-full text-xs font-semibold text-slate-400 dark:text-slate-500 bg-transparent border-none p-0 focus:outline-none focus:ring-0"
-                              />
-                            </div>
-                          )}
+                              {/* In-Block Caret Indicator for Remote Collaborator */}
+                              {isOccupiedByOther && collabTheme && (
+                                <div className="absolute -top-1 left-0 z-10 pointer-events-none flex items-center gap-1 animate-fade-in">
+                                  <div
+                                    className="w-[2.5px] h-4 rounded-full animate-pulse shadow-sm"
+                                    style={{ backgroundColor: collabTheme.color }}
+                                  />
+                                  <span
+                                    className="px-1.5 py-0.2 rounded-full text-[9px] font-extrabold text-white shadow-xs"
+                                    style={{ backgroundColor: collabTheme.color }}
+                                  >
+                                    {remoteFocusedBy.userName}
+                                  </span>
+                                </div>
+                              )}
 
-                          {block.type === 'code' && (
-                            <div className="relative rounded-xl overflow-hidden border border-slate-200/60 dark:border-slate-800 bg-slate-950 text-slate-200 font-mono shadow-inner" style={{ fontSize: `${(12 * editorZoom) / 100}px` }}>
-                              <div className="flex items-center justify-between px-3.5 py-1 bg-slate-900 border-b border-slate-200/50 dark:border-slate-800">
-                                <select
-                                  value={block.language || 'javascript'}
-                                  onChange={(e) => updateBlockProperty(index, 'language', e.target.value)}
-                                  className="bg-transparent border-none text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer"
-                                >
-                                  {['javascript', 'python', 'html', 'css', 'shell', 'json', 'cpp', 'java'].map(lang => (
-                                    <option key={lang} value={lang} className="bg-slate-900 text-slate-300">{lang}</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <textarea
-                                value={block.content}
-                                onChange={(e) => {
-                                  updateBlockProperty(index, 'content', e.target.value);
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onFocus={(e) => {
-                                  e.target.style.height = 'auto';
-                                  e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                rows={4}
-                                placeholder="// Paste or write code snippet here..."
-                                className="w-full bg-transparent border-none p-3.5 focus:outline-none focus:ring-0 placeholder-slate-600 resize-none font-mono text-slate-100"
-                              />
-                            </div>
-                          )}
-                        </div>
+                              {block.type === 'h1' && (
+                                <textarea
+                                  id={`block-input-${block.id}`}
+                                  value={block.content}
+                                  readOnly={isOccupiedByOther}
+                                  title={isOccupiedByOther ? `${remoteFocusedBy.userName} is editing this block. Click to work in a new block below.` : undefined}
+                                  onChange={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    updateBlockProperty(index, 'content', e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                  }}
+                                  onKeyDown={(e) => handleBlockKeyDown(e, index, 'h1', block.content)}
+                                  onFocus={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    setActiveBlockIndex(index);
+                                    handleBlockFocus(block.id);
+                                  }}
+                                  onBlur={handleBlockBlur}
+                                  rows={1}
+                                  placeholder="Heading 1..."
+                                  className={`w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none overflow-hidden text-slate-900 dark:text-white ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold === false ? 'font-normal' : 'font-extrabold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
+                                  style={{ fontSize: `${(24 * editorZoom) / 100}px` }}
+                                />
+                              )}
 
-                        {/* Block Action Buttons on Hover/Focus */}
-                        <div className={`flex items-start gap-1 transition-opacity duration-200 select-none flex-shrink-0 ${activeBlockIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                          }`}>
-                          {/* Formatting Controls for Text Blocks */}
-                          {['h1', 'h2', 'p', 'quote', 'list', 'callout'].includes(block.type) && (
-                            <>
+                              {block.type === 'h2' && (
+                                <textarea
+                                  id={`block-input-${block.id}`}
+                                  value={block.content}
+                                  readOnly={isOccupiedByOther}
+                                  title={isOccupiedByOther ? `${remoteFocusedBy.userName} is editing this block. Click to work in a new block below.` : undefined}
+                                  onChange={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    updateBlockProperty(index, 'content', e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                  }}
+                                  onKeyDown={(e) => handleBlockKeyDown(e, index, 'h2', block.content)}
+                                  onFocus={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    setActiveBlockIndex(index);
+                                    handleBlockFocus(block.id);
+                                  }}
+                                  onBlur={handleBlockBlur}
+                                  rows={1}
+                                  placeholder="Heading 2..."
+                                  className={`w-full bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none overflow-hidden text-slate-800 dark:text-slate-100 ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold === false ? 'font-normal' : 'font-bold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
+                                  style={{ fontSize: `${(20 * editorZoom) / 100}px` }}
+                                />
+                              )}
+
+                              {block.type === 'p' && (
+                                <textarea
+                                  id={`block-input-${block.id}`}
+                                  value={block.content}
+                                  readOnly={isOccupiedByOther}
+                                  title={isOccupiedByOther ? `${remoteFocusedBy.userName} is editing this block. Click to work in a new block below.` : undefined}
+                                  onChange={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    updateBlockProperty(index, 'content', e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                  }}
+                                  onKeyDown={(e) => handleBlockKeyDown(e, index, 'p', block.content)}
+                                  onFocus={(e) => {
+                                    if (isOccupiedByOther) return;
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                    setActiveBlockIndex(index);
+                                    handleBlockFocus(block.id);
+                                  }}
+                                  onBlur={handleBlockBlur}
+                                  rows={2}
+                                  placeholder="Start typing paragraph text..."
+                                  className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none leading-relaxed font-medium ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
+                                  style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
+                                />
+                              )}
+
+                              {block.type === 'quote' && (
+                                <div className="border-l-4 border-primary-500 pl-3.5 bg-slate-50/50 dark:bg-slate-950/20 p-2 rounded-r-xl">
+                                  <textarea
+                                    id={`block-input-${block.id}`}
+                                    value={block.content}
+                                    readOnly={isOccupiedByOther}
+                                    title={isOccupiedByOther ? `${remoteFocusedBy.userName} is editing this block. Click to work in a new block below.` : undefined}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'content', e.target.value);
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onKeyDown={(e) => handleBlockKeyDown(e, index, 'quote', block.content)}
+                                    onFocus={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                      setActiveBlockIndex(index);
+                                      handleBlockFocus(block.id);
+                                    }}
+                                    onBlur={handleBlockBlur}
+                                    rows={2}
+                                    placeholder="Paste a striking quote here..."
+                                    className={`w-full text-slate-600 dark:text-slate-400 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-400 dark:placeholder-slate-700 resize-none font-medium leading-relaxed ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic === false ? 'not-italic' : 'italic'} ${block.underline ? 'underline' : ''}`}
+                                    style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
+                                  />
+                                </div>
+                              )}
+
+                              {block.type === 'list' && (
+                                <div className="flex gap-2 items-start">
+                                  <List className="w-4 h-4 text-violet-500 mt-1 select-none flex-shrink-0" />
+                                  <textarea
+                                    id={`block-input-${block.id}`}
+                                    value={block.content}
+                                    readOnly={isOccupiedByOther}
+                                    title={isOccupiedByOther ? `${remoteFocusedBy.userName} is editing this block. Click to work in a new block below.` : undefined}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'content', e.target.value);
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onKeyDown={(e) => handleBlockKeyDown(e, index, 'list', block.content)}
+                                    onFocus={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                      setActiveBlockIndex(index);
+                                      handleBlockFocus(block.id);
+                                    }}
+                                    onBlur={handleBlockBlur}
+                                    rows={3}
+                                    placeholder="Enter items (one item per line)..."
+                                    className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 placeholder-slate-300 dark:placeholder-slate-700 resize-none leading-relaxed font-medium ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold ? 'font-bold' : 'font-normal'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
+                                    style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
+                                  />
+                                </div>
+                              )}
+
+                              {block.type === 'callout' && (
+                                <div className="bg-primary-50/50 border border-primary-100 dark:bg-primary-950/20 dark:border-primary-900/30 p-3 rounded-xl flex gap-2.5 items-center">
+                                  <select
+                                    value={block.icon || '💡'}
+                                    disabled={isOccupiedByOther}
+                                    onChange={(e) => updateBlockProperty(index, 'icon', e.target.value)}
+                                    className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-1 text-sm focus:outline-none cursor-pointer disabled:opacity-60"
+                                  >
+                                    <option value="💡">💡</option>
+                                    <option value="⚠️">⚠️</option>
+                                    <option value="ℹ️">ℹ️</option>
+                                    <option value="✅">✅</option>
+                                  </select>
+                                  <input
+                                    id={`block-input-${block.id}`}
+                                    type="text"
+                                    value={block.content}
+                                    readOnly={isOccupiedByOther}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'content', e.target.value);
+                                    }}
+                                    onKeyDown={(e) => handleBlockKeyDown(e, index, 'callout', block.content)}
+                                    onFocus={() => {
+                                      if (isOccupiedByOther) return;
+                                      setActiveBlockIndex(index);
+                                      handleBlockFocus(block.id);
+                                    }}
+                                    onBlur={handleBlockBlur}
+                                    placeholder="Important warning / key tip highlight..."
+                                    className={`w-full text-slate-700 dark:text-slate-300 bg-transparent border-none p-0 focus:outline-none focus:ring-0 font-semibold ${isOccupiedByOther ? 'cursor-pointer' : ''} ${block.bold === false ? 'font-normal' : 'font-bold'} ${block.italic ? 'italic' : ''} ${block.underline ? 'underline' : ''}`}
+                                    style={{ fontSize: `${(14 * editorZoom) / 100}px` }}
+                                  />
+                                </div>
+                              )}
+
+                              {block.type === 'image' && (
+                                <div className="space-y-2">
+                                  <input
+                                    id={`block-input-${block.id}`}
+                                    type="text"
+                                    value={block.url}
+                                    readOnly={isOccupiedByOther}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'url', e.target.value);
+                                    }}
+                                    onFocus={() => {
+                                      if (isOccupiedByOther) return;
+                                      setActiveBlockIndex(index);
+                                      handleBlockFocus(block.id);
+                                    }}
+                                    onBlur={handleBlockBlur}
+                                    placeholder="Paste Image URL link..."
+                                    className="w-full text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/40 border border-slate-200/50 dark:border-slate-800 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-primary-500"
+                                  />
+
+                                  {block.url ? (
+                                    <div className="rounded-xl overflow-hidden shadow-sm max-w-xs border dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+                                      <img
+                                        src={block.url}
+                                        alt={block.caption || 'Preview'}
+                                        className="max-h-36 w-full object-cover"
+                                        onError={(e) => {
+                                          e.target.src = 'https://images.unsplash.com/photo-1594322436404-5a0526db4d13?auto=format&fit=crop&q=80&w=400';
+                                        }}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="text-[10px] text-slate-400 italic">No image link pasted yet.</div>
+                                  )}
+
+                                  <input
+                                    type="text"
+                                    value={block.caption}
+                                    readOnly={isOccupiedByOther}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'caption', e.target.value);
+                                    }}
+                                    placeholder="Image Caption..."
+                                    className="w-full text-xs font-semibold text-slate-400 dark:text-slate-500 bg-transparent border-none p-0 focus:outline-none focus:ring-0"
+                                  />
+                                </div>
+                              )}
+
+                              {block.type === 'code' && (
+                                <div className="relative rounded-xl overflow-hidden border border-slate-200/60 dark:border-slate-800 bg-slate-950 text-slate-200 font-mono shadow-inner" style={{ fontSize: `${(12 * editorZoom) / 100}px` }}>
+                                  <div className="flex items-center justify-between px-3.5 py-1 bg-slate-900 border-b border-slate-200/50 dark:border-slate-800">
+                                    <select
+                                      value={block.language || 'javascript'}
+                                      disabled={isOccupiedByOther}
+                                      onChange={(e) => updateBlockProperty(index, 'language', e.target.value)}
+                                      className="bg-transparent border-none text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer"
+                                    >
+                                      {['javascript', 'python', 'html', 'css', 'shell', 'json', 'cpp', 'java'].map(lang => (
+                                        <option key={lang} value={lang} className="bg-slate-900 text-slate-300">{lang}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <textarea
+                                    id={`block-input-${block.id}`}
+                                    value={block.content}
+                                    readOnly={isOccupiedByOther}
+                                    onChange={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      updateBlockProperty(index, 'content', e.target.value);
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                    onFocus={(e) => {
+                                      if (isOccupiedByOther) return;
+                                      e.target.style.height = 'auto';
+                                      e.target.style.height = e.target.scrollHeight + 'px';
+                                      setActiveBlockIndex(index);
+                                      handleBlockFocus(block.id);
+                                    }}
+                                    onBlur={handleBlockBlur}
+                                    rows={4}
+                                    placeholder="// Paste or write code snippet here..."
+                                    className="w-full bg-transparent border-none p-3.5 focus:outline-none focus:ring-0 placeholder-slate-600 resize-none font-mono text-slate-100"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Block Action Buttons on Hover/Focus */}
+                            <div className={`flex items-start gap-1 transition-opacity duration-200 select-none flex-shrink-0 ${activeBlockIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                              }`}>
+                              {/* Formatting Controls for Text Blocks */}
+                              {['h1', 'h2', 'p', 'quote', 'list', 'callout'].includes(block.type) && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const isBold = block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type);
+                                      updateBlockProperty(index, 'bold', !isBold);
+                                    }}
+                                    className={`p-1.5 rounded-lg border transition-colors ${(block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type))
+                                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
+                                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
+                                      }`}
+                                    title="Toggle Bold"
+                                  >
+                                    <span className="font-bold text-xs">B</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateBlockProperty(index, 'italic', !block.italic)}
+                                    className={`p-1.5 rounded-lg border transition-colors ${block.italic
+                                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
+                                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
+                                      }`}
+                                    title="Toggle Italic"
+                                  >
+                                    <span className="italic text-xs font-serif font-bold">I</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateBlockProperty(index, 'underline', !block.underline)}
+                                    className={`p-1.5 rounded-lg border transition-colors ${block.underline
+                                        ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
+                                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
+                                      }`}
+                                    title="Toggle Underline"
+                                  >
+                                    <span className="underline text-xs font-bold">U</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleVoiceForTarget('block', index)}
+                                    className={`p-1.5 rounded-lg border transition-all ${
+                                      isListening && voiceTarget === 'block' && activeBlockIndex === index
+                                        ? 'bg-rose-500 border-rose-600 text-white shadow-sm animate-pulse'
+                                        : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-amber-500 hover:border-amber-500/50'
+                                    }`}
+                                    title="Speak to dictate into this block"
+                                  >
+                                    <Mic className="w-3.5 h-3.5" />
+                                  </button>
+                                  <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1 align-middle self-center"></div>
+                                </>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const isBold = block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type);
-                                  updateBlockProperty(index, 'bold', !isBold);
-                                }}
-                                className={`p-1.5 rounded-lg border transition-colors ${(block.bold !== undefined ? block.bold : ['h1', 'h2', 'callout'].includes(block.type))
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
-                                    : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                  }`}
-                                title="Toggle Bold"
+                                onClick={() => insertBlockBelow(index, 'p')}
+                                className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-primary-500 rounded-lg text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                title="Add paragraph block below"
                               >
-                                <span className="font-bold text-xs">B</span>
+                                <Plus className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 type="button"
-                                onClick={() => updateBlockProperty(index, 'italic', !block.italic)}
-                                className={`p-1.5 rounded-lg border transition-colors ${block.italic
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
-                                    : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                  }`}
-                                title="Toggle Italic"
+                                onClick={() => duplicateBlock(index)}
+                                className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-primary-500 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                title="Duplicate block"
                               >
-                                <span className="italic text-xs font-serif font-bold">I</span>
+                                <Copy className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 type="button"
-                                onClick={() => updateBlockProperty(index, 'underline', !block.underline)}
-                                className={`p-1.5 rounded-lg border transition-colors ${block.underline
-                                    ? 'bg-primary-50 border-primary-100 text-primary-600 dark:bg-primary-950/20 dark:border-primary-900/30 dark:text-primary-400 font-bold'
-                                    : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-800 text-slate-400 hover:text-slate-600'
-                                  }`}
-                                title="Toggle Underline"
+                                onClick={() => deleteBlock(index)}
+                                className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-rose-500 rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
+                                title="Delete block"
                               >
-                                <span className="underline text-xs font-bold">U</span>
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                              <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1 align-middle self-center"></div>
-                            </>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => duplicateBlock(index)}
-                            className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-primary-500 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
-                            title="Duplicate block"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteBlock(index)}
-                            className="p-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 hover:border-rose-500 rounded-lg text-slate-400 hover:text-rose-500 transition-colors"
-                            title="Delete block"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                            </div>
+                          </div>
+
+                          {/* In-Between Add Block Divider */}
+                          <div className="group/divider relative py-1 my-0.5 flex items-center justify-center opacity-0 hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
+                            <div className="absolute inset-0 flex items-center">
+                              <div className="w-full border-t border-dashed border-slate-200 dark:border-slate-800" />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => insertBlockBelow(index, 'p')}
+                              className="relative z-10 px-2.5 py-0.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 text-[10px] font-bold shadow-xs flex items-center gap-1 transition-all cursor-pointer"
+                              title="Insert new block here"
+                            >
+                              <Plus className="w-3 h-3" />
+                              <span>Add Block</span>
+                            </button>
+                          </div>
+                        </React.Fragment>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2167,6 +3326,266 @@ export default function Editor() {
         </div>
       )}
 
+      {/* Real-time Collaboration & LAN Share Modal */}
+      {isCollabModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-xl p-6 bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-2xl flex flex-col gap-5 animate-scale-in max-h-[85vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Live Co-Authoring Studio
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Write and edit together in real-time across your local network
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCollabModalOpen(false)}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Section 1: LAN / Local Network Share Link */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/5 to-primary-500/5 border border-amber-500/20 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Wifi className="w-4 h-4 text-amber-500" />
+                  <span>Instant Network Co-Author Link</span>
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                  Same Wi-Fi Ready
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                Anyone connected to your Wi-Fi or local network can open this link to write with you live:
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 px-3 py-2 text-xs font-mono bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-700 dark:text-slate-300 truncate select-all">
+                  {`${window.location.origin}/editor?edit=${editId}&collab=true`}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopyInviteLink}
+                  className="px-4 py-2 text-xs font-bold rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all flex items-center gap-1.5 shrink-0 shadow-sm"
+                >
+                  {copiedLink ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy Link</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Section 2: Search & Add Registered Writers */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <UserPlus className="w-4 h-4 text-primary-500" />
+                  <span>Invite Registered User</span>
+                </span>
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search user by name, @username, or email..."
+                  value={searchUserQuery}
+                  onChange={(e) => handleSearchUsers(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+
+              {searchingUsers && (
+                <p className="text-[11px] text-slate-400 animate-pulse px-1">Searching authors...</p>
+              )}
+
+              {userSearchResults.length > 0 && (
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {userSearchResults.map((u) => (
+                    <div
+                      key={u._id}
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800/60"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <img
+                          src={u.profileImage || `https://api.dicebear.com/7.x/identicon/svg?seed=${u.username || u.name}`}
+                          alt={u.name}
+                          className="w-7 h-7 rounded-full object-cover shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{u.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate">@{u.username || 'user'}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleAddCollaborator(u)}
+                        className="px-3 py-1 text-[11px] font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all shadow-xs"
+                      >
+                        + Add Co-Author
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Section 3: Current Co-Authors and Presence */}
+            <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                <span>Blog Contributors</span>
+                <span className="text-[10px] text-slate-400 font-normal">
+                  {activeCollaborators.length + 1} online in room
+                </span>
+              </span>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {/* Author (Owner) */}
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src={currentBlog?.author?.profileImage || user?.profileImage || `https://api.dicebear.com/7.x/identicon/svg?seed=owner`}
+                      alt="Owner"
+                      className="w-7 h-7 rounded-full object-cover"
+                    />
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {currentBlog?.author?.name || user?.name}
+                        {user?._id === (currentBlog?.author?._id || currentBlog?.author) && ' (You)'}
+                      </p>
+                      <span className="text-[10px] text-amber-500 font-semibold">Author & Owner</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    Lead Author
+                  </span>
+                </div>
+
+                {/* Unified Collaborators List */}
+                {(() => {
+                  const contributorsMap = new Map();
+
+                  collaborators.forEach(c => {
+                    const id = String(c._id || c);
+                    contributorsMap.set(id, {
+                      id,
+                      name: c.name || 'Co-Author',
+                      username: c.username || '',
+                      profileImage: c.profileImage || '',
+                      isOnline: activeCollaborators.some(ac => String(ac.userId) === id)
+                    });
+                  });
+
+                  activeCollaborators.forEach(ac => {
+                    const id = String(ac.userId);
+                    const authorId = String(currentBlog?.author?._id || currentBlog?.author || user?._id);
+                    if (id && id !== authorId && id !== String(user?._id)) {
+                      if (contributorsMap.has(id)) {
+                        const item = contributorsMap.get(id);
+                        item.isOnline = true;
+                        if (!item.name || item.name === 'Co-Author') item.name = ac.userName;
+                        if (!item.profileImage) item.profileImage = ac.userAvatar;
+                      } else {
+                        contributorsMap.set(id, {
+                          id,
+                          name: ac.userName || 'Live Collaborator',
+                          username: '',
+                          profileImage: ac.userAvatar || '',
+                          isOnline: true
+                        });
+                      }
+                    }
+                  });
+
+                  const mergedContributors = Array.from(contributorsMap.values());
+
+                  if (mergedContributors.length === 0) {
+                    return (
+                      <p className="text-xs text-slate-400 text-center py-3 italic">
+                        No other co-authors added yet. Copy the link above or search to invite!
+                      </p>
+                    );
+                  }
+
+                  return mergedContributors.map(c => {
+                    const collName = c.name;
+                    const isCurrentUser = String(user?._id) === c.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-955 border border-slate-100 dark:border-slate-800"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <img
+                            src={c.profileImage || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.username || collName}`}
+                            alt={collName}
+                            className="w-7 h-7 rounded-full object-cover shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {collName}
+                              {isCurrentUser && ' (You)'}
+                            </p>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-slate-400">Co-Author</span>
+                              {c.isOnline && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-500">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  Active now
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {isAuthor && !isCurrentUser && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCollaborator(c.id)}
+                            className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/30 dark:hover:bg-rose-950/60 dark:text-rose-400 border border-rose-200 dark:border-rose-900/40 transition-all flex items-center gap-1 shadow-xs hover:scale-105"
+                            title="Remove collaborator"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Remove</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setIsCollabModalOpen(false)}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-all"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Grammar/Spell Check Modal */}
       {grammarModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
@@ -2269,6 +3688,110 @@ export default function Editor() {
       )}
 
 
+
+      {/* Floating Voice Dictation HUD / Widget */}
+      {isListening && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[95%] max-w-lg bg-slate-950/95 dark:bg-[#0c0e14]/95 text-white backdrop-blur-xl border border-rose-500/40 dark:border-rose-500/30 rounded-3xl p-4 shadow-2xl shadow-rose-950/30 animate-fade-in space-y-3">
+          {/* Top Bar: Mic indicator, target badge, language selector */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+              </span>
+
+              {/* Animated waveform bars */}
+              <div className="flex items-center gap-0.5 h-4 select-none">
+                <span className="w-1 bg-rose-500 rounded-full animate-bounce [animation-delay:0ms] h-3"></span>
+                <span className="w-1 bg-amber-400 rounded-full animate-bounce [animation-delay:150ms] h-4"></span>
+                <span className="w-1 bg-emerald-400 rounded-full animate-bounce [animation-delay:300ms] h-2"></span>
+                <span className="w-1 bg-sky-400 rounded-full animate-bounce [animation-delay:75ms] h-4"></span>
+                <span className="w-1 bg-rose-400 rounded-full animate-bounce [animation-delay:225ms] h-3"></span>
+              </div>
+
+              <span className="text-xs font-black tracking-wide uppercase text-rose-400">
+                Listening & Dictating
+              </span>
+            </div>
+
+            {/* Target indicator tag & Language selector */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                Target: {voiceTarget === 'title' ? 'Article Title' : `Block #${(activeBlockIndex ?? 0) + 1} (${blocks[activeBlockIndex ?? 0]?.type?.toUpperCase() || 'P'})`}
+              </span>
+
+              <select
+                value={speechLang}
+                onChange={(e) => setSpeechLang(e.target.value)}
+                className="bg-slate-900 border border-slate-700 text-[11px] font-semibold text-slate-300 rounded-lg px-2 py-0.5 focus:outline-none focus:border-amber-500"
+              >
+                {SUPPORTED_VOICE_LANGS.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Live speech preview */}
+          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 min-h-[44px] flex items-center">
+            {interimTranscript ? (
+              <p className="text-xs font-medium text-amber-300 italic animate-pulse">
+                "{interimTranscript}..."
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-slate-500 animate-pulse shrink-0" />
+                <span>Speak naturally. Say commands like "comma", "period", or "new paragraph".</span>
+              </p>
+            )}
+          </div>
+
+          {/* Error Message if any */}
+          {voiceError && (
+            <div className="text-[11px] text-rose-400 bg-rose-950/40 border border-rose-800/50 p-2 rounded-xl">
+              {voiceError}
+            </div>
+          )}
+
+          {/* Quick Action controls */}
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const idx = activeBlockIndex !== null ? activeBlockIndex : (blocks.length > 0 ? blocks.length - 1 : 0);
+                  insertBlockBelow(idx, 'p');
+                }}
+                className="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3 text-amber-400" />
+                <span>+ New Paragraph</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleVoiceForTarget(voiceTarget === 'title' ? 'block' : 'title', activeBlockIndex)}
+                className="px-3 py-1.5 text-[11px] font-bold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
+              >
+                {voiceTarget === 'title' ? 'Switch to Body' : 'Switch to Title'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-500 hidden sm:inline font-mono">Alt+V</span>
+              <button
+                type="button"
+                onClick={stopVoiceListening}
+                className="px-4 py-1.5 text-xs font-extrabold rounded-xl bg-rose-600 hover:bg-rose-500 text-white shadow-md transition-all flex items-center gap-1.5"
+              >
+                <MicOff className="w-3.5 h-3.5" />
+                <span>Stop</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (

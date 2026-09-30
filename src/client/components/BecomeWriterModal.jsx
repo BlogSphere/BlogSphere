@@ -132,7 +132,7 @@ export default function BecomeWriterModal({ isOpen, onClose, onSuccess }) {
                   Start Writing on BlogSphere
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
-                  Join our community of independent writers, essayists, and thinkers. Share your stories, build an audience, and publish with complete editorial control.
+                  Join our community of independent writers, essayists, and thinkers. Share your blogs, build an audience, and publish with complete editorial control.
                 </p>
               </div>
 

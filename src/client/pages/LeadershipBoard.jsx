@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Trophy, TrendingUp, Users, Target, Clock, Medal, Star, Flame, Eye, Heart, MessageSquare, ArrowUp, X } from 'lucide-react';
 import api from '../utils/api.js';
+import { getUserAvatar, handleAvatarError } from '../utils/imageUtils.js';
 
 export default function LeadershipBoard() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -64,10 +65,12 @@ export default function LeadershipBoard() {
     { id: 'views', label: 'Most Views', icon: TrendingUp },
     { id: 'engagement', label: 'Top Engagement', icon: Flame },
     { id: 'posts', label: 'Most Posts', icon: Target },
+    { id: 'xp', label: 'Top XP & Streaks', icon: Trophy },
   ];
 
   // Sort leaderboard based on active tab
   const sortedLeaderboard = [...leaderboard].sort((a, b) => {
+    if (activeTab === 'xp') return (b.xp || 0) - (a.xp || 0);
     if (activeTab === 'posts') return (b.totalPosts || 0) - (a.totalPosts || 0);
     if (activeTab === 'engagement') {
       const scoreA = (a.totalLikes || 0) + (a.totalReactions || 0) + (a.totalComments || 0) * 2;
@@ -140,6 +143,9 @@ export default function LeadershipBoard() {
                 {activeTab === 'posts' && (
                   <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">Total Articles</th>
                 )}
+                {activeTab === 'xp' && (
+                  <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 text-center">XP & Streak Level</th>
+                )}
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-400 text-right">Details</th>
               </tr>
             </thead>
@@ -178,9 +184,11 @@ export default function LeadershipBoard() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={user.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+                            src={getUserAvatar(user.profileImage, user.name)}
                             alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover ring-2 ring-amber-500/20"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => handleAvatarError(e, user.name)}
+                            className="w-10 h-10 rounded-full object-cover ring-2 ring-amber-500/20 bg-amber-500/10"
                           />
                           <div>
                             <p className="font-bold text-slate-900 dark:text-white text-sm">{user.name}</p>
@@ -201,6 +209,22 @@ export default function LeadershipBoard() {
                       {activeTab === 'posts' && (
                         <td className="px-6 py-4 text-center font-extrabold text-amber-500 text-base">
                           {totalPosts}
+                        </td>
+                      )}
+                      {activeTab === 'xp' && (
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2 flex-wrap">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-500/10 text-amber-500 border border-amber-500/30">
+                              Lv.{user.level || 1}
+                            </span>
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                              {user.xp || 0} XP
+                            </span>
+                            <span className="flex items-center gap-0.5 text-xs font-bold text-amber-500">
+                              <Flame className="w-3.5 h-3.5 fill-amber-500" />
+                              <span>{user.streak || 1}d</span>
+                            </span>
+                          </div>
                         </td>
                       )}
                       <td className="px-6 py-4 text-right">
@@ -326,9 +350,11 @@ function CreatorDetailsModal({ user, onClose }) {
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-6 py-5 flex items-center justify-between text-slate-950">
           <div className="flex items-center gap-3">
             <img
-              src={user.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`}
+              src={getUserAvatar(user.profileImage, user.name)}
               alt={user.name}
-              className="w-11 h-11 rounded-full border-2 border-slate-950/20 object-cover shadow-sm"
+              referrerPolicy="no-referrer"
+              onError={(e) => handleAvatarError(e, user.name)}
+              className="w-11 h-11 rounded-full border-2 border-slate-950/20 object-cover shadow-sm bg-amber-500/10"
             />
             <div>
               <p className="text-slate-950 font-extrabold text-sm">{user.name}</p>

@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../redux/authSlice.js';
-import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard, Sparkles } from 'lucide-react';
+import { Bell, Search, Sun, Moon, PenSquare, LogOut, User, Menu, X, ChevronDown, Check, Brain, Trophy, BookOpen, LayoutDashboard, Sparkles, Flame, Zap } from 'lucide-react';
+import GamificationModal from './GamificationModal.jsx';
 import api from '../utils/api.js';
 import socket from '../utils/socket.js';
 import logo from '../assets/logo.png';
 import Stats24hBadge from './Stats24hBadge.jsx';
-import BecomeWriterModal from './BecomeWriterModal.jsx';
+import { getUserAvatar, handleAvatarError } from '../utils/imageUtils.js';
 
 export default function Navbar() {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -26,7 +27,8 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isBecomeWriterOpen, setIsBecomeWriterOpen] = useState(false);
+  const [isGamificationOpen, setIsGamificationOpen] = useState(false);
+  const [gamificationData, setGamificationData] = useState(null);
 
   const notificationRef = useRef(null);
   const userMenuRef = useRef(null);
@@ -45,9 +47,12 @@ export default function Navbar() {
   // Fetch Notifications & Setup Socket
   useEffect(() => {
     if (isAuthenticated && user) {
-      socket.connect();
+      if (!socket.connected) {
+        socket.connect();
+      }
       socket.emit('join_user', user._id);
 
+      api.get('/api/users/gamification').then(res => setGamificationData(res.data)).catch(() => {});
       api.get('/api/notifications')
         .then((res) => {
           setNotifications(res.data.notifications || []);
@@ -55,16 +60,17 @@ export default function Navbar() {
         })
         .catch(console.error);
 
-      socket.on('notification_received', (newNotif) => {
+      const handleNotification = (newNotif) => {
         setNotifications((prev) => [newNotif, ...prev]);
         setUnreadCount((prev) => prev + 1);
-      });
-    }
+      };
 
-    return () => {
-      socket.off('notification_received');
-      socket.disconnect();
-    };
+      socket.on('notification_received', handleNotification);
+
+      return () => {
+        socket.off('notification_received', handleNotification);
+      };
+    }
   }, [isAuthenticated, user]);
 
   // Click Outside hooks
@@ -157,7 +163,7 @@ export default function Navbar() {
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
                 }`}
               >
-                Stories
+                Blogs
               </Link>
               <Link 
                 to="/collections" 
@@ -209,7 +215,7 @@ export default function Navbar() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search stories, essays, topics..."
+                placeholder="Search blogs, essays, topics..."
                 className="w-full py-2 pl-9 pr-4 text-xs font-medium transition-all border rounded-full bg-stone-100/90 border-stone-200 focus:outline-none focus:ring-1 focus:ring-stone-400 focus:bg-white dark:bg-stone-900/90 dark:border-stone-800 dark:focus:border-stone-700 dark:focus:bg-stone-900 text-stone-800 dark:text-stone-100 dark:placeholder-stone-500"
               />
               <Search className="absolute w-3.5 h-3.5 text-stone-400 dark:text-stone-500 top-2.5 left-3" />
@@ -230,25 +236,29 @@ export default function Navbar() {
 
             {isAuthenticated ? (
               <>
-                {/* Write Article Link or Become a Writer CTA */}
-                {user?.role === 'reader' ? (
-                  <button
-                    onClick={() => setIsBecomeWriterOpen(true)}
-                    className="items-center gap-1.5 px-3.5 py-1.5 xl:px-4 xl:py-2 text-xs font-semibold text-amber-900 dark:text-amber-300 bg-amber-50 hover:bg-amber-100 dark:bg-amber-500/10 dark:hover:bg-amber-500/20 border border-amber-200 dark:border-amber-500/30 transition-all rounded-full shadow-xs hidden md:flex hover:scale-[1.02] shrink-0"
-                    title="Start Writing on BlogSphere"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>Become a Writer</span>
-                  </button>
-                ) : (
-                  <Link
-                    to="/editor"
-                    className="items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 rounded-full transition-all shadow-sm hidden md:flex hover:scale-[1.02] shrink-0"
-                  >
-                    <PenSquare className="w-3.5 h-3.5" />
-                    <span>Write</span>
-                  </Link>
-                )}
+                {/* Streak & Gamification Level Pill */}
+                <button
+                  type="button"
+                  onClick={() => setIsGamificationOpen(true)}
+                  className="items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-400 hover:scale-[1.03] transition-all shadow-xs hidden sm:flex shrink-0"
+                  title="View your Streak, Level, and Achievement Badges"
+                >
+                  <Flame className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                  <span>{gamificationData?.streak?.current || user?.gamification?.streak?.current || 1}d</span>
+                  <span className="text-[10px] text-amber-500/40">•</span>
+                  <span className="text-[11px] font-extrabold text-amber-800 dark:text-amber-300">
+                    Lv.{gamificationData?.level || user?.gamification?.level || 1}
+                  </span>
+                </button>
+
+                {/* Write Article Link */}
+                <Link
+                  to="/editor"
+                  className="items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-950 bg-amber-500 hover:bg-amber-400 dark:bg-amber-500 dark:text-slate-950 dark:hover:bg-amber-400 rounded-full transition-all shadow-sm hidden md:flex hover:scale-[1.02] shrink-0"
+                >
+                  <PenSquare className="w-3.5 h-3.5" />
+                  <span>Write</span>
+                </Link>
 
                 {/* Daily Briefs */}
                 <Link
@@ -321,9 +331,11 @@ export default function Navbar() {
                     className="flex items-center gap-2 focus:outline-none p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[#1b1f2b] transition-colors"
                   >
                     <img
-                      src={user?.profileImage || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200'}
-                      alt={user?.name}
-                      className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500/30"
+                      src={getUserAvatar(user?.profileImage, user?.name)}
+                      alt={user?.name || 'User'}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => handleAvatarError(e, user?.name)}
+                      className="w-8 h-8 rounded-full object-cover ring-2 ring-amber-500/30 bg-amber-500/10"
                     />
                     <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
                   </button>
@@ -459,27 +471,26 @@ export default function Navbar() {
                 <Brain className="w-4 h-4 text-amber-500" />
                 <span>AI Briefs</span>
               </Link>
-              {user?.role === 'reader' ? (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    setIsBecomeWriterOpen(true);
-                  }}
-                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-amber-600 dark:text-amber-400 rounded-full bg-amber-500/10 border border-amber-500/20 shadow-sm"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-500" />
-                  <span>Become a Writer</span>
-                </button>
-              ) : (
-                <Link
-                  to="/editor"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-slate-950 rounded-full bg-amber-500 hover:bg-amber-400 shadow-md shadow-amber-500/20"
-                >
-                  <PenSquare className="w-4 h-4" />
-                  <span>Write Article</span>
-                </Link>
-              )}
+              {/* Mobile Gamification Button */}
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setIsGamificationOpen(true);
+                }}
+                className="flex items-center gap-2 w-full justify-center px-4 py-2 text-xs font-bold text-amber-700 dark:text-amber-400 rounded-full bg-amber-500/10 border border-amber-500/20"
+              >
+                <Flame className="w-4 h-4 text-amber-500" />
+                <span>Streak: {gamificationData?.streak?.current || 1} Days · Level {gamificationData?.level || 1}</span>
+              </button>
+
+              <Link
+                to="/editor"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 w-full justify-center px-4 py-2.5 text-xs font-extrabold text-slate-950 rounded-full bg-amber-500 hover:bg-amber-400 shadow-md shadow-amber-500/20"
+              >
+                <PenSquare className="w-4 h-4" />
+                <span>Write Article</span>
+              </Link>
             </div>
           )}
 
@@ -504,10 +515,10 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Become a Writer Upgrade Modal */}
-      <BecomeWriterModal
-        isOpen={isBecomeWriterOpen}
-        onClose={() => setIsBecomeWriterOpen(false)}
+      {/* Gamification Modal */}
+      <GamificationModal
+        isOpen={isGamificationOpen}
+        onClose={() => setIsGamificationOpen(false)}
       />
     </nav>
   );

@@ -103,10 +103,12 @@ mongoose
   });
 
 // Socket.io Real-time Operations
-// Track active collaborators in-memory: blogId -> { socketId: { userId, userName } }
+// Track active collaborators in-memory: blogId -> { socketId: { userId, userName, userAvatar, activeBlockId } }
 interface Collaborator {
   userId: string;
   userName: string;
+  userAvatar?: string;
+  activeBlockId?: string;
 }
 const activeCollaborators: { [blogId: string]: { [socketId: string]: Collaborator } } = {};
 
@@ -126,23 +128,67 @@ io.on('connection', (socket: Socket) => {
   });
 
   // Collaborative Editor: Join Room
-  socket.on('join_collab', ({ blogId, userId, userName }: { blogId: string; userId: string; userName: string }) => {
+  socket.on('join_collab', ({ blogId, userId, userName, userAvatar }: { blogId: string; userId: string; userName: string; userAvatar?: string }) => {
     socket.join(`blog_collab_${blogId}`);
 
     if (!activeCollaborators[blogId]) {
       activeCollaborators[blogId] = {};
     }
 
-    // Add collaborator
-    activeCollaborators[blogId][socket.id] = { userId, userName };
+    // Add collaborator with metadata
+    activeCollaborators[blogId][socket.id] = { 
+      userId, 
+      userName, 
+      userAvatar: userAvatar || '',
+      activeBlockId: undefined 
+    };
 
     // Broadcast active contributors to the room
     io.to(`blog_collab_${blogId}`).emit('collab_users', Object.values(activeCollaborators[blogId]));
   });
 
-  // Collaborative Editor: Sync content changes
-  socket.on('edit_content', ({ blogId, content, title }: { blogId: string; content: string; title: string }) => {
-    socket.to(`blog_collab_${blogId}`).emit('content_updated', { content, title });
+  // Collaborative Editor: Track Cursor / Focus on specific Block
+  socket.on('collab_focus', ({ blogId, userId, userName, blockId }: { blogId: string; userId: string; userName: string; blockId: string | null }) => {
+    if (activeCollaborators[blogId] && activeCollaborators[blogId][socket.id]) {
+      activeCollaborators[blogId][socket.id].activeBlockId = blockId || undefined;
+      io.to(`blog_collab_${blogId}`).emit('collab_users', Object.values(activeCollaborators[blogId]));
+    }
+    socket.to(`blog_collab_${blogId}`).emit('block_focused', { userId, userName, blockId });
+  });
+
+  // Collaborative Editor: Real-time Cursor Movement (Figma / Notion style live pointer)
+  socket.on('collab_cursor', ({ blogId, userId, userName, x, y, blockId }: { blogId: string; userId: string; userName: string; x: number; y: number; blockId?: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('cursor_moved', { userId, userName, x, y, blockId });
+  });
+
+  // Collaborative Editor: Cursor Leaves Canvas
+  socket.on('collab_cursor_leave', ({ blogId, userId }: { blogId: string; userId: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('cursor_removed', { userId });
+  });
+
+  // Collaborative Editor: Granular Block Edit (Async non-blocking editing per block)
+  socket.on('edit_block', ({ blogId, blockId, field, val, userId }: { blogId: string; blockId: string; field: string; val: any; userId: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('block_updated', { blockId, field, val, userId });
+  });
+
+  // Collaborative Editor: Structural block updates (reorder, add, delete)
+  socket.on('edit_blocks_structure', ({ blogId, blocks, userId }: { blogId: string; blocks: any[]; userId: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('blocks_structure_updated', { blocks, userId });
+  });
+
+  // Collaborative Editor: Metadata updates (title, cover, category, tags)
+  socket.on('edit_meta', ({ blogId, field, val, userId }: { blogId: string; field: string; val: any; userId: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('meta_updated', { field, val, userId });
+  });
+
+  // Collaborative Editor: Typing indicator
+  socket.on('collab_typing', ({ blogId, userId, userName, isTyping }: { blogId: string; userId: string; userName: string; isTyping: boolean }) => {
+    socket.to(`blog_collab_${blogId}`).emit('collab_user_typing', { userId, userName, isTyping });
+  });
+
+  // Collaborative Editor: Sync full content changes (fallback / whole sync)
+  socket.on('edit_content', ({ blogId, content, title, userId }: { blogId: string; content: string; title: string; userId?: string }) => {
+    socket.to(`blog_collab_${blogId}`).emit('content_updated', { content, title, userId });
   });
 
   // Collaborative Sprints: Start Sprint
@@ -167,10 +213,34 @@ io.on('connection', (socket: Socket) => {
     io.to(`blog_collab_${blogId}`).emit('sprint_cancelled');
   });
 
+  // Collaborative Editor: Kick / Remove Collaborator
+  socket.on('kick_collaborator', ({ blogId, userId }: { blogId: string; userId: string }) => {
+    if (activeCollaborators[blogId]) {
+      Object.entries(activeCollaborators[blogId]).forEach(([sId, collab]) => {
+        if (collab.userId === userId) {
+          const targetSocket = io.sockets.sockets.get(sId);
+          if (targetSocket) {
+            targetSocket.leave(`blog_collab_${blogId}`);
+            targetSocket.emit('collab_kicked', { blogId, message: 'You have been removed from this co-authoring session by the author.' });
+          }
+          delete activeCollaborators[blogId][sId];
+        }
+      });
+      io.to(`blog_collab_${blogId}`).emit('collab_users', Object.values(activeCollaborators[blogId]));
+      io.to(`blog_collab_${blogId}`).emit('collaborator_removed', { userId });
+      io.to(`blog_collab_${blogId}`).emit('cursor_removed', { userId });
+    }
+  });
+
   // Collaborative Editor: Leave Room
-  socket.on('leave_collab', ({ blogId }: { blogId: string }) => {
+  socket.on('leave_collab', ({ blogId, userId }: { blogId: string; userId?: string }) => {
     socket.leave(`blog_collab_${blogId}`);
+    if (userId) {
+      socket.to(`blog_collab_${blogId}`).emit('cursor_removed', { userId });
+    }
     if (activeCollaborators[blogId] && activeCollaborators[blogId][socket.id]) {
+      const leavingUserId = activeCollaborators[blogId][socket.id].userId;
+      socket.to(`blog_collab_${blogId}`).emit('cursor_removed', { userId: leavingUserId });
       delete activeCollaborators[blogId][socket.id];
       if (Object.keys(activeCollaborators[blogId]).length === 0) {
         delete activeCollaborators[blogId];
@@ -185,6 +255,8 @@ io.on('connection', (socket: Socket) => {
     // Search and remove this socket from all collaboration sessions
     Object.keys(activeCollaborators).forEach((blogId) => {
       if (activeCollaborators[blogId][socket.id]) {
+        const leavingUserId = activeCollaborators[blogId][socket.id].userId;
+        socket.to(`blog_collab_${blogId}`).emit('cursor_removed', { userId: leavingUserId });
         delete activeCollaborators[blogId][socket.id];
         if (Object.keys(activeCollaborators[blogId]).length === 0) {
           delete activeCollaborators[blogId];

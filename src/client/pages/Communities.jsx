@@ -240,7 +240,7 @@ export default function Communities() {
               <div className="text-center py-16 p-6 bg-white dark:bg-stone-900 rounded-3xl border border-stone-200/80 dark:border-stone-800 space-y-3">
                 <MessageSquare className="w-8 h-8 text-stone-400 mx-auto opacity-40" />
                 <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">No articles posted in this community yet.</p>
-                <p className="text-xs text-stone-400">Publish a story under this community to initiate the conversation.</p>
+                <p className="text-xs text-stone-400">Publish a blog under this community to initiate the conversation.</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

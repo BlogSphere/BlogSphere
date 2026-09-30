@@ -257,7 +257,7 @@ export const googleLogin = async (req, res) => {
           googleId,
           isVerified: true,
           profileImage: picture || `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(name)}`,
-          role: 'reader'
+          role: 'author'
         });
 
         await user.save();

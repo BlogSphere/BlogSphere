@@ -6,6 +6,7 @@ import BlogCard from '../components/BlogCard.jsx';
 import Sidebar from '../components/Sidebar.jsx';
 import api from '../utils/api.js';
 import { getCache, setCache } from '../utils/cacheManager.js';
+import { getUserAvatar, handleAvatarError } from '../utils/imageUtils.js';
 
 export default function Home() {
   const [searchParams] = useSearchParams();
@@ -180,7 +181,7 @@ export default function Home() {
                 to="/editor"
                 className="px-7 py-3 rounded-full text-xs font-bold uppercase tracking-wider bg-white hover:bg-slate-50 dark:bg-[#141720] dark:hover:bg-[#1b1f2b] transition-all border border-slate-200 dark:border-slate-800 text-center text-slate-800 dark:text-slate-200 shadow-xs hover:scale-[1.02]"
               >
-                Write a Story
+                Write a Blog
               </Link>
             </div>
           </div>
@@ -198,7 +199,7 @@ export default function Home() {
                 <div className="w-full md:flex-1 relative">
                   <input
                     type="text"
-                    placeholder="Search stories, essays, topics..."
+                    placeholder="Search blogs, essays, topics..."
                     value={searchInput}
                     onChange={(e) => setSearchInput(e.target.value)}
                     className="w-full py-2.5 pl-10 pr-4 text-sm transition-all border rounded-xl bg-slate-50 border-slate-200 dark:bg-[#0b0d11] dark:border-slate-800 text-slate-900 dark:text-slate-100 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-500 dark:focus:ring-amber-500/50 focus:bg-white dark:focus:bg-[#0b0d11]"
@@ -360,7 +361,13 @@ export default function Home() {
                 <div className="grid sm:grid-cols-2 gap-6">
                   {usersList.map((usr) => (
                     <div key={usr._id} className="p-6 border border-slate-100 dark:border-slate-800/80 rounded-3xl bg-white dark:bg-slate-900/60 shadow-sm hover:shadow-md transition-all flex items-start gap-4">
-                      <img src={usr.profileImage || 'https://api.dicebear.com/7.x/adventurer/svg'} alt={usr.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10" />
+                      <img
+                        src={getUserAvatar(usr.profileImage, usr.name)}
+                        alt={usr.name}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => handleAvatarError(e, usr.name)}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/10 bg-amber-500/10"
+                      />
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-bold text-slate-800 dark:text-slate-100">{usr.name}</h4>
